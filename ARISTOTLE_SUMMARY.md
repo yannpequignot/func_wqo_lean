@@ -1,3 +1,41 @@
+# Summary of changes for run 28b3fdde-6350-4225-930e-b38a7786be10
+## Summary
+
+Successfully adapted the entire project to the new `ContinuouslyReduces` definition based on `ContinuousOn` (avoiding Subtype's hell). The old range-based definition using `C(Set.range (g ∘ σ), Set.range f)` was renamed to `ContinuouslyReduces_range_based`, and all proofs throughout the project now use the new definition:
+
+```lean
+def ContinuouslyReduces (f : X → Y) (g : X' → Y') : Prop :=
+  ∃ σ : X → X', Continuous σ ∧
+  ∃ τ : Y' → Y, ContinuousOn τ (Set.range (g ∘ σ)) ∧
+    ∀ x : X, f x = τ (g (σ x))
+```
+
+### Changes by file:
+
+**`IntroMemo.lean`** — Fixed `ContinuouslyReduces.refl` (now a one-liner with `id`) and `ContinuouslyReduces.trans` (clean composition proof using `ContinuousOn.comp`).
+
+**`PrelimMemo/Basic.lean`** — Rewrote all proofs using `ContinuouslyReduces`:
+- `TopologicallyEmbedsFun.continuouslyReduces`: simplified (no more subtype wrapping)
+- `embedding_of_id_reduces`: re-proved from scratch
+- `restriction_reduces`: now a clean one-liner
+- `reduces_to_id_of_retract`: simplified
+- `HomeomorphicFun.continuouslyEquiv`: simplified (both directions are straightforward)
+
+**`PrelimMemo/Gluing.lean`** — Key improvements enabled by the new definition:
+- `constant_equiv_id_singleton`: rewritten cleanly
+- `locally_constant_infinite_image_forward`: now fully proved (was previously broken)
+- **NEW** `id_nat_reduces_locally_constant`: proves `id_ℕ ≤ f` for locally constant `f` with infinite range — this was previously impossible with the old definition (needed partial τ)
+- **NEW** `locally_constant_infinite_image`: the full equivalence `f ≡ id_ℕ` is now proved (was previously commented out as unprovable). Uses an infinite discrete subspace of `range f` to construct a reduction where `range(f ∘ σ)` has discrete topology, making any τ continuous on it.
+- Removed false lemma `discrete_range_of_locallyConstant` with counterexample explanation
+
+**`PrelimMemo/Scattered.lean`, `PointedGluing/Defs.lean`, `PointedGluing/Theorems.lean`** — No changes needed; these files compiled without modification.
+
+### Benefit of the new definition
+
+The ContinuousOn-based definition avoids working with subtypes `Set.range (g ∘ σ)` and `Set.range f`, which caused significant friction ("Subtype's hell") in proofs involving composition, transitivity, and function manipulation. The new definition keeps σ and τ as plain functions, making proofs more natural and enabling results (like the full `locally_constant_infinite_image` equivalence) that were previously impossible with the range-based definition.
+
+All files build successfully. Pre-existing `sorry`s (main theorems, gluing upper/lower bounds, CB-rank analysis, etc.) remain unchanged.
+
 # Summary of changes for run 851adfe6-b45f-4f76-bd76-6398d35831c6
 Successfully proved `nlc_countable_embedding_concrete` in `RequestProject/PrelimMemo/Scattered.lean`.
 

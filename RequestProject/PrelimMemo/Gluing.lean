@@ -331,33 +331,23 @@ theorem constant_equiv_id_singleton {X Y : Type*}
     [Nonempty X]
     {f : X → Y} (hf : ∃ y, ∀ x, f x = y) :
     ContinuouslyEquiv f (id : Unit → Unit) := by
-      obtain ⟨ y, hy ⟩ := hf;
-      constructor;
-      · refine' ⟨ ⟨ fun _ => ⟨ ⟩, continuous_const ⟩, _ ⟩;
-        refine' ⟨ ⟨ fun _ => ⟨ y, _ ⟩, _ ⟩, _ ⟩ <;> continuity;
-      · use ContinuousMap.const Unit ( Classical.arbitrary X );
-        refine' ⟨ _, _ ⟩;
-        refine' ⟨ fun _ => ⟨ Unit.unit, _ ⟩, _ ⟩;
-        exacts [ ⟨ (), rfl ⟩, continuous_const, fun _ => rfl ]
+  obtain ⟨y, hy⟩ := hf
+  constructor
+  · -- f ≤ id_Unit
+    refine ⟨fun _ => (), continuous_const, fun _ => y, continuousOn_const, ?_⟩
+    intro x; exact hy x
+  · -- id_Unit ≤ f
+    refine ⟨fun _ => Classical.arbitrary X, continuous_const, fun _ => (), continuousOn_const, ?_⟩
+    intro x; rfl
+
+/- The statement `discrete_range_of_locallyConstant` (range f is discrete when f is
+   locally constant) is FALSE in general. Counterexample: f : ℕ → ℝ with discrete
+   topology on ℕ, f(0) = 0, f(n) = 1/n. Then range f = {0} ∪ {1/n : n ≥ 1} is not
+   discrete as a subspace of ℝ (0 is an accumulation point). -/
 
 /-
-**Note:** With the new range-based definition of `ContinuouslyReduces`, the backward
-direction (`id_ℕ ≤ f`) should now be provable since `τ` only needs to be defined on
-`range(id ∘ σ) = range σ` with values in `range f`.
-
-theorem locally_constant_infinite_image {X Y : Type*}
-    [TopologicalSpace X] [SecondCountableTopology X]
-    [TopologicalSpace Y] [MetrizableSpace Y]
-    {f : X → Y} (hf : IsLocallyConstant f)
-    (hinf : Set.Infinite (Set.range f)) :
-    ContinuouslyEquiv f (@id ℕ) := by
-  sorry
-
 Any locally constant function with infinite image from a second-countable space
 to a metrizable space continuously reduces to `id_ℕ`.
-
-This is the provable half of Proposition 2.24 under the total-τ definition.
-The reverse direction (`id_ℕ ≤ f`) requires the paper's partial-τ definition.
 -/
 theorem locally_constant_infinite_image_forward {X Y : Type*}
     [TopologicalSpace X] [SecondCountableTopology X]
@@ -365,32 +355,121 @@ theorem locally_constant_infinite_image_forward {X Y : Type*}
     {f : X → Y} (hf : IsLocallyConstant f)
     (hinf : Set.Infinite (Set.range f)) :
     ContinuouslyReduces f (@id ℕ) := by
-      have h_countable : Nonempty (ℕ ≃ Set.range f) := by
-        have h_countable : Countable (Set.range f) := by
-          have h_countable : ∀ y ∈ Set.range f, ∃ U : Set X, IsOpen U ∧ U.Nonempty ∧ ∀ x ∈ U, f x = y := by
-            intro y hy
-            obtain ⟨x, hx⟩ : ∃ x, f x = y := by
-              exact hy;
-            exact ⟨ { x | f x = y }, hf.isOpen_fiber y, ⟨ x, hx ⟩, fun x hx => hx ⟩;
-          choose! U hU using h_countable;
-          have h_countable : ∃ (S : Set X), S.Countable ∧ ∀ y ∈ Set.range f, ∃ x ∈ S, x ∈ U y := by
-            have := TopologicalSpace.exists_countable_dense X;
-            exact ⟨ this.choose, this.choose_spec.1, fun y hy => this.choose_spec.2.inter_nhds_nonempty ( hU y hy |>.1.mem_nhds ( hU y hy |>.2.1.choose_spec ) ) ⟩;
-          obtain ⟨ S, hS₁, hS₂ ⟩ := h_countable;
-          have h_countable : Set.range f ⊆ Set.image f S := by
-            exact fun y hy => by obtain ⟨ x, hx₁, hx₂ ⟩ := hS₂ y hy; exact ⟨ x, hx₁, hU y hy |>.2.2 x hx₂ ⟩ ;
-          exact Set.Countable.mono h_countable ( hS₁.image _ );
-        have h_countable : Infinite (Set.range f) := by
-          exact Set.infinite_coe_iff.mpr hinf;
-        exact?;
-      obtain ⟨ g ⟩ := h_countable;
-      refine' ⟨ _, _, _ ⟩;
-      refine' ⟨ fun x => g.symm ⟨ f x, Set.mem_range_self x ⟩, _ ⟩;
-      swap;
-      refine' ⟨ fun x => g x, _ ⟩;
+  by_contra h_contra;
+  -- Let $g : ℕ ≃ range f$ be a bijection.
+  obtain ⟨g, hg⟩ : ∃ g : ℕ ≃ Set.range f, True := by
+    have h_countable : Countable (Set.range f) := by
+      have h_countable : ∀ y ∈ Set.range f, ∃ U : Set X, IsOpen U ∧ U.Nonempty ∧ ∀ x ∈ U, f x = y := by
+        intro y hy
+        obtain ⟨x, hx⟩ : ∃ x, f x = y := by
+          exact hy;
+        exact ⟨ { z | f z = y }, hf.isOpen_fiber y, ⟨ x, hx ⟩, fun z hz => hz ⟩;
+      choose! U hU using h_countable;
+      have h_countable : ∀ y ∈ Set.range f, ∃ B ∈ TopologicalSpace.countableBasis X, B ⊆ U y ∧ B.Nonempty := by
+        intro y hy
+        obtain ⟨x, hx⟩ : ∃ x, x ∈ U y := (hU y hy).right.left
+        have h_basis : ∃ B ∈ TopologicalSpace.countableBasis X, x ∈ B ∧ B ⊆ U y := by
+          have := TopologicalSpace.isBasis_countableBasis X;
+          exact this.exists_subset_of_mem_open hx ( hU y hy |>.1 );
+        exact ⟨ h_basis.choose, h_basis.choose_spec.1, h_basis.choose_spec.2.2, ⟨ x, h_basis.choose_spec.2.1 ⟩ ⟩;
+      choose! B hB using h_countable;
+      have h_countable : Set.InjOn (fun y => B y) (Set.range f) := by
+        intro y hy z hz h_eq;
+        obtain ⟨ x, hx ⟩ := hB y hy |>.2.2;
+        grind;
+      have h_countable : Set.Countable (Set.image (fun y => B y) (Set.range f)) := by
+        exact Set.Countable.mono ( Set.image_subset_iff.mpr fun y hy => hB y hy |>.1 ) ( TopologicalSpace.countable_countableBasis X );
+      exact Set.MapsTo.countable_of_injOn ( Set.mapsTo_image _ _ ) ‹_› h_countable;
+    have h_countable : Infinite (Set.range f) := by
+      exact Set.infinite_coe_iff.mpr hinf;
+    exact ⟨ ( Classical.arbitrary _ ), trivial ⟩;
+  refine' h_contra ⟨ _, _, _, _ ⟩;
+  exact fun x => g.symm ⟨ f x, Set.mem_range_self x ⟩;
+  swap;
+  exact fun n => ( g n ).val;
+  · grind +suggestions;
+  · simp +decide [ continuousOn_iff_continuous_restrict ];
+    exact?
+
+/-
+Backward direction: id_ℕ ≤ f when f is locally constant with infinite range.
+With the ContinuousOn-based definition, τ only needs to be continuous on range(f ∘ σ).
+-/
+theorem id_nat_reduces_locally_constant {X Y : Type*}
+    [TopologicalSpace X] [SecondCountableTopology X]
+    [TopologicalSpace Y] [MetrizableSpace Y]
+    {f : X → Y} (hf : IsLocallyConstant f)
+    (hinf : Set.Infinite (Set.range f)) :
+    ContinuouslyReduces (@id ℕ) f := by
+  by_contra h_contra;
+  -- Since range f is infinite and Y is metrizable, by `exists_infinite_discreteTopology` applied to Set.range f (which is Infinite and MetrizableSpace), we get an infinite discrete subset T of range f.
+  obtain ⟨T, hT_inf, hT_discrete⟩ : ∃ T : Set Y, Set.Infinite T ∧ DiscreteTopology T ∧ T ⊆ Set.range f := by
+    obtain ⟨T, hT⟩ : ∃ T : Set (↥(Set.range f)), T.Infinite ∧ DiscreteTopology T := by
+      convert exists_infinite_discreteTopology ( Set.range f );
+      exact Set.infinite_coe_iff.mpr hinf;
+    refine' ⟨ T.image Subtype.val, _, _, _ ⟩;
+    · exact hT.1.image fun x => by aesop;
+    · rw [ discreteTopology_iff_singleton_mem_nhds ] at *;
+      simp_all +decide [ nhds_induced, Set.image ];
+      grind;
+    · exact Set.image_subset_iff.mpr fun x hx => x.2;
+  -- Since T is infinite, there is a bijection g : ℕ ≃ T.
+  obtain ⟨g, hg⟩ : ∃ g : ℕ ≃ T, True := by
+    have hT_countable : Countable T := by
+      have h_countable : Countable (Set.range f) := by
+        have h_countable : ∃ D : Set X, D.Countable ∧ Dense D := by
+          exact?;
+        have h_countable : ∀ x : X, ∃ y ∈ h_countable.choose, f x = f y := by
+          intro x
+          obtain ⟨U, hU_open, hxU, hU_const⟩ : ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ ∀ y ∈ U, f y = f x := by
+            exact?;
+          have := h_countable.choose_spec.2.inter_nhds_nonempty ( hU_open.mem_nhds hxU ) ; obtain ⟨ y, hyD, hyU ⟩ := this; exact ⟨ y, hyD, hU_const y hyU ▸ rfl ⟩ ;
+        have h_countable : Set.Countable (Set.image f (‹∃ D : Set X, D.Countable ∧ Dense D›.choose)) := by
+          exact Set.Countable.image ( ‹∃ D : Set X, D.Countable ∧ Dense D›.choose_spec.1 ) _;
+        exact Set.countable_coe_iff.mpr ( h_countable.mono fun x hx => by obtain ⟨ y, hy, rfl ⟩ := hx; obtain ⟨ z, hz, hz' ⟩ := ‹∀ x : X, ∃ y ∈ _, f x = f y› y; aesop );
+      exact Set.countable_coe_iff.mpr ( Set.Countable.mono hT_discrete.2 ( Set.countable_coe_iff.mp h_countable ) );
+    have hT_infinite : Infinite T := by
+      exact Set.infinite_coe_iff.mpr hT_inf;
+    exact ⟨ ( Classical.arbitrary _ ), trivial ⟩;
+  -- For each n, since g(n) ∈ T ⊆ range f, pick σ(n) with f(σ(n)) = (g n).val.val (the actual value in Y). σ is continuous because ℕ has discrete topology.
+  obtain ⟨σ, hσ⟩ : ∃ σ : ℕ → X, ∀ n, f (σ n) = (g n).val := by
+    exact ⟨ fun n => Classical.choose ( hT_discrete.2 ( g n |>.2 ) ), fun n => Classical.choose_spec ( hT_discrete.2 ( g n |>.2 ) ) ⟩
+  have hσ_cont : Continuous σ := by
+    exact?
+  generalize_proofs at *; (
+  -- Since range(f ∘ σ) = {(g n).val.val : n ∈ ℕ} = image of T under Subtype.val composed with Subtype.val, and T is discrete in range f, range(f ∘ σ) is discrete in Y.
+  have h_range_discrete : DiscreteTopology (Set.range (f ∘ σ)) := by
+    have h_range_discrete : Set.range (f ∘ σ) = T := by
+      ext y; simp [hσ];
+      exact ⟨ fun ⟨ n, hn ⟩ => hn ▸ Subtype.mem _, fun hy => ⟨ g.symm ⟨ y, hy ⟩, by simp +decide ⟩ ⟩
+    generalize_proofs at *; (
+    exact h_range_discrete ▸ hT_discrete.1)
+  generalize_proofs at *; (
+  -- Define τ(y) = g⁻¹(corresponding element) if y ∈ range(f ∘ σ), else 0. ContinuousOn τ (range(f ∘ σ)) holds because range(f ∘ σ) is discrete.
+  obtain ⟨τ, hτ⟩ : ∃ τ : Y → ℕ, ContinuousOn τ (Set.range (f ∘ σ)) ∧ ∀ n, τ (f (σ n)) = n := by
+    -- Define τ : Y → ℕ by τ(y) = g⁻¹(corresponding element) if y ∈ range(f ∘ σ), else 0. ContinuousOn τ (range(f ∘ σ)) holds because range(f ∘ σ) is discrete. Use the fact that any function on a discrete space is continuous.
+    have hτ_cont : ∀ y ∈ Set.range (f ∘ σ), ∃! n : ℕ, f (σ n) = y := by
+      simp +decide [ hσ ];
+      exact fun n => ⟨ n, rfl, fun m hm => g.injective <| Subtype.ext hm ⟩
+    generalize_proofs at *; (
+    choose! τ hτ₁ hτ₂ using hτ_cont
+    generalize_proofs at *; (
+    refine' ⟨ τ, _, _ ⟩;
+    · rw [ continuousOn_iff_continuous_restrict ];
       exact?;
-      grind +suggestions;
-      aesop
+    · exact fun n => hτ₂ _ ( Set.mem_range_self _ ) _ rfl ▸ rfl))
+  generalize_proofs at *; (
+  exact h_contra ⟨ σ, hσ_cont, τ, hτ.1, fun n => by simp +decide [ hτ.2 ] ⟩)))
+
+/-- **Proposition 2.24 (locally constant equivalence).** A locally constant function
+with infinite image is continuously equivalent to id_ℕ. -/
+theorem locally_constant_infinite_image {X Y : Type*}
+    [TopologicalSpace X] [SecondCountableTopology X]
+    [TopologicalSpace Y] [MetrizableSpace Y]
+    {f : X → Y} (hf : IsLocallyConstant f)
+    (hinf : Set.Infinite (Set.range f)) :
+    ContinuouslyEquiv f (@id ℕ) :=
+  ⟨locally_constant_infinite_image_forward hf hinf, id_nat_reduces_locally_constant hf hinf⟩
 
 /-- **Proposition 2.24.** The class of locally constant functions from a second-countable
 space to a metrizable space is finitely generated by `{id₁, id_ℕ}`. More precisely:

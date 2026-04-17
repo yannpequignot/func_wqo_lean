@@ -75,20 +75,30 @@ variable [TopologicalSpace Y] [TopologicalSpace Y']
 A function `f` continuously reduces to `g` if there is a continuous `σ : X → X'`
 and a continuous `τ : im(g ∘ σ) → im(f)` such that `τ(g(σ(x))) = f(x)` for all `x`.
 -/
-def ContinuouslyReduces (f : X → Y) (g : X' → Y') : Prop :=
+def ContinuouslyReduces_range_based (f : X → Y) (g : X' → Y') : Prop :=
   ∃ σ : C(X, X'),
   ∃ τ : C(Set.range (g ∘ σ), Set.range f),
     ∀ x : X, τ ⟨g (σ x), Set.mem_range_self x⟩ = ⟨f x, Set.mem_range_self x⟩
+
+/--
+A function `f` continuously reduces to `g` if there is a continuous `σ : X → X'`
+and a function `τ : Y' → Y` that is continuous on `im(g ∘ σ)`
+such that `f(x) = τ(g(σ(x)))` for all `x`.
+-/
+def ContinuouslyReduces {X Y X' Y' : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y]
+    [TopologicalSpace X'] [TopologicalSpace Y']
+    (f : X → Y) (g : X' → Y') : Prop :=
+  ∃ σ : X → X', Continuous σ ∧
+  ∃ τ : Y' → Y, ContinuousOn τ (Set.range (g ∘ σ)) ∧
+    ∀ x : X, f x = τ (g (σ x))
 
 -- Optional: Define the ≤ notation for this relation
 infix:50 " ≤ " => ContinuouslyReduces
 
 /-- Continuous reducibility is reflexive: any function reduces to itself via `(id, id)`. -/
 theorem ContinuouslyReduces.refl (f : X → Y) : f ≤ f := by
-  use ContinuousMap.id X
-  use ContinuousMap.id (Set.range f)
-  intro x
-  rfl
+  exact ⟨id, continuous_id, id, continuousOn_id, fun x => rfl⟩
 
 /-
 Continuous reducibility is transitive. If `f ≤ g` via `(σ₁, τ₁)` and `g ≤ h`
@@ -100,16 +110,18 @@ theorem ContinuouslyReduces.trans {X X' X'' Y Y' Y'' : Type*}
   {f : X → Y} {g : X' → Y'} {h : X'' → Y''}
   (hfg : f ≤ g) (hgh : g ≤ h) :
   f ≤ h := by
-    obtain ⟨σ₁, τ₁, hfg⟩ := hfg
-    obtain ⟨σ₂, τ₂, hgh⟩ := hgh
-    use σ₂.comp σ₁;
-    refine' ⟨ _, _ ⟩;
-    refine' ⟨ fun x => τ₁ ⟨ ( τ₂ ⟨ x.val, _ ⟩ ).val, _ ⟩, _ ⟩;
-    all_goals norm_num;
-    any_goals intro x; simp +decide [ hfg, hgh ];
-    exact ⟨ _, x.2.choose_spec ⟩;
-    grind +suggestions;
-    fun_prop
+    obtain ⟨σ₁, hσ₁, τ₁, hτ₁cont, hτ₁eq⟩ := hfg
+    obtain ⟨σ₂, hσ₂, τ₂, hτ₂cont, hτ₂eq⟩ := hgh
+    refine ⟨σ₂ ∘ σ₁, hσ₂.comp hσ₁, τ₁ ∘ τ₂, ?_, ?_⟩
+    · apply ContinuousOn.comp hτ₁cont (hτ₂cont.mono (Set.range_comp_subset_range _ _))
+      intro y hy
+      obtain ⟨x, rfl⟩ := hy
+      simp [Function.comp] at *
+      rw [← hτ₂eq]
+      exact Set.mem_range_self x
+    · intro x
+      simp [Function.comp]
+      rw [hτ₁eq, ← hτ₂eq]
 
 end ContinuousReduction
 
