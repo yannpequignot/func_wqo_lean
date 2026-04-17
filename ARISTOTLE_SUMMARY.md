@@ -1,45 +1,25 @@
-# Summary of changes for run ea4a78e0-4596-4bd7-bc9a-669be5a7fa76
-## Summary
+# Summary of changes for run 851adfe6-b45f-4f76-bd76-6398d35831c6
+Successfully proved `nlc_countable_embedding_concrete` in `RequestProject/PrelimMemo/Scattered.lean`.
 
-I updated the entire project to use the new correct definition of `ContinuouslyReduces`, which uses continuous maps between range subtypes instead of total maps:
+**What was proved:** The theorem states that if `g : X → Y` is a continuous, nowhere locally constant function from a nonempty metrizable space to a T₂ space, then there exists an embedding `σ : CantorRat → X` such that both `σ` and `g ∘ σ` are topological embeddings. Here `CantorRat` is the space of eventually-zero binary sequences (a countable dense-in-itself subspace of Cantor space).
 
-```lean
--- New (correct) definition:
-def ContinuouslyReduces (f : X → Y) (g : X' → Y') : Prop :=
-  ∃ σ : C(X, X'),
-  ∃ τ : C(Set.range (g ∘ σ), Set.range f),
-    ∀ x : X, τ ⟨g (σ x), Set.mem_range_self x⟩ = ⟨f x, Set.mem_range_self x⟩
-```
+**Proof approach:** The proof uses a Cantor scheme construction (the classical technique from descriptive set theory). The decomposition involved 12 helper lemmas:
 
-The old definition (with total `τ : Y' → Y`) was renamed to `ContinuouslyReduces_naive`.
+1. **`cantor_scheme_exists`** — Constructs centers `c`, radii `r`, and open sets `U` indexed by finite binary sequences using the `splitting_lemma_nlc` recursively
+2. **`scheme_center_in_closedBall`** — Centers are nested: descendant centers lie in ancestor balls
+3. **`scheme_radius_bound`** — Radii decay exponentially: `r(l) ≤ r([]) / 2^|l|`
+4. **`scheme_center_replicate_zero`** — Prepending zeros preserves centers
+5. **`scheme_disjoint_of_ne`** — Different same-length paths have centers in disjoint balls
+6. **`cantorRatPrefix_length`**, **`cantorRat_zero_beyond`**, **`res_extends_prefix`**, **`center_of_extended_res`** — Properties connecting `cantorRatPrefix` (using `Nat.find`) to `PiNat.res`
+7. **`sigma_in_closedBall_res`** — σ(x) lies in the closed ball at every truncation level
+8. **`cantor_sigma_injective`** — σ is injective (via padding + disjointness)
+9. **`cantor_sigma_continuous`** — σ is continuous (via vanishing radii)
+10. **`g_sigma_in_U`** — g(σ(x)) lies in the scheme's open sets
+11. **`cantor_sigma_isEmbedding`** — σ is a topological embedding
+12. **`cantor_g_sigma_isEmbedding`** — g ∘ σ is a topological embedding
 
-### Files modified
 
-1. **`RequestProject/IntroMemo.lean`** — Replaced the `ContinuousReduction` section with the new definition using bundled `C(X, X')` continuous maps. Proved `refl` and `trans`. Updated docstrings.
-
-2. **`RequestProject/IntroMemo_new.lean`** — Cleared this staging file (its content was integrated into `IntroMemo.lean`).
-
-3. **`RequestProject/PrelimMemo/Basic.lean`** — Fixed and re-proved all 5 theorems that broke:
-   - `TopologicallyEmbedsFun.continuouslyReduces`
-   - `embedding_of_id_reduces`
-   - `restriction_reduces`
-   - `reduces_to_id_of_retract`
-   - `HomeomorphicFun.continuouslyEquiv`
-
-4. **`RequestProject/PrelimMemo/Scattered.lean`** — Fixed and re-proved `ContinuouslyReduces.scattered`. Also added a `TopologicalSpace` instance for `CantorEventuallyZero` to fix an unrelated compilation error.
-
-5. **`RequestProject/PrelimMemo/Gluing.lean`** — Re-proved `constant_equiv_id_singleton`, `disjoint_union_reduces_gluing`, and `locally_constant_infinite_image_forward`. Updated the docstring noting that `locally_constant_infinite_image` (the equivalence version) should now be provable with the new range-based definition.
-
-6. **`RequestProject/PointedGluing/Defs.lean`** and **`RequestProject/PointedGluing/Theorems.lean`** — These compiled without changes since their `ContinuouslyReduces` usages were all in `sorry`'d theorem statements.
-
-### Remaining sorry's introduced by this change
-
-Two gluing theorems in `PrelimMemo/Gluing.lean` that previously had proofs could not be re-proved with the new definition due to the complexity of constructing range-subtype witnesses for Baire space gluing operations:
-
-- `gluingFun_upper_bound_forward` (line 204)
-- `gluingFun_upper_bound_backward` (line 271)
-
-All other previously-proved theorems were successfully re-proved. The full project builds cleanly.
+**Verification:** The proof compiles cleanly and `#print axioms nlc_countable_embedding_concrete` confirms it depends only on the standard axioms (`propext`, `Classical.choice`, `Quot.sound`).
 
 # Summary of changes for run 201337e2-be6b-4d2f-b356-b49247bb44c5
 ## Formalization of `3_general_struct_memo.tex`
