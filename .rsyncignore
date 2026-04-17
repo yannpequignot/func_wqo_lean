@@ -1,0 +1,5 @@
+.git/
+.lake/
+.vscode/
+build/
+.rsyncignore

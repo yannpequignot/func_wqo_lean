@@ -49,42 +49,67 @@ section ContinuousReduction
 ## Definition 1 (Continuous Reduction)
 
 Given topological spaces `X, X', Y, Y'`, a function `f : X → Y` *continuously reduces*
-to a function `g : X' → Y'` if there exist continuous functions `σ : X → X'` and
-`τ : Y' → Y` such that `f = τ ∘ g ∘ σ`.
+to a function `g : X' → Y'` if there exist continuous `σ : X → X'` and a continuous
+`τ : im(g ∘ σ) → im(f)` such that `τ(g(σ(x))) = f(x)` for all `x`.
 
-**Note:** The original definition requires `τ` to be defined only on the image of `g ∘ σ`
-with values in the image of `f`. Our formalization uses a total `τ : Y' → Y`, which is a
-slightly stronger condition but is equivalent for most purposes and yields cleaner
-transitivity.
+**Note:** The naive definition uses a total `τ : Y' → Y`. The correct definition
+(used here) restricts `τ` to operate between the relevant images, matching the
+paper's original formulation.
 -/
 
-/-- `ContinuouslyReduces f g` means that `f` continuously reduces to `g`:
-there exist continuous `σ : X → X'` and `τ : Y' → Y` such that `f = τ ∘ g ∘ σ`. -/
-def ContinuouslyReduces {X X' Y Y' : Type*}
+/-- `ContinuouslyReduces_naive f g` is the naive (stronger) version of continuous
+reducibility using total maps `σ : X → X'` and `τ : Y' → Y`. -/
+def ContinuouslyReduces_naive {X X' Y Y' : Type*}
     [TopologicalSpace X] [TopologicalSpace X']
     [TopologicalSpace Y] [TopologicalSpace Y']
     (f : X → Y) (g : X' → Y') : Prop :=
   ∃ (σ : X → X') (τ : Y' → Y), Continuous σ ∧ Continuous τ ∧ ∀ x, f x = τ (g (σ x))
 
+universe u v w z
+
+variable {X : Type u} {X' : Type v} {Y : Type w} {Y' : Type z}
+variable[TopologicalSpace X] [TopologicalSpace X']
+variable [TopologicalSpace Y] [TopologicalSpace Y']
+
+/--
+A function `f` continuously reduces to `g` if there is a continuous `σ : X → X'`
+and a continuous `τ : im(g ∘ σ) → im(f)` such that `τ(g(σ(x))) = f(x)` for all `x`.
+-/
+def ContinuouslyReduces (f : X → Y) (g : X' → Y') : Prop :=
+  ∃ σ : C(X, X'),
+  ∃ τ : C(Set.range (g ∘ σ), Set.range f),
+    ∀ x : X, τ ⟨g (σ x), Set.mem_range_self x⟩ = ⟨f x, Set.mem_range_self x⟩
+
+-- Optional: Define the ≤ notation for this relation
+infix:50 " ≤ " => ContinuouslyReduces
+
 /-- Continuous reducibility is reflexive: any function reduces to itself via `(id, id)`. -/
-theorem ContinuouslyReduces.refl {X Y : Type*}
-    [TopologicalSpace X] [TopologicalSpace Y]
-    (f : X → Y) : ContinuouslyReduces f f :=
-  ⟨id, id, continuous_id, continuous_id, fun _ => rfl⟩
+theorem ContinuouslyReduces.refl (f : X → Y) : f ≤ f := by
+  use ContinuousMap.id X
+  use ContinuousMap.id (Set.range f)
+  intro x
+  rfl
 
 /-
 Continuous reducibility is transitive. If `f ≤ g` via `(σ₁, τ₁)` and `g ≤ h`
 via `(σ₂, τ₂)`, then `f ≤ h` via `(σ₂ ∘ σ₁, τ₁ ∘ τ₂)`.
 -/
 theorem ContinuouslyReduces.trans {X X' X'' Y Y' Y'' : Type*}
-    [TopologicalSpace X] [TopologicalSpace X'] [TopologicalSpace X'']
-    [TopologicalSpace Y] [TopologicalSpace Y'] [TopologicalSpace Y'']
-    {f : X → Y} {g : X' → Y'} {h : X'' → Y''}
-    (hfg : ContinuouslyReduces f g) (hgh : ContinuouslyReduces g h) :
-    ContinuouslyReduces f h := by
-  obtain ⟨ σ₁, τ₁, hσ₁, hτ₁, hfg ⟩ := hfg;
-  obtain ⟨ σ₂, τ₂, hσ₂, hτ₂, hgh ⟩ := hgh;
-  exact ⟨ σ₂ ∘ σ₁, τ₁ ∘ τ₂, hσ₂.comp hσ₁, hτ₁.comp hτ₂, fun x => by simp +decide [ ← hfg, ← hgh ] ⟩
+  [TopologicalSpace X] [TopologicalSpace X'] [TopologicalSpace X'']
+  [TopologicalSpace Y] [TopologicalSpace Y'] [TopologicalSpace Y'']
+  {f : X → Y} {g : X' → Y'} {h : X'' → Y''}
+  (hfg : f ≤ g) (hgh : g ≤ h) :
+  f ≤ h := by
+    obtain ⟨σ₁, τ₁, hfg⟩ := hfg
+    obtain ⟨σ₂, τ₂, hgh⟩ := hgh
+    use σ₂.comp σ₁;
+    refine' ⟨ _, _ ⟩;
+    refine' ⟨ fun x => τ₁ ⟨ ( τ₂ ⟨ x.val, _ ⟩ ).val, _ ⟩, _ ⟩;
+    all_goals norm_num;
+    any_goals intro x; simp +decide [ hfg, hgh ];
+    exact ⟨ _, x.2.choose_spec ⟩;
+    grind +suggestions;
+    fun_prop
 
 end ContinuousReduction
 
@@ -351,6 +376,8 @@ def IsBetterQuasiOrder (Q : Type*) (r : Q → Q → Prop) : Prop :=
   ∀ (φ : EllentuckSpace → Q),
     LocallyConstant EllentuckSpace Q →
     ∃ Z : EllentuckSpace, r (φ Z) (φ Z.shift)
+
+
 
 /-- **Theorem (BQO strengthening).** Continuous reducibility is a BQO on the class of
 continuous functions from a zero-dimensional separable metrizable space to a metrizable

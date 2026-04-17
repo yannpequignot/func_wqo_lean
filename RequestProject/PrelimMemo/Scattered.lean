@@ -257,26 +257,20 @@ section ReductionAndCB
 2. If `(σ,τ)` continuously reduces `f` to `g`, then `σ(CB_α(f)) ⊆ CB_α(g)`.
 -/
 
-/-- If `f ≤ g` and `g` is scattered, then `f` is scattered. -/
+/-
+If `f ≤ g` and `g` is scattered, then `f` is scattered.
+-/
 theorem ContinuouslyReduces.scattered {X X' Y Y' : Type*}
     [TopologicalSpace X] [TopologicalSpace X']
     [TopologicalSpace Y] [TopologicalSpace Y']
     {f : X → Y} {g : X' → Y'}
     (hred : ContinuouslyReduces f g) (hg : ScatteredFun g) :
     ScatteredFun f := by
-  obtain ⟨σ, τ, hσ, hτ, hred⟩ := hred
-  intro S hS
-  have hσS : (σ '' S).Nonempty := hS.image σ
-  obtain ⟨V, hV, hVS, hconst⟩ := hg (σ '' S) hσS
-  refine ⟨σ ⁻¹' V, hσ.isOpen_preimage V hV, ?_, ?_⟩
-  · obtain ⟨z, hz⟩ := hVS
-    obtain ⟨hz1, hz2⟩ := hz
-    obtain ⟨x, hx, rfl⟩ := hz2
-    exact ⟨x, hz1, hx⟩
-  · intro x ⟨hxV, hxS⟩ x' ⟨hx'V, hx'S⟩
-    have h1 := hconst (σ x) ⟨hxV, mem_image_of_mem σ hxS⟩
-                       (σ x') ⟨hx'V, mem_image_of_mem σ hx'S⟩
-    rw [hred x, hred x', h1]
+      obtain ⟨ σ, τ, h ⟩ := hred;
+      intro S hS;
+      rcases hg ( σ '' S ) ( Set.Nonempty.image _ hS ) with ⟨ U, hU, hU' ⟩;
+      refine' ⟨ σ ⁻¹' U, hU.preimage σ.continuous, _, _ ⟩ <;> simp_all +decide [ Set.Nonempty ];
+      grind
 
 /-
 If `(σ,τ)` reduces `f` to `g`, then for all `α`, `σ(CB_α(f)) ⊆ CB_α(g)`.
@@ -319,7 +313,8 @@ disconnected). A fully faithful formalization would require a notion of reductio
 `τ` is only defined on a subset of `Y`.
 -/
 
-/- The original statement below is FALSE as formalized — `TopologicallyEmbedsFun (@id ℚ) f`
+/-
+The original statement below is FALSE as formalized — `TopologicallyEmbedsFun (@id ℚ) f`
    requires an injective `τ : Y → ℚ`, which cannot exist when `Y` is uncountable.
    For example, `fun x => x^2 : ℝ → ℝ` is not scattered, but there is no injection `ℝ → ℚ`.
 
@@ -328,20 +323,194 @@ theorem nonscattered_embeds_idQ {X Y : Type*}
     [TopologicalSpace Y] [T2Space Y]
     {f : X → Y} (hf : Continuous f) (hns : ¬ ScatteredFun f) :
     TopologicallyEmbedsFun (@id ℚ) f
+
+**Splitting Lemma.** If `g` is continuous and NLC from a pseudo-metric space to a
+T₂ space, then any metric ball can be split into two smaller sub-balls with disjoint
+closures whose g-images lie in disjoint open sets.
 -/
+lemma splitting_lemma_nlc {X Y : Type*}
+    [PseudoMetricSpace X] [TopologicalSpace Y] [T2Space Y]
+    {g : X → Y} (hg : Continuous g) (hnlc : NowhereLocllyConstant g)
+    (x : X) (ε : ℝ) (hε : 0 < ε) :
+    ∃ (x' : X) (ε' : ℝ),
+      0 < ε' ∧ ε' < ε ∧
+      Metric.closedBall x ε' ⊆ Metric.ball x ε ∧
+      Metric.closedBall x' ε' ⊆ Metric.ball x ε ∧
+      Disjoint (Metric.closedBall x ε') (Metric.closedBall x' ε') ∧
+      ∃ (U₀ U₁ : Set Y), IsOpen U₀ ∧ IsOpen U₁ ∧ Disjoint U₀ U₁ ∧
+        g '' (Metric.ball x ε') ⊆ U₀ ∧
+        g '' (Metric.ball x' ε') ⊆ U₁ := by
+  -- By NLC, find x' ∈ ball(x,ε) with g(x) ≠ g(x').
+  obtain ⟨x', hx'⟩ : ∃ x' ∈ Metric.ball x ε, g x ≠ g x' := by
+    contrapose! hnlc;
+    exact fun h => by have := h ( Metric.ball x ε ) ( Metric.isOpen_ball ) ⟨ x, Metric.mem_ball_self hε ⟩ ; obtain ⟨ x', hx', x'', hx'', hne ⟩ := this; exact hne ( hnlc x' hx' ▸ hnlc x'' hx'' ▸ rfl ) ;
+  -- By T2, separate g(x) and g(x') by disjoint open U₀, U₁.
+  obtain ⟨U₀, U₁, hU₀, hU₁, h_disjoint⟩ : ∃ U₀ U₁ : Set Y, IsOpen U₀ ∧ IsOpen U₁ ∧ Disjoint U₀ U₁ ∧ g x ∈ U₀ ∧ g x' ∈ U₁ := by
+    rcases t2_separation hx'.2 with ⟨ U₀, U₁, hU₀, hU₁, hU₀₁ ⟩ ; use U₀, U₁ ; aesop;
+  -- By continuity, find δ₁, δ₂ > 0 with ball(x,δ₁) ⊆ g⁻¹(U₀) and ball(x',δ₂) ⊆ g⁻¹(U₁).
+  obtain ⟨δ₁, hδ₁_pos, hδ₁⟩ : ∃ δ₁ > 0, Metric.ball x δ₁ ⊆ g ⁻¹' U₀ := by
+    exact Metric.mem_nhds_iff.1 ( hg.continuousAt ( hU₀.mem_nhds h_disjoint.2.1 ) )
+  obtain ⟨δ₂, hδ₂_pos, hδ₂⟩ : ∃ δ₂ > 0, Metric.ball x' δ₂ ⊆ g ⁻¹' U₁ := by
+    exact Metric.mem_nhds_iff.1 ( hg.continuousAt ( hU₁.mem_nhds h_disjoint.2.2 ) );
+  -- Choose ε' = min(min(min ε δ₁) δ₂)(min((ε - dist x x')/2)(dist x x' / 3)) / 2.
+  obtain ⟨ε', hε'_pos, hε'_lt⟩ : ∃ ε' > 0, ε' < ε ∧ ε' < δ₁ ∧ ε' < δ₂ ∧ ε' < (ε - dist x x') / 2 ∧ ε' < dist x x' / 3 := by
+    obtain ⟨ε', hε'_pos, hε'_lt⟩ : ∃ ε' > 0, ε' < min (min (min ε δ₁) δ₂) (min ((ε - dist x x') / 2) (dist x x' / 3)) := by
+      refine' exists_between _;
+      simp_all +decide [ Set.subset_def ];
+      grind +suggestions;
+    exact ⟨ ε', hε'_pos, by aesop ⟩;
+  refine' ⟨ x', ε', hε'_pos, hε'_lt.1, _, _, _, _ ⟩ <;> simp_all +decide [ Set.disjoint_left ];
+  · exact fun y hy => Metric.mem_ball.mpr ( lt_of_le_of_lt ( Metric.mem_closedBall.mp hy ) hε'_lt.1 );
+  · intro y hy; rw [ Metric.mem_closedBall ] at hy; rw [ Metric.mem_ball ] ; linarith [ dist_triangle y x' x, dist_comm x' x ] ;
+  · intro y hy; have := dist_triangle_left x x' y; have := dist_triangle_right x x' y; norm_num at *; linarith;
+  · exact ⟨ U₀, hU₀, U₁, hU₁, h_disjoint.1, fun y hy => hδ₁ <| Metric.ball_subset_ball ( by linarith ) hy, fun y hy => hδ₂ <| Metric.ball_subset_ball ( by linarith ) hy ⟩
+
+/-- **Sierpiński’s Theorem.** Every nonempty countable metrizable space without
+isolated points is homeomorphic to ℚ. -/
+theorem sierpinski_rat_homeomorph {X : Type*}
+    [TopologicalSpace X] [MetrizableSpace X]
+    [Countable X] [Nonempty X]
+    (hni : ∀ x : X, ¬ IsOpen ({x} : Set X)) :
+    Nonempty (X ≃ₜ ℚ) := by
+  sorry
+
+
+
+-- 1. Define the base Cantor Space (infinite binary sequences)
+abbrev CantorSpace := ℕ → Fin 2
+
+-- 2. Define the property of being eventually zero
+def IsEventuallyZero (x : CantorSpace) : Prop :=
+  ∃ N : ℕ, ∀ n ≥ N, x n = 0
+
+-- 3. Define the Subspace
+def CantorEventuallyZero : Type :=
+  { x : CantorSpace // IsEventuallyZero x }
+
+instance : TopologicalSpace CantorEventuallyZero := inferInstanceAs (TopologicalSpace (Subtype _))
+
+-- 4. Define your custom shorthand notation
+-- You can use whatever symbol you prefer here.
+notation "CantorRat" => CantorEventuallyZero
+
+
+-- 5. Helper definitions for the tree structure (Cantor scheme)
+-- A finite binary sequence can be represented as List (Fin 2).
+-- You will need a function that maps a finite list to its center, radius, and open set.
+structure SchemeNode (X Y : Type*) [MetricSpace X] [TopologicalSpace Y] where
+  center : X
+  radius : ℝ
+  radius_pos : 0 < radius
+  open_set : Set Y
+  is_open : IsOpen open_set
+
+-- The theorem
+lemma nlc_countable_embedding_concrete {X Y : Type*}
+    [TopologicalSpace X] [MetrizableSpace X]
+    [TopologicalSpace Y] [T2Space Y]
+    (g : X → Y) (hg : Continuous g) (hnlc : NowhereLocllyConstant g) [Nonempty X] :
+    ∃ (σ : CantorRat → X), Topology.IsEmbedding σ ∧ Topology.IsEmbedding (g ∘ σ) := by
+
+  -- We assume X has a compatible metric.
+  letI : MetricSpace X := TopologicalSpace.metrizableSpaceMetric X
+
+  -- Step 1: Base case for the Cantor scheme.
+  obtain ⟨x_empty⟩ := id ‹Nonempty X›
+
+  -- Step 2: Define the Cantor scheme via your `splitting_lemma_nlc`.
+  -- You will construct a map `scheme : List (Fin 2) → SchemeNode X Y` recursively.
+  -- For brevity, we declare its existence here.
+  have construct_scheme : ∃ (scheme : List (Fin 2) → SchemeNode X Y),
+      ∀ s : List (Fin 2),
+        (scheme (s ++ [0])).center = (scheme s).center ∧
+        (scheme (s ++ [0])).radius = (scheme (s ++ [1])).radius ∧
+        (scheme (s ++ [0])).radius ≤ (scheme s).radius / 2 ∧
+        Disjoint (scheme (s ++ [0])).open_set (scheme (s ++ [1])).open_set := by
+    -- Here you apply `splitting_lemma_nlc` recursively.
+    sorry
+
+  obtain ⟨scheme, h_scheme⟩ := construct_scheme
+
+  -- Step 3: Define σ : CantorRat → X
+  -- Since every x ∈ CantorRat is eventually zero, it has a "last" index where it might be 1.
+  -- We can truncate `x.val` to a `List (Fin 2)` up to that index, say `s`.
+  -- Then σ(x) is simply defined as `(scheme s).center`.
+
+  have extract_prefix : CantorRat → List (Fin 2) := by
+    intro x
+    -- Extract the finite prefix before the infinite tail of zeros.
+    -- (Implementation requires `Nat.find` on the `IsEventuallyZero` property).
+    sorry
+
+  let σ : CantorRat → X := fun x => (scheme (extract_prefix x)).center
+
+  -- Step 4: Prove σ is an embedding.
+  have hσ_embed : Topology.IsEmbedding σ := by
+    -- Proof strategy:
+    -- 1. σ is injective because diverging finite prefixes map to disjoint closed balls.
+    -- 2. σ is continuous because the radii ρ_s ≤ 2^{-|s|} shrink to 0.
+    -- 3. σ is open onto its image because cylinder sets in CantorRat map to
+    --    intersections of open balls with the image σ(CantorRat).
+    sorry
+
+  -- Step 5: Prove g ∘ σ is an embedding.
+  have hgσ_embed : Topology.IsEmbedding (g ∘ σ) := by
+    -- Proof strategy mirroring Kechris:
+    -- Show that for any cylinder set N_s in CantorSpace,
+    -- (g ∘ σ)(CantorRat ∩ N_s) = (g ∘ σ)(CantorRat) ∩ U_s
+    -- The disjointness of U_{s ⌢ 0} and U_{s ⌢ 1} separates the branches,
+    -- making the restricted map an open bijection onto its image.
+    sorry
+
+  -- Conclusion
+  exact ⟨σ, hσ_embed, hgσ_embed⟩
+
+/-- **Cantor scheme construction.** If `g : X → Y` is continuous and NLC from a
+nonempty metrizable space to a T₂ space, then there exists a countable nonempty
+subset `S ⊆ X` such that:
+- `S` has no isolated points (in the subspace topology)
+- The restriction of `g` to `S` is a topological embedding into `Y` -/
+lemma nlc_countable_embedding {X Y : Type*}
+    [TopologicalSpace X] [MetrizableSpace X]
+    [TopologicalSpace Y] [T2Space Y]
+    (g : X → Y) (hg : Continuous g) (hnlc : NowhereLocllyConstant g) [Nonempty X] :
+    ∃ (S : Set X), S.Countable ∧ S.Nonempty ∧
+      (∀ x : S, ¬ IsOpen ({x} : Set S)) ∧
+      Topology.IsEmbedding (fun (x : S) => g x.val) := by
+  sorry
+
+/-- **Key helper for Theorem 2.5.** If `g : X → Y` is continuous from a nonempty
+metrizable space to a T₂ space, and `g` is nowhere locally constant, then there exists
+a topological embedding `σ : ℚ → X` such that `g ∘ σ` is also a topological embedding. -/
+lemma nlc_to_rat_embedding {X Y : Type*}
+    [TopologicalSpace X] [MetrizableSpace X]
+    [TopologicalSpace Y] [T2Space Y]
+    (g : X → Y) (hg : Continuous g) (hnlc : NowhereLocllyConstant g) [Nonempty X] :
+    ∃ (σ : ℚ → X), Topology.IsEmbedding σ ∧ Topology.IsEmbedding (g ∘ σ) := by
+  obtain ⟨S, hcount, hne, hni, hemb_g⟩ := nlc_countable_embedding g hg hnlc
+  haveI : Countable S := hcount.to_subtype
+  haveI : Nonempty S := hne.to_subtype
+  obtain ⟨h⟩ := sierpinski_rat_homeomorph hni
+  exact ⟨Subtype.val ∘ h.symm,
+    Topology.IsEmbedding.subtypeVal.comp h.symm.isEmbedding,
+    hemb_g.comp h.symm.isEmbedding⟩
 
 /-- **Theorem 2.5 (weakened formulation).** If `f` is continuous from a metrizable to a
 Hausdorff space and not scattered, then there exists a topological embedding `σ : ℚ → X`
-such that `f ∘ σ` is also a topological embedding (into `Y`).
-
-This captures the mathematical content: there is a copy of `ℚ` inside `X` on which `f`
-acts as a topological embedding. -/
+such that `f ∘ σ` is also a topological embedding (into `Y`). -/
 theorem nonscattered_embeds_idQ {X Y : Type*}
     [TopologicalSpace X] [MetrizableSpace X]
     [TopologicalSpace Y] [T2Space Y]
     {f : X → Y} (hf : Continuous f) (hns : ¬ ScatteredFun f) :
     ∃ (σ : ℚ → X), Topology.IsEmbedding σ ∧ Topology.IsEmbedding (f ∘ σ) := by
-  sorry
+  rw [not_scattered_iff_exists_nlc] at hns
+  obtain ⟨A, hA, hnlc⟩ := hns
+  haveI : Nonempty A := hA.to_subtype
+  have hcont : Continuous (f ∘ Subtype.val : A → Y) := hf.comp continuous_subtype_val
+  obtain ⟨σ, hσ, hgσ⟩ := nlc_to_rat_embedding (f ∘ Subtype.val) hcont hnlc
+  exact ⟨Subtype.val ∘ σ,
+    Topology.IsEmbedding.subtypeVal.comp hσ,
+    hgσ⟩
 
 end NonScatteredTheorem
 

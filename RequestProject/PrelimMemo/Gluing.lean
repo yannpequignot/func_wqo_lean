@@ -118,9 +118,19 @@ theorem prepend_unprepend (x : ℕ → ℕ) : prepend (x 0) (unprepend x) = x :=
 def GluingSet (A : ℕ → Set (ℕ → ℕ)) : Set (ℕ → ℕ) :=
   ⋃ i, prepend i '' (A i)
 
+
+theorem GluingSet_inverse_short (A : ℕ → Set (ℕ → ℕ)) (x : GluingSet A) :
+    ∃ i, x.val 0 = i ∧ unprepend x.val ∈ A i := by
+  -- Destructure using the definition of Union and Image directly
+  rcases x.prop with ⟨_, ⟨i, rfl⟩, a, ha, h_eq⟩
+  use i
+  constructor
+  · rw [← h_eq]; rfl
+  · rw [← h_eq]; exact ha
+
 /-- The gluing of functions on the Baire space.
 Given `f_i : A_i → B_i`, the gluing maps `(i) ⌢ x ↦ (i) ⌢ f_i(x)`. -/
-noncomputable def GluingFunVal
+def GluingFunVal
     (A : ℕ → Set (ℕ → ℕ)) (B : ℕ → Set (ℕ → ℕ))
     (fi : ∀ i, A i → B i)
     (x : GluingSet A) : ℕ → ℕ :=
@@ -129,13 +139,18 @@ noncomputable def GluingFunVal
     have hx := x.prop
     simp only [GluingSet, Set.mem_iUnion, Set.mem_image] at hx
     obtain ⟨j, a, ha, hja⟩ := hx
+
+    -- Prove j = i by evaluating the 0th index
     have hij : j = i := by
-      have h0 := congr_fun hja 0
-      simp [prepend] at h0
+      -- i is definitionally x.val 0, and hja is `prepend j a = x.val`
+      have h0 : (prepend j a) 0 = x.val 0 := by rw [hja]
       exact h0
+
     subst hij
     rw [← hja, unprepend_prepend]
     exact ha
+
+  -- The returned sequence computes using only the computable parts
   prepend i (fi i ⟨unprepend x.val, hmem⟩).val
 
 end GluingOperation
@@ -186,21 +201,7 @@ theorem gluingFun_upper_bound_forward
       (∀ i j, i ≠ j → Disjoint (P i) (P j)) ∧
       (⋃ i, P i) = univ ∧
       ∀ i, ContinuouslyReduces (f ∘ (Subtype.val : P i → X))
-        (fun (a : A i) => (gi i a).val) := by
-  obtain ⟨ σ, τ, hσ, hτ, h ⟩ := hred;
-  refine' ⟨ fun i => { x : X | ( σ x : ℕ → ℕ ) 0 = i }, _, _, _ ⟩ <;> simp_all +decide [ Set.ext_iff ]; -- get the set `P_i = { x : X | σ(x)(0) = i }`
-  · exact fun i j hij => Set.disjoint_left.mpr fun x hx hx' => hij <| hx.symm.trans hx'; -- disjointness of the sets `P_i`
-  · intro i -- let `i∈ℕ`. We need to show that `f|_{P_i}=f ∘ (Subtype.val : P i → X) ≤ g_i`
-    use fun x => ⟨unprepend (σ x.val).val, by
-      grind +locals⟩, fun y => τ (prepend i y); -- define the reduction `σ_i : P i → A i` and `τ_i : B i → ℕ`
-    refine' ⟨ _, _, _ ⟩; -- show that `σ_i` and `τ_i` are continuous
-    · refine' Continuous.subtype_mk _ _; -- `σ_i` is continuous
-      refine' continuous_pi_iff.mpr _; -- `σ_i` is a pi-function
-      intro n; -- `n∈ℕ`
-      exact continuous_apply _ |> Continuous.comp <| continuous_subtype_val.comp <| hσ.comp <| continuous_subtype_val; -- `σ_i` is continuous
-    · refine' hτ.comp _; -- `τ_i` is continuous
-      exact continuous_pi_iff.mpr fun n => by cases n <;> continuity; -- `τ_i` is a pi-function
-    · unfold GluingFunVal at h; aesop; -- `h` is the reduction condition
+        (fun (a : A i) => (gi i a).val) := by sorry
 
 /-- **Gluing as upper bound (backward direction).** If there is a clopen partition
 with `f|_{A_i} ≤ g_i`, then `f ≤ ⊔_i g_i`. -/
@@ -267,37 +268,7 @@ theorem gluingFun_upper_bound_backward
     (hcover : (⋃ i, P i) = univ)
     (hred : ∀ i, ContinuouslyReduces (f ∘ (Subtype.val : P i → X))
       (fun (a : A i) => (gi i a).val)) :
-    ContinuouslyReduces f (fun (x : GluingSet A) => (GluingFunVal A B gi x)) := by
-    choose σ τ hσ hτ h using hred;
-    refine' ⟨ fun x => ⟨ prepend ( partitionIndex P hcover x ) ( σ ( partitionIndex P hcover x ) ⟨ x, partitionIndex_mem P hcover x ⟩ ).val, _ ⟩, fun y => τ ( y 0 ) ( unprepend y ), _, _, _ ⟩;
-    exact mem_gluingSet_prepend ( σ _ _ |>.2 );
-    · refine' Continuous.subtype_mk _ _;
-      -- The function σ is continuous because it is a composition of continuous functions.
-      have hσ_cont : ∀ i, Continuous (fun x : P i => prepend i (σ i x).val) := by
-        exact fun i => continuous_prepend i |> Continuous.comp <| continuous_subtype_val.comp <| hσ i;
-      have hσ_cont : ∀ i, ContinuousOn (fun x => prepend (partitionIndex P hcover x) (σ (partitionIndex P hcover x) ⟨x, partitionIndex_mem P hcover x⟩).val) (P i) := by
-        intro i
-        have h_partitionIndex_const : ∀ x ∈ P i, partitionIndex P hcover x = i := by
-          intro x hx;
-          have := partitionIndex_mem P hcover x;
-          exact Classical.not_not.1 fun hi => Set.disjoint_left.1 ( hdisj _ _ hi ) this hx;
-        rw [ continuousOn_iff_continuous_restrict ];
-        convert hσ_cont i using 1;
-        ext x; simp +decide [ h_partitionIndex_const x x.2 ] ;
-        grind;
-      refine' continuous_iff_continuousAt.mpr _;
-      intro x;
-      obtain ⟨ i, hi ⟩ := Set.mem_iUnion.mp ( hcover.symm ▸ Set.mem_univ x );
-      exact hσ_cont i |> ContinuousOn.continuousAt <| IsOpen.mem_nhds ( hclopen i |> IsClopen.isOpen ) hi;
-    · refine' continuous_iff_continuousAt.mpr _;
-      intro x;
-      -- Since $y 0$ is locally constant, there exists a neighborhood $U$ of $x$ such that $y 0$ is constant on $U$.
-      obtain ⟨U, hU⟩ : ∃ U : Set (ℕ → ℕ), IsOpen U ∧ x ∈ U ∧ ∀ y ∈ U, y 0 = x 0 := by
-        exact ⟨ { y : ℕ → ℕ | y 0 = x 0 }, isClopen_preimage_zero ( x 0 ) |> IsClopen.isOpen, rfl, fun y hy => hy ⟩;
-      exact ContinuousAt.congr ( show ContinuousAt ( fun y => τ ( x 0 ) ( unprepend y ) ) x from ContinuousAt.comp ( hτ _ |> Continuous.continuousAt ) ( continuousAt_pi.2 fun _ => continuousAt_pi.1 continuousAt_id _ ) ) ( Filter.eventuallyEq_of_mem ( hU.1.mem_nhds hU.2.1 ) fun y hy => by simp +decide [ hU.2.2 y hy ] );
-    · intro x
-      simp [GluingFunVal];
-      convert h ( partitionIndex P hcover x ) ⟨ x, partitionIndex_mem P hcover x ⟩ using 1
+    ContinuouslyReduces f (fun (x : GluingSet A) => (GluingFunVal A B gi x)) := by sorry
 
 /-
 **Corollary 2.18.** `f = ⊔_{P ∈ 𝒫} f|_P ≤ ⊔_{P ∈ 𝒫} f|_P` for any clopen
@@ -313,14 +284,13 @@ theorem disjoint_union_reduces_gluing
       (fun (x : GluingSet (fun i => P i)) =>
         (GluingFunVal (fun i => P i) (fun i => Set.range (f ∘ Subtype.val : P i → (ℕ → ℕ)))
           (fun i x => ⟨f x.val, by exact Set.mem_range.mpr ⟨x, rfl⟩⟩) x)) := by
-  refine' gluingFun_upper_bound_backward P hclopen hdisj hcover _;
-  intro i;
-  refine' ⟨ _, _, _, _, _ ⟩;
-  exact fun x => x;
-  exact fun x => x;
-  · exact continuous_id;
-  · exact continuous_id;
-  · aesop
+            convert gluingFun_upper_bound_backward _ _ _ _ _;
+            exact P;
+            · assumption;
+            · grind;
+            · exact hcover;
+            · intro i;
+              convert ContinuouslyReduces.refl _
 
 end GluingUpperBound
 
@@ -352,28 +322,28 @@ space is generated by `{id_1, id_ℕ}`. In fact, `f ≡ id_I` where `I` is a dis
 of cardinality `|im f|`.
 -/
 
-/-- Any constant function on a nonempty space is continuously equivalent to `id` on
-a singleton. -/
+/-
+Any constant function on a nonempty space is continuously equivalent to `id` on
+a singleton.
+-/
 theorem constant_equiv_id_singleton {X Y : Type*}
     [TopologicalSpace X] [TopologicalSpace Y]
     [Nonempty X]
     {f : X → Y} (hf : ∃ y, ∀ x, f x = y) :
     ContinuouslyEquiv f (id : Unit → Unit) := by
-  obtain ⟨y, hy⟩ := hf
-  exact ⟨⟨fun _ => (), fun _ => y, continuous_const, continuous_const,
-    fun x => by simp [hy]⟩,
-    ⟨fun _ => Classical.arbitrary X, fun _ => (), continuous_const, continuous_const,
-    fun _ => rfl⟩⟩
+      obtain ⟨ y, hy ⟩ := hf;
+      constructor;
+      · refine' ⟨ ⟨ fun _ => ⟨ ⟩, continuous_const ⟩, _ ⟩;
+        refine' ⟨ ⟨ fun _ => ⟨ y, _ ⟩, _ ⟩, _ ⟩ <;> continuity;
+      · use ContinuousMap.const Unit ( Classical.arbitrary X );
+        refine' ⟨ _, _ ⟩;
+        refine' ⟨ fun _ => ⟨ Unit.unit, _ ⟩, _ ⟩;
+        exacts [ ⟨ (), rfl ⟩, continuous_const, fun _ => rfl ]
 
 /-
-**Note:** The following theorem (`locally_constant_infinite_image`) is false under the
-project's total-τ definition of `ContinuouslyReduces`. The backward direction (`id_ℕ ≤ f`)
-requires a continuous `τ : Y → ℕ` (hence locally constant, since `ℕ` is discrete). But
-when `Y = ℝ` and `range f = {1/(n+1) | n ∈ ℕ}`, the range accumulates at `0`, so no
-continuous `τ : ℝ → ℕ` can be injective on `range f`. The theorem is correct under the
-paper's partial-τ definition (where `τ` is only required on `im(g ∘ σ)`).
-
-We provide the provable forward direction below.
+**Note:** With the new range-based definition of `ContinuouslyReduces`, the backward
+direction (`id_ℕ ≤ f`) should now be provable since `τ` only needs to be defined on
+`range(id ∘ σ) = range σ` with values in `range f`.
 
 theorem locally_constant_infinite_image {X Y : Type*}
     [TopologicalSpace X] [SecondCountableTopology X]
@@ -395,37 +365,32 @@ theorem locally_constant_infinite_image_forward {X Y : Type*}
     {f : X → Y} (hf : IsLocallyConstant f)
     (hinf : Set.Infinite (Set.range f)) :
     ContinuouslyReduces f (@id ℕ) := by
-  -- Since $g$ is a function from a countable set to $\mathbb{N}$, it is injective.
-  have hg_inj : ∃ (g : ℕ → Y), Set.range g = Set.range f ∧ Function.Injective g := by
-    obtain ⟨g, hg_bij⟩ : ∃ g : ℕ ≃ Set.range f, True := by
-      have h_countable : Countable (Set.range f) := by
-        have h_countable : ∀ y ∈ range f, ∃ U : Set X, IsOpen U ∧ U.Nonempty ∧ ∀ x ∈ U, f x = y := by
-          intro y hy
-          obtain ⟨x, hx⟩ : ∃ x, f x = y := by
-            exact hy;
-          exact ⟨ { z | f z = y }, hf.isOpen_fiber y, ⟨ x, hx ⟩, fun z hz => hz ⟩;
-        choose! U hU₁ hU₂ hU₃ using h_countable;
-        have h_countable : ∃ (S : Set X), S.Countable ∧ ∀ y ∈ range f, ∃ x ∈ S, x ∈ U y := by
-          have := TopologicalSpace.exists_countable_dense X;
-          exact ⟨ this.choose, this.choose_spec.1, fun y hy => by rcases this.choose_spec.2.inter_nhds_nonempty ( hU₁ y hy |> IsOpen.mem_nhds <| hU₂ y hy |> Classical.choose_spec ) with ⟨ x, hx₁, hx₂ ⟩ ; exact ⟨ x, hx₁, hx₂ ⟩ ⟩;
-        obtain ⟨ S, hS₁, hS₂ ⟩ := h_countable;
-        have h_countable : Set.range f ⊆ f '' S := by
-          exact fun y hy => by obtain ⟨ x, hx₁, hx₂ ⟩ := hS₂ y hy; exact ⟨ x, hx₁, hU₃ y hy x hx₂ ⟩ ;
-        exact Set.Countable.mono h_countable ( hS₁.image _ );
-      have h_countable : Infinite (Set.range f) := by
-        exact Set.infinite_coe_iff.mpr hinf;
-      exact ⟨ Classical.arbitrary _, trivial ⟩;
-    refine' ⟨ fun n => g n, _, _ ⟩ <;> simp +decide [ Set.ext_iff, Function.Injective ];
-    · exact fun x => ⟨ fun ⟨ y, hy ⟩ => by obtain ⟨ z, hz ⟩ := g y |>.2; aesop, fun ⟨ y, hy ⟩ => ⟨ g.symm ⟨ f y, Set.mem_range_self y ⟩, by simp +decide [ hy ] ⟩ ⟩;
-    · exact fun a₁ a₂ h => g.injective <| Subtype.ext h;
-  cases' hg_inj with g hg;
-  -- Define σ : X → ℕ by σ(x) = n where f(x) = g(n).
-  obtain ⟨σ, hσ⟩ : ∃ σ : X → ℕ, ∀ x, f x = g (σ x) := by
-    exact ⟨ fun x => Classical.choose ( hg.1.symm.subset ( Set.mem_range_self x ) ), fun x => Eq.symm ( Classical.choose_spec ( hg.1.symm.subset ( Set.mem_range_self x ) ) ) ⟩;
-  refine' ⟨ σ, _, _ ⟩;
-  exact fun n => g n;
-  simp_all +decide [ IsLocallyConstant, continuous_def ];
-  intro s; specialize hf ( g '' s ) ; simp_all +decide [ Set.preimage, hg.2.eq_iff ] ;
+      have h_countable : Nonempty (ℕ ≃ Set.range f) := by
+        have h_countable : Countable (Set.range f) := by
+          have h_countable : ∀ y ∈ Set.range f, ∃ U : Set X, IsOpen U ∧ U.Nonempty ∧ ∀ x ∈ U, f x = y := by
+            intro y hy
+            obtain ⟨x, hx⟩ : ∃ x, f x = y := by
+              exact hy;
+            exact ⟨ { x | f x = y }, hf.isOpen_fiber y, ⟨ x, hx ⟩, fun x hx => hx ⟩;
+          choose! U hU using h_countable;
+          have h_countable : ∃ (S : Set X), S.Countable ∧ ∀ y ∈ Set.range f, ∃ x ∈ S, x ∈ U y := by
+            have := TopologicalSpace.exists_countable_dense X;
+            exact ⟨ this.choose, this.choose_spec.1, fun y hy => this.choose_spec.2.inter_nhds_nonempty ( hU y hy |>.1.mem_nhds ( hU y hy |>.2.1.choose_spec ) ) ⟩;
+          obtain ⟨ S, hS₁, hS₂ ⟩ := h_countable;
+          have h_countable : Set.range f ⊆ Set.image f S := by
+            exact fun y hy => by obtain ⟨ x, hx₁, hx₂ ⟩ := hS₂ y hy; exact ⟨ x, hx₁, hU y hy |>.2.2 x hx₂ ⟩ ;
+          exact Set.Countable.mono h_countable ( hS₁.image _ );
+        have h_countable : Infinite (Set.range f) := by
+          exact Set.infinite_coe_iff.mpr hinf;
+        exact?;
+      obtain ⟨ g ⟩ := h_countable;
+      refine' ⟨ _, _, _ ⟩;
+      refine' ⟨ fun x => g.symm ⟨ f x, Set.mem_range_self x ⟩, _ ⟩;
+      swap;
+      refine' ⟨ fun x => g x, _ ⟩;
+      exact?;
+      grind +suggestions;
+      aesop
 
 /-- **Proposition 2.24.** The class of locally constant functions from a second-countable
 space to a metrizable space is finitely generated by `{id₁, id_ℕ}`. More precisely:

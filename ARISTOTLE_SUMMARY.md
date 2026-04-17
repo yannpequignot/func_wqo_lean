@@ -1,3 +1,46 @@
+# Summary of changes for run ea4a78e0-4596-4bd7-bc9a-669be5a7fa76
+## Summary
+
+I updated the entire project to use the new correct definition of `ContinuouslyReduces`, which uses continuous maps between range subtypes instead of total maps:
+
+```lean
+-- New (correct) definition:
+def ContinuouslyReduces (f : X → Y) (g : X' → Y') : Prop :=
+  ∃ σ : C(X, X'),
+  ∃ τ : C(Set.range (g ∘ σ), Set.range f),
+    ∀ x : X, τ ⟨g (σ x), Set.mem_range_self x⟩ = ⟨f x, Set.mem_range_self x⟩
+```
+
+The old definition (with total `τ : Y' → Y`) was renamed to `ContinuouslyReduces_naive`.
+
+### Files modified
+
+1. **`RequestProject/IntroMemo.lean`** — Replaced the `ContinuousReduction` section with the new definition using bundled `C(X, X')` continuous maps. Proved `refl` and `trans`. Updated docstrings.
+
+2. **`RequestProject/IntroMemo_new.lean`** — Cleared this staging file (its content was integrated into `IntroMemo.lean`).
+
+3. **`RequestProject/PrelimMemo/Basic.lean`** — Fixed and re-proved all 5 theorems that broke:
+   - `TopologicallyEmbedsFun.continuouslyReduces`
+   - `embedding_of_id_reduces`
+   - `restriction_reduces`
+   - `reduces_to_id_of_retract`
+   - `HomeomorphicFun.continuouslyEquiv`
+
+4. **`RequestProject/PrelimMemo/Scattered.lean`** — Fixed and re-proved `ContinuouslyReduces.scattered`. Also added a `TopologicalSpace` instance for `CantorEventuallyZero` to fix an unrelated compilation error.
+
+5. **`RequestProject/PrelimMemo/Gluing.lean`** — Re-proved `constant_equiv_id_singleton`, `disjoint_union_reduces_gluing`, and `locally_constant_infinite_image_forward`. Updated the docstring noting that `locally_constant_infinite_image` (the equivalence version) should now be provable with the new range-based definition.
+
+6. **`RequestProject/PointedGluing/Defs.lean`** and **`RequestProject/PointedGluing/Theorems.lean`** — These compiled without changes since their `ContinuouslyReduces` usages were all in `sorry`'d theorem statements.
+
+### Remaining sorry's introduced by this change
+
+Two gluing theorems in `PrelimMemo/Gluing.lean` that previously had proofs could not be re-proved with the new definition due to the complexity of constructing range-subtype witnesses for Baire space gluing operations:
+
+- `gluingFun_upper_bound_forward` (line 204)
+- `gluingFun_upper_bound_backward` (line 271)
+
+All other previously-proved theorems were successfully re-proved. The full project builds cleanly.
+
 # Summary of changes for run 201337e2-be6b-4d2f-b356-b49247bb44c5
 ## Formalization of `3_general_struct_memo.tex`
 

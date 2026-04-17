@@ -123,7 +123,7 @@ noncomputable def PointedGluingFun
     (A B : ℕ → Set (ℕ → ℕ))
     (f : ∀ i, A i → B i)
     (x : PointedGluingSet A) : ℕ → ℕ :=
-  if hx : x.val = zeroStream then zeroStream
+  if _ : x.val = zeroStream then zeroStream
   else
     let i := firstNonzero x.val
     if hmem : stripZerosOne i x.val ∈ A i then
