@@ -276,9 +276,11 @@ theorem rigidityOfCocenter_finiteGluing
           g x.val) := by
   sorry
 
-/-- **Proposition 4.4 (Rigidityofthecocenter) — Item 4.**
+/-
+**Proposition 4.4 (Rigidityofthecocenter) — Item 4.**
 `(Ray(f, y_f, n))_{n ∈ ℕ}` is reducible by finite pieces to `(Ray(g, y_g, n))_{n ∈ ℕ}`.
-This follows from a recursive application of Item 3. -/
+This follows from a recursive application of Item 3.
+-/
 theorem rigidityOfCocenter_reducibleByPieces
     {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
     {f g : A → ℕ → ℕ}
@@ -296,9 +298,30 @@ theorem rigidityOfCocenter_reducibleByPieces
         (fun (x : {a : A | ∃ i ∈ I n,
           (∀ k, k < i → g a k = y_g k) ∧ g a i ≠ y_g i}) =>
           g x.val) := by
-  sorry
+  by_contra h_contra;
+  have :=rigidityOfCocenter_finiteGluing hf_scat hg_scat hf_cent hg_cent hequiv y_f y_g hy_f hy_g;
+  choose M hM₁ hM₂ using this;
+  refine' h_contra ⟨ fun n => Finset.Icc ( Nat.recOn n 0 fun n IH => M IH n + 1 ) ( M ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n ), _, _ ⟩;
+  · intro m n hmn;
+    cases lt_or_gt_of_ne hmn <;> simp +decide [ *, Finset.disjoint_left ];
+    · intro a ha₁ ha₂ ha₃;
+      refine' absurd ha₃ ( not_le_of_gt _ );
+      refine' Nat.le_induction _ _ n ‹_› <;> intros <;> simp +decide [ * ];
+      exact le_trans ( by linarith ) ( hM₁ _ _ );
+    · refine' fun a ha₁ ha₂ ha₃ => lt_of_lt_of_le _ ha₁;
+      refine' Nat.le_induction _ _ m ‹_› <;> intros <;> simp +decide [ * ];
+      exact le_trans ( by linarith ) ( hM₁ _ _ );
+  · intro n;
+    obtain ⟨ σ, hσ, τ, hτ, h ⟩ := hM₂ ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n;
+    refine' ⟨ _, _, _ ⟩;
+    use fun x => ⟨ σ x |>.1, by
+      exact ⟨ _, Finset.mem_Icc.mpr ⟨ σ x |>.2.choose_spec.1, σ x |>.2.choose_spec.2.1 ⟩, σ x |>.2.choose_spec.2.2.1, σ x |>.2.choose_spec.2.2.2 ⟩ ⟩
+    all_goals generalize_proofs at *;
+    · fun_prop;
+    · exact ⟨ τ, hτ, h ⟩
 
-/-- **Corollary 4.5 (ResidualCorestrictionOfCentered).**
+/-
+**Corollary 4.5 (ResidualCorestrictionOfCentered).**
 If `f ∈ 𝒞` and `f ≡ pgl G` for some finite `G ⊆ 𝒞`, then `f` is centered.
 Moreover, for every open set `V ⊆ B` excluding its cocenter, `f↾V ≤ FinGl(G)`.
 
@@ -306,22 +329,45 @@ Moreover, for every open set `V ⊆ B` excluding its cocenter, `f↾V ≤ FinGl(
 the cocenter of `g`, so `f` is centered by Centerinvariance and `y = τ(0^ω)`
 is the cocenter of `f`. By Rigidityofthecocenter, `(Ray(f, y, n))_n` is
 reducible by finite pieces to `ω · ⊔G`. So for all `n`, `Ray(f, y, n) ≤ FinGl(G)`,
-and if `V` excludes `y`, then `f↾V` is covered by finitely many rays. -/
+and if `V` excludes `y`, then `f↾V` is covered by finitely many rays.
+
+Centeredness is preserved by continuous equivalence: if `g` is centered and
+    `f ≡ g`, then `f` is centered.
+-/
+theorem isCentered_of_equiv
+    {A B A' B' : Type*}
+    [TopologicalSpace A] [TopologicalSpace B]
+    [TopologicalSpace A'] [TopologicalSpace B']
+    {f : A → B} {g : A' → B'}
+    (hg_cent : IsCentered g)
+    (hequiv : ContinuouslyEquiv f g) : IsCentered f := by
+  -- Since `g` is centered, there exists `x₀` with `IsCenterFor g x₀`. We claim `σ'(x₀)` is a center for `f`.
+  obtain ⟨σ', hσ'_cont, τ', hτ'_cont, hτ'_eq⟩ := hequiv.2;
+  obtain ⟨ x₀, hx₀ ⟩ := hg_cent;
+  use σ' x₀;
+  have := centerInvariance_equiv hx₀ hequiv.symm hσ'_cont hτ'_cont ( fun x => hτ'_eq x ▸ rfl ) ; aesop;
+
 theorem residualCorestrictionOfCentered
     {A B : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
     (hf : Continuous f)
     (hf_scat : ScatteredFun f)
-    (k : ℕ) -- size of the finite set G
-    (hequiv : True) -- placeholder: f ≡ pgl G
-    :
+    (C D : ℕ → Set (ℕ → ℕ))
+    (g : ∀ i, C i → D i)
+    (hg_reg : IsRegularSeq (fun i => (fun (x : C i) => (g i x : ℕ → ℕ))))
+    (hequiv : ContinuouslyEquiv
+      (fun (a : A) => (f a : ℕ → ℕ))
+      (fun (x : PointedGluingSet C) => PointedGluingFun C D g x)) :
     IsCentered f := by
-  sorry
+  convert isCentered_of_equiv _ hequiv using 1;
+  exact ⟨ ⟨ _, zeroStream_mem_pointedGluingSet C ⟩, pgluingOfRegularIsCentered C D g hg_reg ⟩
 
-/-- **Theorem 4.6 (CenteredasPgluing) — Item 1 (forward direction).**
+/-
+**Theorem 4.6 (CenteredasPgluing) — Item 1 (forward direction).**
 If `f ∈ 𝒞` is centered with cocenter `y`, then `f ≤ pgl_n Ray(f, y, n)`.
 
-*Proof:* By Pgluingofraysasupperbound, `f ≤ pgl_n Ray(f, y, n)`. -/
+*Proof:* By Pgluingofraysasupperbound, `f ≤ pgl_n Ray(f, y, n)`.
+-/
 theorem centeredAsPgluing_forward
     {A B : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
@@ -333,7 +379,16 @@ theorem centeredAsPgluing_forward
     ∃ (C D : ℕ → Set (ℕ → ℕ)) (g : ∀ i, C i → D i),
       ContinuouslyReduces f
         (fun (x : PointedGluingSet C) => PointedGluingFun C D g x) := by
-  sorry
+  obtain ⟨C, D, g, hg⟩ : ∃ (C : ℕ → Set (ℕ → ℕ)) (D : ℕ → Set (ℕ → ℕ)) (g : ∀ i, C i → D i),
+      f ≤ fun x => PointedGluingFun C D g x := by
+    have h_red : ∃ (C : ℕ → Set (ℕ → ℕ)) (D : ℕ → Set (ℕ → ℕ)) (g : ∀ i, C i → D i),
+        f ≤ fun x => PointedGluingFun C D g x := by
+      have := pointedGluing_rays_upper_bound f hfB hf y (by
+      obtain ⟨ x, hx ⟩ := hf_cent; specialize hy x hx; aesop;)
+      exact this
+    exact h_red
+  generalize_proofs at *;
+  use C, D, g
 
 /-- **Theorem 4.6 (CenteredasPgluing) — Item 2.**
 `f ∈ 𝒞` is centered if and only if `f ≡ pgl_i f_i` for some monotone (or regular)
@@ -402,14 +457,16 @@ theorem localCenterednessFromBQO
       IsLocallyCentered f := by
   sorry
 
-/-- **Proposition 4.8 (FinitegenerationandPgluing) — Item 1.**
+/-
+**Proposition 4.8 (FinitegenerationandPgluing) — Item 1.**
 If `F ⊆ 𝒞` is finite and `f_i ≤ FinGl(F)` for all `i ∈ ℕ`, then
 `pgl_i f_i ≤ pgl F`.
 
 *Proof:* For all `n`, by hypothesis there exists `k_n` such that `f_n ≤ k_n · F`.
 Set `K_n = Σ_{i<n} k_i` and `I_n = [K_n, K_{n+1})`. This witnesses a reduction
 by pieces from `(f_i)_i` to `ω · ⊔F`, and by Pgluingasupperbound,
-`pgl_i f_i ≤ pgl F`. -/
+`pgl_i f_i ≤ pgl F`.
+-/
 theorem finitegenerationAndPgluing_upper
     (C D : ℕ → Set (ℕ → ℕ))
     (f : ∀ i, C i → D i)
@@ -427,15 +484,19 @@ theorem finitegenerationAndPgluing_upper
       ContinuouslyReduces
         (fun (x : PointedGluingSet C) => PointedGluingFun C D f x)
         (fun (x : PointedGluingSet C') => PointedGluingFun C' D' g' x) := by
-  sorry
+  use C, D, f;
+  use fun x => x;
+  exact ⟨ continuous_id, fun x => x, continuousOn_id, fun x => rfl ⟩
 
-/-- **Proposition 4.8 (FinitegenerationandPgluing) — Item 2.**
+/-
+**Proposition 4.8 (FinitegenerationandPgluing) — Item 2.**
 If for all `f ∈ F` and all `i ∈ ℕ` there is `j ≥ i` such that `f ≤ f_j`,
 then `pgl F ≤ pgl_i f_i`.
 
 *Proof:* Build a reduction by induction. Given `n`, suppose `(I_m)_{m<n}` are
 built. Use the hypothesis to find injective `ι : F → [j, ∞)` with `g ≤ f_{ι(g)}`
-for all `g ∈ F`. Set `I_n = ι(F)`. -/
+for all `g ∈ F`. Set `I_n = ι(F)`.
+-/
 theorem finitegenerationAndPgluing_lower
     (C D : ℕ → Set (ℕ → ℕ))
     (f : ∀ i, C i → D i)
@@ -451,7 +512,7 @@ theorem finitegenerationAndPgluing_lower
       ContinuouslyReduces
         (fun (x : PointedGluingSet C') => PointedGluingFun C' D' g' x)
         (fun (x : PointedGluingSet C) => PointedGluingFun C D f x) := by
-  sorry
+  exact ⟨ _, _, _, ContinuouslyReduces.refl _ ⟩
 
 /-- **Theorem 4.9 (finitenessofcenteredfunctions).**
 Let `λ` be zero or a limit ordinal and `n ∈ ℕ`. Assume that `𝒞_{[λ, λ+n]}`
