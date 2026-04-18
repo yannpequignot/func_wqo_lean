@@ -1,3 +1,61 @@
+# Summary of changes for run 1edff943-dc19-4705-ab1c-401eac615b33
+## Formalization of `4_centered_memo.tex` — Centered Functions
+
+Created two new Lean files formalizing the main theorems and definitions from Chapter 4 (Centered Functions) of the memoir on continuous reducibility between functions.
+
+### `RequestProject/CenteredMemo/Defs.lean` — Definitions (fully compiles, 0 sorries)
+
+Contains all core definitions for the centered functions chapter:
+
+- **`IsCenterFor g x`** — a point `x` is a *center* for a function `g` if `g` reduces to its restriction to any neighbourhood of `x`
+- **`IsCentered g`** — `g` admits a center
+- **`IsRegularSeq f`** — a sequence of functions is *regular* for continuous reducibility (each element reduces to infinitely many later elements)
+- **`IsMonotoneSeq f`** — a sequence is monotone for continuous reducibility
+- **`cocenter f`** — the common image of all centers (well-defined for scattered centered functions)
+- **`IsLocallyCentered f`** — every point admits a neighbourhood where the restriction is centered
+- **`RayFun f y n`** — the n-th ray of `f` at `y`
+
+**Proved lemma:** `IsMonotoneSeq.isRegularSeq` — every monotone sequence is regular.
+
+### `RequestProject/CenteredMemo/Theorems.lean` — Main Theorems (compiles, 6 theorems fully proved)
+
+Contains formalizations of all 13 main results from Chapter 4, organized into three sections:
+
+**Section 1: Definition and Characterization (§4.1)**
+
+Fully proved (6 theorems):
+1. **`centerInvariance_reduce`** (Fact 4.2, Item 1) — If `x` is a center for `f` and `(σ,τ)` reduces `f` to `g`, then for every neighbourhood `U` of `σ(x)`, `f ≤ g|_U`.
+2. **`centerInvariance_equiv`** (Fact 4.2, Item 2) — If `x` is a center for `f` and `f ≡ g`, then `σ(x)` is a center for `g`.
+3. **`centerInvariance_cover`** (Fact 4.2, Item 3) — If `x` is a center for `f`, `f ≤ g`, and `(A_i)` covers `dom(g)`, then `f ≤ g|_{A_i}` for some `i`.
+4. **`scatteredCentered_isSimple`** (Proposition 4.3, part 2) — Scattered centered functions have a unique cocenter.
+5. **`rigidityOfCocenter_tau`** (Proposition 4.4, Item 1) — Under equivalence, `τ(y_g) = y_f`.
+6. **`rigidityOfCocenter_separation`** (Proposition 4.4, Item 2) — The cocenter is separated from the image of rays.
+
+Stated with sorry (7 theorems):
+- `pgluingOfRegularIsCentered` (Fact 4.1) — Pointed gluing of regular sequence is centered
+- `scatteredHaveCocenter` (Proposition 4.3) — Scattered ↔ all centers have same image
+- `rigidityOfCocenter_finiteGluing` (Proposition 4.4, Item 3) — Finite gluing of rays
+- `rigidityOfCocenter_reducibleByPieces` (Proposition 4.4, Item 4) — Reducibility by pieces
+- `residualCorestrictionOfCentered` (Corollary 4.5) — Centered via pgl of finite set
+- `centeredAsPgluing_forward/iff_monotone/CBrank` (Theorem 4.6) — Centered ↔ pointed gluing
+
+**Section 2: Structure of Continuous Reducibility (§4.2)**
+
+- `localCenterednessFromBQO` (Theorem 4.7) — BQO ⟹ locally centered
+- `finitegenerationAndPgluing_upper/lower` (Proposition 4.8) — Finite generation and pointed gluing
+- `finitenessOfCenteredFunctions` (Theorem 4.9) — Finiteness of centered functions
+- `centeredSuccessor` (Corollary 4.10) — Exactly two centered functions at successor of limit
+
+**Section 3: Simple Functions at Successors of Limit Levels (§4.3)**
+
+- `simpleIffCoincidenceOfCocenters` (Proposition 4.11)
+- `simpleFunctionsLambdaPlusOne` (Theorem 4.12) — Classification: k_{λ+1}, k_{λ+1} ⊔ ℓ_λ, or pgl ℓ_λ
+- `finiteDegreeLambdaPlusOne` (Corollary 4.13) — Finite generation by {ℓ_λ, k_{λ+1}, pgl ℓ_λ}
+
+All theorem statements include detailed docstrings with proof sketches from the paper. The sorry'd theorems are deep results requiring substantial Baire space topology and transfinite CB-level infrastructure that builds on earlier chapters of the memoir. All proved theorems depend only on the standard axioms (propext, Classical.choice, Quot.sound).
+
+Both files compile successfully with `lake build`.
+
 # Summary of changes for run 28b3fdde-6350-4225-930e-b38a7786be10
 ## Summary
 
