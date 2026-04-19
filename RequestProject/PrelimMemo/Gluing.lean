@@ -287,7 +287,8 @@ theorem gluingFun_upper_bound_backward
     (hcover : (⋃ i, P i) = univ)
     (hred : ∀ i, ContinuouslyReduces (f ∘ (Subtype.val : P i → X))
       (fun (a : A i) => (gi i a).val)) :
-    ContinuouslyReduces f (fun (x : GluingSet A) => (GluingFunVal A B gi x)) := by sorry
+    ContinuouslyReduces f (fun (x : GluingSet A) => (GluingFunVal A B gi x)) := by
+    sorry
 
 /-
 **Corollary 2.18.** `f = ⊔_{P ∈ 𝒫} f|_P ≤ ⊔_{P ∈ 𝒫} f|_P` for any clopen
@@ -408,7 +409,7 @@ theorem locally_constant_infinite_image_forward {X Y : Type*}
   exact fun n => ( g n ).val;
   · grind +suggestions;
   · simp +decide [ continuousOn_iff_continuous_restrict ];
-    exact?
+    exact continuous_of_discreteTopology
 
 /-
 Backward direction: id_ℕ ≤ f when f is locally constant with infinite range.
@@ -437,11 +438,12 @@ theorem id_nat_reduces_locally_constant {X Y : Type*}
     have hT_countable : Countable T := by
       have h_countable : Countable (Set.range f) := by
         have h_countable : ∃ D : Set X, D.Countable ∧ Dense D := by
-          exact?;
+          exact ⟨_, (TopologicalSpace.SeparableSpace.exists_countable_dense (α := X)).choose_spec.1,
+                 (TopologicalSpace.SeparableSpace.exists_countable_dense (α := X)).choose_spec.2⟩;
         have h_countable : ∀ x : X, ∃ y ∈ h_countable.choose, f x = f y := by
           intro x
           obtain ⟨U, hU_open, hxU, hU_const⟩ : ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ ∀ y ∈ U, f y = f x := by
-            exact?;
+            exact ⟨f ⁻¹' {f x}, hf.isOpen_fiber _, rfl, fun y hy => hy⟩;
           have := h_countable.choose_spec.2.inter_nhds_nonempty ( hU_open.mem_nhds hxU ) ; obtain ⟨ y, hyD, hyU ⟩ := this; exact ⟨ y, hyD, hU_const y hyU ▸ rfl ⟩ ;
         have h_countable : Set.Countable (Set.image f (‹∃ D : Set X, D.Countable ∧ Dense D›.choose)) := by
           exact Set.Countable.image ( ‹∃ D : Set X, D.Countable ∧ Dense D›.choose_spec.1 ) _;
@@ -454,7 +456,7 @@ theorem id_nat_reduces_locally_constant {X Y : Type*}
   obtain ⟨σ, hσ⟩ : ∃ σ : ℕ → X, ∀ n, f (σ n) = (g n).val := by
     exact ⟨ fun n => Classical.choose ( hT_discrete.2 ( g n |>.2 ) ), fun n => Classical.choose_spec ( hT_discrete.2 ( g n |>.2 ) ) ⟩
   have hσ_cont : Continuous σ := by
-    exact?
+    exact continuous_of_discreteTopology
   generalize_proofs at *; (
   -- Since range(f ∘ σ) = {(g n).val.val : n ∈ ℕ} = image of T under Subtype.val composed with Subtype.val, and T is discrete in range f, range(f ∘ σ) is discrete in Y.
   have h_range_discrete : DiscreteTopology (Set.range (f ∘ σ)) := by
@@ -475,7 +477,7 @@ theorem id_nat_reduces_locally_constant {X Y : Type*}
     generalize_proofs at *; (
     refine' ⟨ τ, _, _ ⟩;
     · rw [ continuousOn_iff_continuous_restrict ];
-      exact?;
+      exact continuous_of_discreteTopology;
     · exact fun n => hτ₂ _ ( Set.mem_range_self _ ) _ rfl ▸ rfl))
   generalize_proofs at *; (
   exact h_contra ⟨ σ, hσ_cont, τ, hτ.1, fun n => by simp +decide [ hτ.2 ] ⟩)))

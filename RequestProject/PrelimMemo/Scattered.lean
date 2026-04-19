@@ -316,24 +316,12 @@ theorem ContinuouslyReduces.scattered {X X' Y Y' : Type*}
     intro S hS -- let S be a nonempty subset of X
     let A : Set X' := σ '' S -- let A be the image of S by σ
     have hA_nonempty :A.Nonempty := hS.image σ -- A is non empty
-    -- obtain ⟨x, hx⟩ := hS;
-
-    -- have hsx : σ x ∈ σ '' S := by exact mem_image_of_mem σ hx; -- let x be a point in S
-
     -- now we use that g is scattered
-
     -- Step 1: Specialize the hypothesis to your set A
-
     have hg_A : ∃ U, IsOpen U ∧ (U ∩ A).Nonempty ∧ ∀ x ∈ U ∩ A, ∀ x' ∈ U ∩ A, g x = g x' := hg A hA_nonempty
-
     -- Step 2: Unpack the specialized hypothesis
-
     obtain ⟨U, hU_open, hU_nonempty, hg_const⟩ := hg_A
-
-    -- obtain ⟨y, hy⟩ := hU_nonempty;
-
     -- let x be a point in A with σ x = y
-
     obtain ⟨y, hy_in_U, hy_in_image⟩ := hU_nonempty
     -- Replace 'rfl' stands for implicit reflexivity of equality in y=σx, henceforth σx
     obtain ⟨x, hx_in_S, rfl⟩ := hy_in_image

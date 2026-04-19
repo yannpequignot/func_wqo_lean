@@ -343,6 +343,40 @@ def perfectKernel {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
     (f : X → Y) : Set X :=
   ⋂₀ {S : Set X | IsClosed S ∧ (locallyConstantLocus f)ᶜ ⊆ S}
 
+/-- The perfect kernel equals the complement of the locally constant locus,
+since the locally constant locus is open (hence its complement is the smallest
+closed set containing itself). -/
+lemma perfectKernel_eq_compl {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    (f : X → Y) : perfectKernel f = (locallyConstantLocus f)ᶜ := by
+  unfold perfectKernel
+  apply le_antisymm
+  · exact Set.sInter_subset_of_mem ⟨(isOpen_locallyConstantLocus f).isClosed_compl, le_refl _⟩
+  · exact Set.subset_sInter fun S hS => hS.2
+
+/-- Backward direction: if every point is locally constant, then f is scattered. -/
+lemma locallyConstantLocus_univ_imp_scattered {X Y : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y]
+    (f : X → Y) (h : locallyConstantLocus f = Set.univ) : ScatteredFun f := by
+  intro S hS
+  obtain ⟨x, hx⟩ := hS
+  have : x ∈ locallyConstantLocus f := h ▸ Set.mem_univ x
+  obtain ⟨U, hU, hxU, hconst⟩ := this
+  exact ⟨U, hU, ⟨x, hxU, hx⟩, fun y hy z hz => by rw [hconst y hy.1, hconst z hz.1]⟩
+
+/-- Forward direction helper: if f is scattered, continuous, X metrizable, Y T₂,
+then every point is locally constant.
+
+Proof: Suppose y ∉ locallyConstantLocus f. Since X is metrizable (hence first countable),
+choose z_n → y with f(z_n) ≠ f(y). Apply ScatteredFun to {y} ∪ {z_n}.
+The open set U must eventually contain y (since z_n → y), giving f(z_n) = f(y)
+for large n, contradiction. -/
+lemma scattered_imp_locallyConstantLocus_univ {X Y : Type*}
+    [TopologicalSpace X] [MetrizableSpace X]
+    [TopologicalSpace Y] [T2Space Y]
+    (f : X → Y) (hf : Continuous f) (hscat : ScatteredFun f) :
+    locallyConstantLocus f = Set.univ := by
+  sorry
+
 /-- A continuous function from a metrizable domain to a Hausdorff codomain is scattered
 if and only if its perfect kernel is empty. -/
 theorem scatteredIffEmptyKernel {X Y : Type*}
@@ -350,7 +384,15 @@ theorem scatteredIffEmptyKernel {X Y : Type*}
     [TopologicalSpace Y] [T2Space Y]
     (f : X → Y) (hf : Continuous f) :
     ScatteredFun f ↔ perfectKernel f = ∅ := by
-  sorry
+  rw [perfectKernel_eq_compl]
+  constructor
+  · intro h
+    rw [scattered_imp_locallyConstantLocus_univ f hf h]
+    simp
+  · intro h
+    have : locallyConstantLocus f = Set.univ := by
+      rwa [Set.compl_empty_iff] at h
+    exact locallyConstantLocus_univ_imp_scattered f this
 
 end ScatteredCharacterization
 

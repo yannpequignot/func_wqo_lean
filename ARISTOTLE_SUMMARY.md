@@ -1,32 +1,35 @@
-# Summary of changes for run 6d267076-09fe-4f5a-a819-6f666ea3a47f
-I formalized all main theorems and definitions from `6_double_successor_memo.tex` (Chapter 6: Finite Generation at Double Successors) into two new Lean 4 files that compile successfully against the existing project:
+# Summary of changes for run 6a4023a5-80eb-4ddc-a3b4-7c32b9cf09f2
+## Summary of Changes
 
-### New files created
+This project formalizes a research memoir on continuous reducibility between functions — a deep area of descriptive set theory. The project contains ~53 `sorry` statements representing the core theorems of this multi-chapter memoir, including results about well-quasi-orders, Cantor-Bendixson analysis, pointed gluings, centered functions, wedge operations, and the precise structure theorem.
 
-**`RequestProject/DoubleSuccMemo/Defs.lean`** — Definitions (240 lines, no sorries):
-- `IsCPartition` — c-partition of a function (clopen partition where each restriction is centered)
-- `OmegaRegularSet` — the test set W(α) = {k_λ} ∪ {ωh | h ∈ C(α)}
-- `IsOmegaRegularAt` — ω-regularity at a point
-- `IsLump` — a lump (g, y) where f_{(g,y)} fails ω-regularity
-- `IsFineCPartition` — fine c-partition (no lumps, all parts of rank > λ)
-- `IsPseudoCentered` — pseudo-centered function (single cocenter, all parts equivalent)
-- `IsStronglySolvable` — strongly solvable function at y
-- `IsSolvableFun` — solvable function with a fine c-partition
+### What was accomplished:
 
-**`RequestProject/DoubleSuccMemo/Theorems.lean`** — Theorem statements (374 lines, 11 sorry'd theorems):
-1. `refining_dissolves_lump` — **Lemma 6.1** (RefiningBy1): Dissolving lumps by refining c-partitions
-2. `gobbling_less_than_lambda` — **Lemma 6.2** (gobblingLessThanLambda): Large centered pieces absorb small pieces
-3. `existence_fine_partitions` — **Proposition 6.3** (ExistenceFinePartitions): FG(<α) implies existence of fine c-partitions
-4. `vertical_theorem` — **Theorem 6.4** (VerticalTheorem): Structure of pseudo-centered functions
-5. `diagonal_theorem` — **Theorem 6.5** (DiagonalTheorem): Structure of strongly solvable functions
-6. `solvable_decomposition` — **Theorem 6.6** (SolvableDecomposition): Decomposing fine c-partitions into solvable pieces
-7. `solvable_lambda_plus_one` — **Proposition 6.7** (solvablelambda+1): Statement S(λ) for limit/null λ
-8. `FG_for_solvable` — **Theorem 6.8** (FiniteGenerationForSolvable): Finite generation for solvable functions
-9. `FG_at_double_successors` — **Theorem 6.9** (FGatdoublesuccessors): The main inductive step FG(<α+2) ⟹ FG(≤α+2)
-10. `preciseStructureThm_combined` — Combined Precise Structure Theorem: FG(α) for all α < ω₁
-11. `bqo_scattered_combined` — BQO consequence for scattered continuous functions
+1. **`RequestProject/PrelimMemo/Gluing.lean`** — Fixed 4 incomplete proofs (`exact?` calls) in the locally constant function theory:
+   - `locally_constant_infinite_image_forward`: Fixed the continuity proof for the restricted codomain map (used `continuous_of_discreteTopology` since ℕ has discrete topology)
+   - `id_nat_reduces_locally_constant`: Fixed three proof goals:
+     - Existence of countable dense subset (used `SeparableSpace.exists_countable_dense`)
+     - Locally constant function has constant open neighborhoods (used `IsLocallyConstant.isOpen_fiber_`)
+     - Continuity of σ : ℕ → X (used `continuous_of_discreteTopology`)
+     - Continuity of restricted τ on discrete range (used `continuous_of_discreteTopology`)
 
-All definitions and theorem statements type-check and are consistent with the project's existing conventions (using `ContinuouslyReduces`, `ContinuouslyEquiv`, `CBRank`, `FiniteGeneration`, etc. from earlier chapters). The proofs are left as `sorry` — these are deep results whose formal proofs would require substantial additional infrastructure.
+2. **`RequestProject/IntroMemo.lean`** — Decomposed `scatteredIffEmptyKernel` into structured helper lemmas:
+   - **`perfectKernel_eq_compl`** (fully proved): Shows the perfect kernel equals the complement of the locally constant locus, since the locally constant locus is open (hence its complement is the smallest closed set containing itself)
+   - **`locallyConstantLocus_univ_imp_scattered`** (fully proved): The backward direction — if every point is locally constant, then f is scattered
+   - **`scattered_imp_locallyConstantLocus_univ`** (sorry): The forward direction — if f is scattered, continuous, X metrizable, Y T₂, then every point is locally constant. This is the mathematically deep direction requiring careful use of metrizability and sequential arguments.
+   - **`scatteredIffEmptyKernel`** (now uses the helpers): The main theorem now follows directly from the three helper lemmas above, with only the forward direction remaining as a sorry.
+
+### What remains:
+
+The vast majority of remaining `sorry` statements are deep results from the research memoir:
+- **IntroMemo.lean**: Main Theorems 1-3 (WQO results), `scattered_imp_locallyConstantLocus_univ`
+- **PrelimMemo/Scattered.lean**: Sierpiński's theorem, first reduction theorem, clopen basis lemma, decomposition lemma
+- **PrelimMemo/Gluing.lean**: `gluingFun_upper_bound_backward`
+- **PointedGluing/Theorems.lean**: 14 theorems about pointed gluings, CB-rank analysis, max/min functions, general structure theorem
+- **CenteredMemo/Theorems.lean**: 9 theorems about centered functions, cocenters, rigidity
+- **PreciseStructMemo/Theorems.lean**: 21 theorems about wedge operations, finite generation, precise structure theorem
+
+These are genuinely deep research-level results that form the mathematical content of a multi-chapter memoir on continuous reducibility. Each requires substantial mathematical infrastructure and proof techniques (transfinite induction, Cantor-Bendixson analysis, BQO theory, etc.) that go beyond what can be automated.
 
 # Summary of changes for run 40233a37-8f29-419f-b0f0-818542bbac9c
 ## Formalization of `5_precise_struct_memo.tex` — Precise Structure
