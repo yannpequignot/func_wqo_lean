@@ -1,3 +1,33 @@
+# Summary of changes for run 6d267076-09fe-4f5a-a819-6f666ea3a47f
+I formalized all main theorems and definitions from `6_double_successor_memo.tex` (Chapter 6: Finite Generation at Double Successors) into two new Lean 4 files that compile successfully against the existing project:
+
+### New files created
+
+**`RequestProject/DoubleSuccMemo/Defs.lean`** — Definitions (240 lines, no sorries):
+- `IsCPartition` — c-partition of a function (clopen partition where each restriction is centered)
+- `OmegaRegularSet` — the test set W(α) = {k_λ} ∪ {ωh | h ∈ C(α)}
+- `IsOmegaRegularAt` — ω-regularity at a point
+- `IsLump` — a lump (g, y) where f_{(g,y)} fails ω-regularity
+- `IsFineCPartition` — fine c-partition (no lumps, all parts of rank > λ)
+- `IsPseudoCentered` — pseudo-centered function (single cocenter, all parts equivalent)
+- `IsStronglySolvable` — strongly solvable function at y
+- `IsSolvableFun` — solvable function with a fine c-partition
+
+**`RequestProject/DoubleSuccMemo/Theorems.lean`** — Theorem statements (374 lines, 11 sorry'd theorems):
+1. `refining_dissolves_lump` — **Lemma 6.1** (RefiningBy1): Dissolving lumps by refining c-partitions
+2. `gobbling_less_than_lambda` — **Lemma 6.2** (gobblingLessThanLambda): Large centered pieces absorb small pieces
+3. `existence_fine_partitions` — **Proposition 6.3** (ExistenceFinePartitions): FG(<α) implies existence of fine c-partitions
+4. `vertical_theorem` — **Theorem 6.4** (VerticalTheorem): Structure of pseudo-centered functions
+5. `diagonal_theorem` — **Theorem 6.5** (DiagonalTheorem): Structure of strongly solvable functions
+6. `solvable_decomposition` — **Theorem 6.6** (SolvableDecomposition): Decomposing fine c-partitions into solvable pieces
+7. `solvable_lambda_plus_one` — **Proposition 6.7** (solvablelambda+1): Statement S(λ) for limit/null λ
+8. `FG_for_solvable` — **Theorem 6.8** (FiniteGenerationForSolvable): Finite generation for solvable functions
+9. `FG_at_double_successors` — **Theorem 6.9** (FGatdoublesuccessors): The main inductive step FG(<α+2) ⟹ FG(≤α+2)
+10. `preciseStructureThm_combined` — Combined Precise Structure Theorem: FG(α) for all α < ω₁
+11. `bqo_scattered_combined` — BQO consequence for scattered continuous functions
+
+All definitions and theorem statements type-check and are consistent with the project's existing conventions (using `ContinuouslyReduces`, `ContinuouslyEquiv`, `CBRank`, `FiniteGeneration`, etc. from earlier chapters). The proofs are left as `sorry` — these are deep results whose formal proofs would require substantial additional infrastructure.
+
 # Summary of changes for run 40233a37-8f29-419f-b0f0-818542bbac9c
 ## Formalization of `5_precise_struct_memo.tex` — Precise Structure
 
