@@ -3,3 +3,4 @@
 .vscode/
 build/
 .rsyncignore
+RequestProject/PrelimMemo/blackboard.lean
