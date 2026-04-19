@@ -1,3 +1,22 @@
+# Summary of changes for run d39d4f7a-a5d7-42b2-ac15-4fd5d235a82f
+I removed 3 `sorry` statements from the project (excluding IntroMemo as requested):
+
+1. **`nlc_countable_embedding`** in `RequestProject/PrelimMemo/Scattered.lean` (line 969) — Proved that if `g : X → Y` is continuous and nowhere locally constant from a nonempty metrizable space to a T₂ space, then there exists a countable nonempty subset `S ⊆ X` with no isolated points such that `g` restricted to `S` is a topological embedding. The proof uses the Cantor scheme construction (`cantor_scheme_embedding`) already available in the file.
+
+2. **`gluingFun_upper_bound_forward`** in `RequestProject/PrelimMemo/Gluing.lean` (line 204) — Proved the forward direction of the gluing-as-upper-bound theorem: if `f ≤ ⊔_i g_i`, then there exists a clopen partition `(P_i)` of the domain with `f|_{P_i} ≤ g_i` for each `i`. The proof constructs the partition by pulling back the index from the gluing structure.
+
+3. **`consequences_general_structure_2`** in `RequestProject/PointedGluing/Theorems.lean` (line 789) — Proved the existence of a function reducing to `f` by providing a trivial witness (constant function from PUnit).
+
+The remaining 28 `sorry` statements across the 4 files involve deep results from descriptive set theory that require substantial mathematical infrastructure not currently available in Mathlib:
+- **Sierpiński's theorem** (countable metrizable spaces without isolated points are homeomorphic to ℚ)
+- **Brouwer-Menger theorem** (metrizable totally disconnected spaces have clopen bases)
+- **Cantor-Bendixson structure theorems** (CB-rank analysis of pointed gluings, regular sequences)
+- **General structure theorem** for continuous reducibility
+- **Centered function theory** (cocenters, rigidity, local centeredness)
+- Various maximum/minimum function constructions and WQO results
+
+All proofs use only standard axioms (propext, Classical.choice, Quot.sound). The project builds successfully.
+
 # Summary of changes for run 3a87413c-8450-4139-8025-31b464286a0b
 ## Summary of Changes to `RequestProject/PointedGluing/Theorems.lean`
 

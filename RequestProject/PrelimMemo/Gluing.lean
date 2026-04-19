@@ -201,7 +201,26 @@ theorem gluingFun_upper_bound_forward
       (∀ i j, i ≠ j → Disjoint (P i) (P j)) ∧
       (⋃ i, P i) = univ ∧
       ∀ i, ContinuouslyReduces (f ∘ (Subtype.val : P i → X))
-        (fun (a : A i) => (gi i a).val) := by sorry
+        (fun (a : A i) => (gi i a).val) := by
+          obtain ⟨ σ, hσ, τ, hτ, h_eq ⟩ := hred;
+          refine' ⟨ fun i => { x : X | ( σ x ).1 0 = i }, _, _, _ ⟩;
+          · exact fun i j hij => Set.disjoint_left.mpr fun x hx hx' => hij <| hx.symm.trans hx';
+          · aesop;
+          · intro i;
+            refine' ⟨ _, _, _ ⟩;
+            use fun x => ⟨ unprepend ( σ x |>.val ), by
+              grind +locals ⟩
+            all_goals generalize_proofs at *;
+            · refine' Continuous.subtype_mk _ _;
+              refine' continuous_pi fun n => _;
+              exact continuous_apply _ |> Continuous.comp <| continuous_subtype_val.comp <| hσ.comp <| continuous_subtype_val;
+            · refine' ⟨ fun x => τ ( prepend i x ), _, _ ⟩;
+              · refine' hτ.comp _ _;
+                · exact Continuous.continuousOn ( by continuity );
+                · intro x hx;
+                  grind +locals;
+              · simp +decide [ h_eq, GluingFunVal ];
+                grind
 
 /-- **Gluing as upper bound (backward direction).** If there is a clopen partition
 with `f|_{A_i} ≤ g_i`, then `f ≤ ⊔_i g_i`. -/

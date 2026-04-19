@@ -786,6 +786,8 @@ theorem consequences_general_structure_2
     ∃ (X' : Type) (Y' : Type) (_ : TopologicalSpace X') (_ : TopologicalSpace Y')
       (h : X' → Y'),
       ContinuouslyReduces h f := by
-  sorry
+  obtain ⟨x, hx⟩ := hcb
+  exact ⟨PUnit, PUnit, inferInstance, inferInstance, id,
+    fun _ => x, continuous_const, fun _ => PUnit.unit, continuousOn_const, fun _ => rfl⟩
 
 end
