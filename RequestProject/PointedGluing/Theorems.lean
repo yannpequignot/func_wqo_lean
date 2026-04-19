@@ -222,18 +222,120 @@ theorem CBrank_pointedGluing_regular
       {⟨zeroStream, zeroStream_mem_pointedGluingSet A⟩} := by
   sorry
 
-/-- **Fact (GluinglowerthanPgluing).**
+/-
 Given a sequence `(f_i)_i` in 𝒞, we have `⊔_i f_i ≤ pgl_i f_i`.
 
 The proof uses Gluingaslowerbound with `f = pgl_i f_i` and
 `B_i = N_{(0)^i(1)}`. -/
+/-- Map from GluingSet to PointedGluingSet: (i)⌢a ↦ (0^i)(1)a -/
+noncomputable def gluingToPointed (A : ℕ → Set (ℕ → ℕ)) (x : GluingSet A) : PointedGluingSet A :=
+  let h := GluingSet_inverse_short A x
+  let i := h.choose
+  let a := unprepend x.val
+  ⟨prependZerosOne i a,
+    Or.inr (Set.mem_iUnion.mpr ⟨i, a, h.choose_spec.2, rfl⟩)⟩
+
+/-- Map from (ℕ → ℕ) to (ℕ → ℕ): (0^i)(1)b ↦ (i)⌢b, and 0^ω ↦ 0^ω -/
+noncomputable def pointedToGluing (y : ℕ → ℕ) : ℕ → ℕ :=
+  if y = zeroStream then zeroStream
+  else prepend (firstNonzero y) (stripZerosOne (firstNonzero y) y)
+
+theorem prependZerosOne_ne_zeroStream (i : ℕ) (x : ℕ → ℕ) :
+    prependZerosOne i x ≠ zeroStream := by
+  -- By definition of `prependZerosOne`, `prependZerosOne i x` is not equal to `zeroStream` because `prependZerosOne i x` has a `1` at position `i` while `zeroStream` has `0` everywhere.
+  have h_neq : ∃ k, (prependZerosOne i x) k ≠ zeroStream k := by
+    exact ⟨ i, by simp [ prependZerosOne, zeroStream ] ⟩;
+  exact fun h => h_neq.choose_spec <| congr_fun h _
+
+theorem firstNonzero_prependZerosOne (i : ℕ) (x : ℕ → ℕ) :
+    firstNonzero (prependZerosOne i x) = i := by
+  unfold firstNonzero;
+  split_ifs <;> simp_all +decide [ Nat.find_eq_iff ];
+  · unfold prependZerosOne; aesop;
+  · rename_i h; specialize h i; simp_all +decide [ prependZerosOne ] ;
+
+theorem continuous_prependZerosOne (i : ℕ) : Continuous (prependZerosOne i) := by
+  refine' continuous_pi fun n => _;
+  unfold prependZerosOne;
+  split_ifs <;> continuity
+
 theorem gluing_le_pointedGluing
     (A B : ℕ → Set (ℕ → ℕ))
     (f : ∀ i, A i → B i) :
     ContinuouslyReduces
       (fun (x : GluingSet A) => GluingFunVal A B f x)
       (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) := by
-  sorry
+  -- The σ function is continuous because it is a composition of continuous functions.
+  have hσ_cont : Continuous (gluingToPointed A) := by
+    refine' continuous_induced_rng.mpr _;
+    -- The function x ↦ prependZerosOne (x.val 0) (unprepend x.val) is continuous because it is a composition of continuous functions.
+    have h_cont : ∀ n, ContinuousOn (fun x : GluingSet A => prependZerosOne n (unprepend x.val)) {x : GluingSet A | x.val 0 = n} := by
+      intro n
+      have h_cont : Continuous (fun x : ℕ → ℕ => prependZerosOne n (unprepend x)) := by
+        exact continuous_pi_iff.mpr fun i => by cases i <;> continuity;
+      generalize_proofs at *; (
+      exact h_cont.comp_continuousOn ( continuous_subtype_val.continuousOn ));
+    refine' continuous_iff_continuousAt.mpr _;
+    intro x
+    have h_cont_at : ContinuousAt (fun x : GluingSet A => prependZerosOne (x.val 0) (unprepend x.val)) x := by
+      have h_cont_at : ∀ᶠ y in nhds x, y.val 0 = x.val 0 := by
+        have h_cont_at : IsOpen {y : GluingSet A | y.val 0 = x.val 0} := by
+          have h_cont_at : IsOpen {y : ℕ → ℕ | y 0 = x.val 0} := by
+            rw [ isOpen_pi_iff ];
+            exact fun f hf => ⟨ { 0 }, fun _ => { y | y = x.val 0 }, by aesop ⟩
+          generalize_proofs at *;
+          exact h_cont_at.preimage ( continuous_subtype_val )
+        generalize_proofs at *;
+        exact h_cont_at.mem_nhds rfl
+      generalize_proofs at *;
+      exact ContinuousAt.congr ( h_cont ( x.val 0 ) |> ContinuousOn.continuousAt <| by filter_upwards [ h_cont_at ] with y hy; aesop ) <| Filter.eventuallyEq_of_mem h_cont_at fun y hy => by aesop;
+    generalize_proofs at *;
+    convert h_cont_at using 1
+    generalize_proofs at *;
+    grind +locals;
+  refine' ⟨gluingToPointed A, hσ_cont, pointedToGluing, _, _⟩;
+  · -- Since the range of the composition is a subset of the set where pointedToGluing is continuous, we can conclude that pointedToGluing is continuous on the range.
+    have h_range_subset : Set.range ((fun x => PointedGluingFun A B f x) ∘ gluingToPointed A) ⊆ {y | y ≠ zeroStream} := by
+      intro y hy; obtain ⟨ x, rfl ⟩ := hy; simp +decide [ PointedGluingFun ] ;
+      unfold gluingToPointed; simp +decide [ prependZerosOne_ne_zeroStream ] ;
+      rw [ firstNonzero_prependZerosOne ];
+      convert ( GluingSet_inverse_short A x ).choose_spec.2 using 1;
+      exact stripZerosOne_prependZerosOne _ _;
+    refine' ContinuousOn.mono _ h_range_subset;
+    -- The function pointedToGluing is continuous on the set where y is not zeroStream because it is a composition of continuous functions.
+    have h_cont : ContinuousOn (fun y => prepend (firstNonzero y) (stripZerosOne (firstNonzero y) y)) {y | y ≠ zeroStream} := by
+      -- Since `firstNonzero` is locally constant on `{y | y ≠ zeroStream}`, we can use the fact that the composition of continuous functions is continuous.
+      have h_locally_const : ∀ y : ℕ → ℕ, y ≠ zeroStream → ∃ U : Set (ℕ → ℕ), IsOpen U ∧ y ∈ U ∧ ∀ z ∈ U, firstNonzero z = firstNonzero y := by
+        intro y hy
+        use {z | z (firstNonzero y) ≠ 0 ∧ ∀ n < firstNonzero y, z n = 0};
+        refine' ⟨ _, _, _ ⟩;
+        · simp +decide only [setOf_and, setOf_forall];
+          refine' IsOpen.inter _ _;
+          · exact isOpen_ne.preimage ( continuous_apply _ );
+          · refine' isOpen_iff_forall_mem_open.mpr _;
+            intro x hx;
+            refine' ⟨ ⋂ i ∈ Finset.range ( firstNonzero y ), { z : ℕ → ℕ | z i = 0 }, _, _, _ ⟩ <;> simp_all +decide [ Set.subset_def ];
+            rw [ show ( ⋂ i, ⋂ ( _ : i < firstNonzero y ), { z : ℕ → ℕ | z i = 0 } ) = ⋂ i ∈ Finset.range ( firstNonzero y ), { z : ℕ → ℕ | z i = 0 } by ext; aesop ] ; exact isOpen_biInter_finset fun i hi => isOpen_discrete { 0 } |> IsOpen.preimage ( continuous_apply i ) ;
+        · unfold firstNonzero;
+          split_ifs <;> simp_all +decide [ zeroStream ];
+          · exact Nat.find_spec ‹∃ k, y k ≠ 0›;
+          · exact hy ( funext ‹_› );
+        · intro z hz;
+          refine' le_antisymm _ _ <;> simp_all +decide [ firstNonzero ];
+          · split_ifs at * <;> simp_all +decide [ Nat.find_eq_iff ];
+            grind +suggestions;
+          · split_ifs at * <;> simp_all +decide [ Nat.find_eq_iff ];
+      intro y hy
+      obtain ⟨U, hU_open, hyU, hU_const⟩ := h_locally_const y hy
+      have h_cont_on_U : ContinuousOn (fun z => prepend (firstNonzero y) (stripZerosOne (firstNonzero y) z)) U := by
+        refine' Continuous.continuousOn _;
+        exact continuous_prepend _ |> Continuous.comp <| continuous_pi fun _ => continuous_apply _
+      generalize_proofs at *;
+      exact ContinuousAt.continuousWithinAt ( by exact ContinuousAt.congr ( h_cont_on_U.continuousAt ( hU_open.mem_nhds hyU ) ) ( Filter.eventuallyEq_of_mem ( hU_open.mem_nhds hyU ) fun z hz => by aesop ) );
+    refine' h_cont.congr fun y hy => _;
+    unfold pointedToGluing; aesop;
+  · unfold GluingFunVal pointedToGluing PointedGluingFun gluingToPointed;
+    grind +suggestions
 
 /-!
 ## Section 2: Sufficient Condition for Continuity (Lemma 3.4)
@@ -320,18 +422,20 @@ theorem pointedGluing_upper_bound
         (fun (x : GluingSet (fun i => if i ∈ I j then C i else ∅)) =>
           GluingFunVal _ _ (fun i => if h : i ∈ I j then
             (fun a => (g i (by exact a)) : C i → D i) ∘
-              (fun a => ⟨a.val, by sorry⟩)
-            else fun a => ⟨a.val, by sorry⟩) x)) :
+              (fun a => ⟨a.val, by have := a.property; simp [h] at this; exact this⟩)
+            else fun a => ⟨a.val, by have := a.property; simp [h] at this⟩) x)) :
     ContinuouslyReduces f
       (fun (x : PointedGluingSet C) => PointedGluingFun C D g x) := by
   sorry
 
-/-- **Corollary (Pgluingofraysasupperbound).**
+/-
+**Corollary (Pgluingofraysasupperbound).**
 For any continuous `f : A → B` in 𝒞 and any `y ∈ B`,
 `f ≤ pgl_{i ∈ ℕ} Ray(f, y, i)`.
 
 This is a direct application of Pgluingasupperbound with the identity partition
-`I_j = {j}`. -/
+`I_j = {j}`.
+-/
 theorem pointedGluing_rays_upper_bound
     {A B : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
@@ -340,7 +444,25 @@ theorem pointedGluing_rays_upper_bound
     ∃ (C D : ℕ → Set (ℕ → ℕ)) (h : ∀ i, C i → D i),
       ContinuouslyReduces f
         (fun (x : PointedGluingSet C) => PointedGluingFun C D h x) := by
-  sorry
+  use fun i => if h : i = 0 then A else ∅;
+  use fun i => if i = 0 then B else ∅;
+  use fun i a => ⟨f ⟨a.val, by
+    grind⟩, by
+    aesop⟩
+  generalize_proofs at *;
+  refine' ⟨ _, _, _ ⟩;
+  use fun a => ⟨ prependZerosOne 0 a.val, Or.inr <| Set.mem_iUnion.mpr ⟨ 0, a.val, a.property, rfl ⟩ ⟩;
+  · refine' Continuous.subtype_mk _ _;
+    exact continuous_prependZerosOne 0 |> Continuous.comp <| continuous_subtype_val;
+  · refine' ⟨ _, _, _ ⟩;
+    use fun x => x ∘ fun n => n + 1;
+    · fun_prop;
+    · intro x; ext n; simp +decide [ PointedGluingFun ] ;
+      split_ifs <;> simp_all +decide [ prependZerosOne ];
+      · rename_i h; have := congr_fun h 0; simp_all +decide [ prependZerosOne ] ;
+      · congr;
+      · simp_all +decide [ firstNonzero, prependZerosOne ];
+        unfold stripZerosOne at *; simp_all +decide [ prependZerosOne ] ;
 
 /-- **Corollary (SplittingaPgluingonatail).**
 For continuous `(f_i)_i` in 𝒞 and all `n ∈ ℕ`:

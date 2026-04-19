@@ -1,3 +1,44 @@
+# Summary of changes for run 3a87413c-8450-4139-8025-31b464286a0b
+## Summary of Changes to `RequestProject/PointedGluing/Theorems.lean`
+
+I worked on removing `sorry`s from the file, starting from an initial count of 19 sorry's (17 theorem-level + 2 in a statement). Here's what was accomplished:
+
+### Sorry's Fixed in Theorem Statements (2)
+- **`pointedGluing_upper_bound`** (line ~323): Fixed two `by sorry` proof obligations inside the theorem statement itself. These were membership proofs for subtype construction that followed from `if_pos`/`if_neg` and the relevant set membership.
+
+### Theorems Fully Proved (5)
+1. **`prependZerosOne_ne_zeroStream`** — New helper lemma: `prependZerosOne i x ≠ zeroStream` because position `i` is `1` vs `0`.
+
+2. **`firstNonzero_prependZerosOne`** — New helper lemma: `firstNonzero (prependZerosOne i x) = i`, using `Nat.find_eq_iff` and the structure of `prependZerosOne`.
+
+3. **`continuous_prependZerosOne`** — New helper lemma: `prependZerosOne i` is continuous, via `continuous_pi` and case analysis on coordinates.
+
+4. **`gluing_le_pointedGluing`** (Fact 3.3) — The gluing ⊔_i f_i continuously reduces to the pointed gluing pgl_i f_i. Proved by constructing explicit σ (via `gluingToPointed`) and τ (via `pointedToGluing`) maps and verifying continuity and the reduction equation.
+
+5. **`pointedGluing_rays_upper_bound`** (Corollary 3.6) — For any continuous f and point y ∈ B, there exist C, D, h such that f ≤ pgl h. Proved by constructing a simple one-block pointed gluing.
+
+### New Definitions Added
+- **`gluingToPointed`**: Maps `GluingSet A → PointedGluingSet A`, sending `prepend(i, a)` to `prependZerosOne(i, a)`.
+- **`pointedToGluing`**: Maps `(ℕ → ℕ) → (ℕ → ℕ)`, the inverse operation on non-zero streams.
+
+### Remaining Sorry's (15)
+The remaining theorems are deep results from a research memoir on continuous reducibility theory, including:
+- `pointedGluingFun_preserves_continuity` (Fact 3.1)
+- `CBrank_pointedGluing_regular` (Proposition 3.2)
+- `pointedGluing_upper_bound` (Proposition 3.5)
+- `CBrank_regular_simple` (Proposition 3.8)
+- `maxFun_is_maximum` / `minFun_is_minimum` (Propositions 3.9, 3.12)
+- `pointedGluing_lower_bound_lemma` / `pointedGluing_lower_bound` (Lemma 3.10, Proposition 3.11)
+- `classification_compact_domains` (Theorem 3.13)
+- `general_structure_theorem` / `general_structure_limit` / `general_structure_successor` (Theorem 3.14)
+- `finitely_generated_implies_bqo` (Proposition 3.15)
+- `consequences_general_structure_1` / `consequences_general_structure_2` (Corollary 3.16)
+
+These are highly non-trivial results requiring substantial mathematical infrastructure (transfinite induction on CB ranks, careful constructions of σ/τ reduction witnesses, regularity arguments, etc.) that goes beyond what could be automated in this session.
+
+### Verification
+All proved theorems compile successfully without `sorryAx` in their axiom dependencies. The project builds cleanly with `lake build`.
+
 # Summary of changes for run a26a7655-c180-4cbe-bb02-4f0f3f361f9a
 ## Progress on Formalizing `4_centered_memo.tex`
 
