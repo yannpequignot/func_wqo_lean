@@ -97,8 +97,8 @@ theorem gluingFun_upper_bound_backward_
           rw [h_tail_eq_y, h_i_eq_j]
           exact hy_mem
 
-          -- 3. Feed the tail (NOT z!) and the proof into the local function
-        exact τ_choose i (unprepend z) -- ⟨unprepend z, hzi⟩
+          -- 3. Feed the tail 
+        exact τ_choose i (unprepend z)
 
       else
         exact zeroStream
