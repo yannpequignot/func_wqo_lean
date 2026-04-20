@@ -102,8 +102,6 @@ theorem gluingFun_upper_bound_backward_
 
       else
         exact zeroStream
-      
-
-
-
+    -- show that σ and τ are continuous on their domain
+    -- show the equality
     sorry
