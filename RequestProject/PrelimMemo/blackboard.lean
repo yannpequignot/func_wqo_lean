@@ -71,14 +71,63 @@ theorem gluingFun_upper_bound_backward_
 
 
     -- σ is well-defined (remove the use of choice)
-    have h_choose_eq (i : ℕ) (x : D) (hx_union : x.val ∈ ⋃ j, P j) (hx : x.val ∈ P i) :
-        (Classical.choose (Set.mem_iUnion.mp hx_union)) = i := by
-      let j := Classical.choose (Set.mem_iUnion.mp hx_union)
-      have hj : x.val ∈ P j := Classical.choose_spec (Set.mem_iUnion.mp hx_union)
+    -- have h_choose_eq (i : ℕ) (x : D) (hx_union : x.val ∈ ⋃ j, P j) (hx : x.val ∈ P i) :
+    --     (Classical.choose (Set.mem_iUnion.mp hx_union)) = i := by
+    --   let j := Classical.choose (Set.mem_iUnion.mp hx_union)
+    --   have hj : x.val ∈ P j := Classical.choose_spec (Set.mem_iUnion.mp hx_union)
+    --   by_contra h_neq
+    --   have h_disjoint := hdisj j i h_neq
+    --   have h_not_in_i := Set.disjoint_left.mp h_disjoint hj
+    --   exact h_not_in_i hx
+    have h_choose_eq (i : ℕ) (x : Baire) (hx : x ∈ P i) {h_exists : ∃ j, x ∈ P j} :
+        Classical.choose h_exists = i := by
+      -- Because h_exists is implicit, Lean grabs the exact proof from the goal
+      let j := Classical.choose h_exists
+      have hj : x ∈ P j := Classical.choose_spec h_exists
       by_contra h_neq
       have h_disjoint := hdisj j i h_neq
       have h_not_in_i := Set.disjoint_left.mp h_disjoint hj
       exact h_not_in_i hx
+
+    have hσ_cont_piece (i : ℕ) : ContinuousOn σ {x : D | x.val ∈ P i} := by
+      rw [continuousOn_iff_continuous_restrict]
+      apply continuous_induced_rng.mpr
+
+      -- 1. YOUR POINTWISE LEMMA
+      -- Notice how much cleaner this is without `Set.restrict` clutter!
+      have h_eq_pointwise (x : Baire) (h_inD : x ∈ D) (h_Pi : x ∈ P i) :
+          σ_raw ⟨x, h_inD⟩ = prepend i (σ_choose i ⟨x, h_Pi⟩).val := by
+        dsimp only [σ_raw, σ]
+        have hx_union : x ∈ ⋃ j, P j := by
+          rw [hcover]
+          exact h_inD
+        have h_exists : ∃ j, x ∈ P j := Set.mem_iUnion.mp hx_union
+
+        -- The dependent type helper lemma from before
+        have h_eval : ∀ (j : ℕ) (hj : x ∈ P j) (h_ji : j = i),
+          prepend j (σ_choose j ⟨x, hj⟩).val = prepend i (σ_choose i ⟨x, h_Pi⟩).val := by
+          intro j hj h_ji; subst h_ji; rfl
+
+        exact h_eval (Classical.choose h_exists) (Classical.choose_spec h_exists) (h_choose_eq i x h_Pi)
+
+      -- 2. THE FUNCTION EQUALITY LEMMA (now trivial to prove)
+      have h_eq : ({w : D | w.val ∈ P i}).restrict σ_raw =
+                  (fun (x : {w : D // w.val ∈ P i}) => prepend i (σ_choose i ⟨x.val.val, x.property⟩)) := by
+        funext x
+        -- We just apply your pointwise lemma, feeding it the unwrapped properties of the subtype!
+        exact h_eq_pointwise x.val.val x.val.property x.property
+
+      -- 3. THE TOPOLOGICAL FINISH
+      -- This leaves the invisible `Continuous` topologies completely untouched!
+      have h_raw : Subtype.val ∘ ({w : D | w.val ∈ P i}).restrict σ =
+                   ({w : D | w.val ∈ P i}).restrict σ_raw := by
+        funext x
+        rfl -- (σ x).val is definitionally equal to σ_raw x
+      -- Now rw will find the exact syntax and succeed perfectly!
+      rw [h_raw]
+      rw [h_eq]
+      exact Continuous.comp (continuous_prepend i) (hσ_choose i)
+
 
     have hσ_cont_piece (i : ℕ) : ContinuousOn σ {x : D | x.val ∈ P i} := by
       rw [continuousOn_iff_continuous_restrict]
@@ -89,26 +138,21 @@ theorem gluingFun_upper_bound_backward_
 
       have h_eq : ({w : D | w.val ∈ P i}).restrict σ_raw =
                   (fun (x : {w : D // w.val ∈ P i}) => prepend i (σ_choose i ⟨x.val.val, x.property⟩)) := by
-        sorry
-        -- ext x
-        -- -- Extract the exact proofs we need for the specific x
-        -- have hx_in_Pi : x.val.val ∈ P i := x.property
-        -- have hx_union : x.val.val ∈ ⋃ j, P j := by
-        --   rw [hcover]
-        --   exact x.val.property
+        funext x
+        have hx_in_Pi : x.val.val ∈ P i := x.property
 
-        -- -- Unfold definitions so Lean can see the Classical.choose
-        -- unfold σ_raw σ
+        -- Step A: dsimp evaluates the function applications and `let` variables
+        dsimp only [Set.restrict, σ_raw, σ]
 
-        -- -- Use simp instead of rw. `simp` is much better at applying lemmas
-        -- -- even when the invisible proof terms look slightly different.
-        -- simp only [h_choose_eq i x.val hx_union hx_in_Pi]
+        -- Step B: simp finds Classical.choose, and because the proof is implicit,
+        -- it perfectly matches and rewrites it!
+        simp only [h_choose_eq i x.val hx_in_Pi]
+        rfl
+       --Swap out the messy choose function for your clean, continuous formula
+      rw [h_eq]
 
-      -- Swap out the messy choose function for your clean, continuous formula
-      -- rw [h_eq]
-
-      -- Apply continuity!
-      -- exact Continuous.comp (continuous_prepend i) (hσ_choose i)
+      --Apply continuity!
+      exact Continuous.comp (continuous_prepend i) (hσ_choose i)
 
     -- have hσ_range : ∀ x : D, σ x ∈ GluingSet A := by
     --   intro x
