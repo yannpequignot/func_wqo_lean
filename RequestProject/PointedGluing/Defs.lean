@@ -36,8 +36,7 @@ noncomputable section
 ## Baire space operations for pointed gluing
 -/
 
-/-- The constant zero sequence `0^ω ∈ ℕ → ℕ`. -/
-def zeroStream : ℕ → ℕ := fun _ => 0
+
 
 /-- Prepend `i` zeros followed by a `1` to a sequence `x : ℕ → ℕ`.
 This produces the sequence `(0)^i ⌢ (1) ⌢ x`. -/

@@ -214,3 +214,12 @@ theorem HomeomorphicFun.continuouslyEquiv {X X' Y Y' : Type*}
     simp
 
 end HomeomorphicFunctions
+
+section Notations
+
+/-- The constant zero sequence `0^ω ∈ ℕ → ℕ`. -/
+def zeroStream : ℕ → ℕ := fun _ => 0
+
+abbrev Baire := ℕ → ℕ
+
+end Notations

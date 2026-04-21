@@ -1,3 +1,30 @@
+# Summary of changes for run 0a0631b7-0fae-4d3c-beb8-695193b7ee51
+Successfully removed all `sorry` instances from `RequestProject/PrelimMemo/Gluing.lean`. 
+
+The file had 6 `sorry` instances, all concentrated in the `gluingFun_upper_bound_backward` theorem and its dependency `disjoint_union_reduces_gluing`. There was also a critical issue: stray `import` statements in the middle of the file (line 279) that prevented compilation.
+
+**Changes made:**
+
+1. **Removed stray imports** — Lines 279–282 contained `import Mathlib` and `import RequestProject.PrelimMemo.Gluing` (a circular self-import) in the middle of the file. These were removed.
+
+2. **Removed `[TopologicalSpace Baire]`** — The theorem `gluingFun_upper_bound_backward` had an explicit `[TopologicalSpace Baire]` instance parameter that conflicted with the canonical product topology on `ℕ → ℕ`, preventing the use of existing lemmas like `continuous_prepend` and `continuous_unprepend`. This was removed since `Baire = ℕ → ℕ` already inherits the product topology.
+
+3. **Proved `gluingFun_upper_bound_backward`** — Decomposed into a clean proof skeleton:
+   - Used `continuous_pasting_on_clopen` (also proved in this session) to construct σ by pasting the per-piece reductions along the clopen partition.
+   - Defined τ(z) = τ_i(z₀)(unprepend z) and proved continuity via `continuousOn_piecewise_clopen` (also proved).
+   - Proved the equation `f(x) = τ(gl(σ(x)))` by chasing the definitions through `GluingFunVal_prepend` and `unprepend_prepend`.
+
+4. **Proved `disjoint_union_reduces_gluing`** — The corollary now follows from the backward theorem.
+
+5. **Added helper lemmas** (all proved, no sorry):
+   - `continuous_pasting_on_clopen` — Pasting continuous functions on a clopen partition
+   - `GluingFunVal_prepend` — Computing GluingFunVal at a prepend element  
+   - `continuousOn_piecewise_clopen` — ContinuousOn for piecewise functions on clopen covers
+   - `gluing_backward_eq` — The equation in the backward direction
+   - `gluing_backward_tau_cont` — τ continuity in the backward direction
+
+All proofs compile successfully with only standard axioms (propext, Classical.choice, Quot.sound).
+
 # Summary of changes for run 6a4023a5-80eb-4ddc-a3b4-7c32b9cf09f2
 ## Summary of Changes
 

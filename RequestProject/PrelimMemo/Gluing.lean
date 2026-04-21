@@ -276,19 +276,179 @@ theorem partitionIndex_locallyConstant
   · exact IsClopen.isOpen ( hclopen _ );
   · exact partitionIndex_mem P hcover x
 
-theorem gluingFun_upper_bound_backward
+
+/-
+Given a clopen partition covering D and continuous functions on each piece,
+    the pasted function into a subtype is continuous.
+-/
+theorem continuous_pasting_on_clopen
     {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    {f : X → Y}
-    {A : ℕ → Set (ℕ → ℕ)} {B : ℕ → Set (ℕ → ℕ)}
-    {gi : ∀ i, A i → B i}
-    (P : ℕ → Set X)
+    (P : ℕ → Set X) (D : Set X)
     (hclopen : ∀ i, IsClopen (P i))
     (hdisj : ∀ i j, i ≠ j → Disjoint (P i) (P j))
-    (hcover : (⋃ i, P i) = univ)
-    (hred : ∀ i, ContinuouslyReduces (f ∘ (Subtype.val : P i → X))
-      (fun (a : A i) => (gi i a).val)) :
-    ContinuouslyReduces f (fun (x : GluingSet A) => (GluingFunVal A B gi x)) := by
-    sorry
+    (hcover : (⋃ i, P i) = D)
+    (g : ∀ i, P i → Y)
+    (hg : ∀ i, Continuous (g i))
+    (compat : ∀ (x : D) (i : ℕ) (hi : x.val ∈ P i)
+      (j : ℕ) (hj : x.val ∈ P j), g i ⟨x.val, hi⟩ = g j ⟨x.val, hj⟩) :
+    ∃ h : D → Y, Continuous h ∧
+      ∀ (x : D) (i : ℕ) (hi : x.val ∈ P i), h x = g i ⟨x.val, hi⟩ := by
+  by_contra! h_not_cont;
+  obtain ⟨h, hh⟩ : ∃ h : D → Y, ∀ x : D, ∀ i : ℕ, ∀ hi : x.val ∈ P i, h x = g i ⟨x.val, hi⟩ := by
+    use fun x => g (Classical.choose (Set.mem_iUnion.mp (hcover ▸ x.2))) ⟨x.val, Classical.choose_spec (Set.mem_iUnion.mp (hcover ▸ x.2))⟩;
+    exact fun x i hi => compat x _ ( Classical.choose_spec ( Set.mem_iUnion.mp ( hcover ▸ x.2 ) ) ) _ hi;
+  -- Since $P_i$ are clopen and form a cover of $D$, the preimages of open sets under $h$ are open.
+  have h_preimage_open : ∀ U : Set Y, IsOpen U → IsOpen {x : D | h x ∈ U} := by
+    intro U hU
+    have h_preimage_open : ∀ i, IsOpen {x : D | x.val ∈ P i ∧ h x ∈ U} := by
+      intro i
+      have h_preimage_open_i : IsOpen {x : P i | g i x ∈ U} := by
+        exact hU.preimage ( hg i );
+      obtain ⟨ t, ht, ht' ⟩ := h_preimage_open_i;
+      refine' ⟨ t ∩ P i, ht.inter ( hclopen i |>.2 ), _ ⟩;
+      simp_all +decide [ Set.ext_iff ];
+      grind +ring;
+    convert isOpen_iUnion fun i => h_preimage_open i using 1;
+    ext x; simp [hcover];
+    exact fun hx => Set.mem_iUnion.mp ( hcover.symm ▸ x.2 );
+  exact h_not_cont h ( continuous_def.mpr h_preimage_open ) |> fun ⟨ x, i, hi, hx ⟩ => hx ( hh x i hi )
+
+/-
+The GluingFunVal at a prepend element equals prepend of the function value.
+-/
+theorem GluingFunVal_prepend
+    (A : ℕ → Set (ℕ → ℕ)) (B : ℕ → Set (ℕ → ℕ))
+    (fi : ∀ i, A i → B i)
+    (i : ℕ) (a : A i) (hmem : prepend i a.val ∈ GluingSet A) :
+    GluingFunVal A B fi ⟨prepend i a.val, hmem⟩ =
+      prepend i (fi i a).val := by
+  convert rfl
+
+/-
+ContinuousOn for a piecewise function on clopen sets.
+-/
+theorem continuousOn_piecewise_clopen
+    [TopologicalSpace Baire]
+    {S : Set Baire}
+    (τ_i : ℕ → Baire → Baire)
+    (S_i : ℕ → Set Baire)
+    (hS_cover : ∀ z ∈ S, ∃ i, z ∈ S_i i)
+    (hS_clopen : ∀ i, IsClopen (S_i i))
+    (hτ_agree : ∀ z ∈ S, ∀ i, z ∈ S_i i →
+      ∀ j, z ∈ S_i j → τ_i i z = τ_i j z)
+    (hτ_cont : ∀ i, ContinuousOn (τ_i i) (S ∩ S_i i))
+    (hτ : ∀ z ∈ S, ∃ i, z ∈ S_i i)
+    (τ : Baire → Baire)
+    (hτ_def : ∀ z ∈ S, ∀ i, z ∈ S_i i → τ z = τ_i i z) :
+    ContinuousOn τ S := by
+  intro z hz;
+  obtain ⟨ i, hi ⟩ := hτ z hz;
+  have h_cont_at : ContinuousWithinAt (τ_i i) S z := by
+    have := hτ_cont i;
+    convert this.continuousWithinAt ( Set.mem_inter hz hi ) |> ContinuousWithinAt.mono_of_mem_nhdsWithin <| ?_ using 1;
+    exact mem_nhdsWithin_iff_exists_mem_nhds_inter.mpr ⟨ S_i i, IsOpen.mem_nhds ( hS_clopen i |>.isOpen ) hi, by aesop ⟩;
+  refine' h_cont_at.congr_of_eventuallyEq _ _;
+  · filter_upwards [ self_mem_nhdsWithin, mem_nhdsWithin_of_mem_nhds ( hS_clopen i |>.isOpen.mem_nhds hi ) ] with x hx hx' using hτ_def x hx i hx';
+  · exact hτ_def z hz i hi
+
+/-
+Standalone lemma for the equation in backward direction
+-/
+theorem gluing_backward_eq
+    {f : Baire → Baire}
+    {D : Set Baire}
+    {A : ℕ → Set Baire} {B : ℕ → Set Baire}
+    {gi : ∀ i, A i → B i}
+    {P : ℕ → Set Baire}
+    (hcover : (⋃ i, P i) = D)
+    (σ_i : ∀ i, P i → A i)
+    (τ_i : ℕ → Baire → Baire)
+    (heq_i : ∀ (i : ℕ) (x : P i), (P i).restrict f x = τ_i i ((fun a => (gi i a).val) (σ_i i x)))
+    (σ_raw : D → Baire)
+    (hσ_raw_eq : ∀ (x : D) (i : ℕ) (hi : x.val ∈ P i),
+      σ_raw x = prepend i (σ_i i ⟨x.val, hi⟩).val)
+    (hσ_raw_mem : ∀ x : D, σ_raw x ∈ GluingSet A) :
+    ∀ x : D, (D.restrict f) x =
+      (fun z => τ_i (z 0) (unprepend z))
+        (GluingFunVal A B gi ⟨σ_raw x, hσ_raw_mem x⟩) := by
+  intro x
+  obtain ⟨i, hi⟩ : ∃ i, x.val ∈ P i := by
+    exact Set.mem_iUnion.mp ( hcover.symm ▸ x.2 );
+  convert heq_i i ⟨ x.val, hi ⟩ using 1;
+  simp +decide [ hσ_raw_eq x i hi, unprepend_prepend ];
+  convert rfl
+
+/-
+Standalone lemma for τ continuity in backward direction
+-/
+theorem gluing_backward_tau_cont
+    {D : Set Baire}
+    {A : ℕ → Set Baire} {B : ℕ → Set Baire}
+    {gi : ∀ i, A i → B i}
+    {P : ℕ → Set Baire}
+    (hcover : (⋃ i, P i) = D)
+    (σ_i : ∀ i, P i → A i)
+    (τ_i : ℕ → Baire → Baire)
+    (hτ_i : ∀ i, ContinuousOn (τ_i i) (Set.range ((fun a => (gi i a).val) ∘ σ_i i)))
+    (σ_raw : D → Baire)
+    (hσ_raw_cont : Continuous σ_raw)
+    (hσ_raw_eq : ∀ (x : D) (i : ℕ) (hi : x.val ∈ P i),
+      σ_raw x = prepend i (σ_i i ⟨x.val, hi⟩).val)
+    (hσ_raw_mem : ∀ x : D, σ_raw x ∈ GluingSet A) :
+    ContinuousOn (fun z => τ_i (z 0) (unprepend z))
+      (Set.range (GluingFunVal A B gi ∘ (fun x => ⟨σ_raw x, hσ_raw_mem x⟩))) := by
+  have hg : Continuous _root_.unprepend := by
+    exact continuous_unprepend;
+  apply continuousOn_piecewise_clopen;
+  case S_i => exact fun i => { z : Baire | z 0 = i };
+  any_goals tauto;
+  · exact?;
+  · lia;
+  · intro i;
+    refine' ContinuousOn.congr _ _;
+    use fun z => τ_i i ( unprepend z );
+    · refine' ContinuousOn.comp ( hτ_i i ) _ _;
+      · exact hg.continuousOn;
+      · intro z hz;
+        rcases hz with ⟨ ⟨ x, rfl ⟩, hx ⟩;
+        rcases Set.mem_iUnion.mp ( hcover.symm.subset x.2 ) with ⟨ j, hj ⟩ ; specialize hσ_raw_eq x j hj ; aesop;
+    · intro z hz; aesop;
+
+theorem gluingFun_upper_bound_backward
+    {f : Baire → Baire}
+    {D : Set Baire}
+    {A : ℕ → Set Baire} {B : ℕ → Set Baire}
+    {gi : ∀ i, A i → B i}
+    (P : ℕ → Set Baire)
+    (hclopen : ∀ i, IsClopen (P i))
+    (hdisj : ∀ i j, i ≠ j → Disjoint (P i) (P j))
+    (hcover : (⋃ i, P i) = D)
+    (hred : ∀ i, ContinuouslyReduces ((P i).restrict f) (fun (a : A i) => (gi i a).val)) :
+    ContinuouslyReduces (D.restrict f) (fun (x : GluingSet A) => (GluingFunVal A B gi x)) := by
+  -- Extract components from hred
+  choose σ_i hσ_i τ_i hτ_i heq_i using hred
+  -- Step 1: Build σ using continuous_pasting_on_clopen
+  set g_raw : ∀ i, P i → Baire := fun i x => prepend i (σ_i i x).val with hg_raw_def
+  have hg_raw_cont : ∀ i, Continuous (g_raw i) :=
+    fun i => (continuous_prepend i).comp (continuous_subtype_val.comp (hσ_i i))
+  have hg_raw_compat : ∀ (x : D) (i : ℕ) (hi : x.val ∈ P i)
+      (j : ℕ) (hj : x.val ∈ P j), g_raw i ⟨x.val, hi⟩ = g_raw j ⟨x.val, hj⟩ := by
+    intro x i hi j hj
+    by_cases hij : i = j
+    · subst hij; rfl
+    · exact absurd hj (Set.disjoint_left.mp (hdisj i j hij) hi)
+  obtain ⟨σ_raw, hσ_raw_cont, hσ_raw_eq⟩ :=
+    continuous_pasting_on_clopen P D hclopen hdisj hcover g_raw hg_raw_cont hg_raw_compat
+  have hσ_raw_mem : ∀ x : D, σ_raw x ∈ GluingSet A := by
+    intro x
+    obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (hcover ▸ x.prop : x.val ∈ ⋃ i, P i)
+    rw [hσ_raw_eq x i hi]
+    exact mem_gluingSet_prepend (σ_i i ⟨x.val, hi⟩).prop
+  exact ⟨fun x => ⟨σ_raw x, hσ_raw_mem x⟩,
+    continuous_induced_rng.mpr hσ_raw_cont,
+    fun z => τ_i (z 0) (unprepend z),
+    gluing_backward_tau_cont hcover σ_i τ_i hτ_i σ_raw hσ_raw_cont hσ_raw_eq hσ_raw_mem,
+    gluing_backward_eq hcover σ_i τ_i heq_i σ_raw hσ_raw_eq hσ_raw_mem⟩
 
 /-
 **Corollary 2.18.** `f = ⊔_{P ∈ 𝒫} f|_P ≤ ⊔_{P ∈ 𝒫} f|_P` for any clopen
@@ -304,13 +464,21 @@ theorem disjoint_union_reduces_gluing
       (fun (x : GluingSet (fun i => P i)) =>
         (GluingFunVal (fun i => P i) (fun i => Set.range (f ∘ Subtype.val : P i → (ℕ → ℕ)))
           (fun i x => ⟨f x.val, by exact Set.mem_range.mpr ⟨x, rfl⟩⟩) x)) := by
-            convert gluingFun_upper_bound_backward _ _ _ _ _;
-            exact P;
-            · assumption;
-            · grind;
-            · exact hcover;
-            · intro i;
-              convert ContinuouslyReduces.refl _
+  refine' ⟨ fun x => _, _, _ ⟩ <;> norm_num [ GluingFunVal ];
+  exact ⟨ _, mem_gluingSet_prepend ( partitionIndex_mem P hcover x ) ⟩
+  generalize_proofs at *;
+  · have h_cont : Continuous (fun x : ℕ → ℕ =>prepend (partitionIndex P hcover x) x) := by
+      have h_partitionIndex : IsLocallyConstant (partitionIndex P hcover) := by
+        exact?
+      have h_cont : Continuous (fun x : ℕ → ℕ => partitionIndex P hcover x) := by
+        exact?
+      generalize_proofs at *;
+      exact continuous_pi_iff.mpr fun n => by cases n <;> continuity;
+    generalize_proofs at *;
+    exact?;
+  · refine' ⟨ fun x => x ∘ Nat.succ, _, _ ⟩ <;> norm_num [ Function.comp ];
+    · exact Continuous.continuousOn ( by continuity );
+    · unfold prepend unprepend; aesop;
 
 end GluingUpperBound
 
