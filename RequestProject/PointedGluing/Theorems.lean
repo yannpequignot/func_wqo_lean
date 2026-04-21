@@ -67,6 +67,123 @@ noncomputable def omega1 : Ordinal.{0} := (Cardinal.aleph 1).ord
 -/
 
 /-
+If `x ∈ PointedGluingSet A` and `x ≠ zeroStream`, then
+`stripZerosOne (firstNonzero x) x ∈ A (firstNonzero x)`.
+-/
+lemma strip_mem_of_pointedGluingSet (A : ℕ → Set (ℕ → ℕ))
+    (x : PointedGluingSet A) (hx : x.val ≠ zeroStream) :
+    stripZerosOne (firstNonzero x.val) x.val ∈ A (firstNonzero x.val) := by
+  -- Since x ∈ PointedGluingSet A and x ≠ zeroStream, we can write x as prependZerosOne j a for some j and a ∈ A j.
+  obtain ⟨j, a, ha₁, ha₂⟩ : ∃ j, ∃ a ∈ A j, (↑x : ℕ → ℕ) = prependZerosOne j a := by
+    unfold PointedGluingSet at x; aesop;
+  unfold prependZerosOne at ha₂; simp_all +decide [ firstNonzero ] ;
+  convert ha₁ using 1;
+  · split_ifs <;> simp_all +decide [ Nat.find_eq_iff ];
+    · congr! 1;
+      rw [ Nat.find_eq_iff ] ; aesop;
+    · rename_i h; specialize h j le_rfl; aesop;
+  · convert stripZerosOne_prependZerosOne j a using 1;
+    congr! 1;
+    split_ifs <;> simp_all +decide [ Nat.find_eq_iff ];
+    rename_i h; specialize h j; aesop;
+
+/-
+On a non-zero element, `PointedGluingFun` equals the block formula.
+-/
+lemma pointedGluingFun_eq_on_block (A B : ℕ → Set (ℕ → ℕ)) (f : ∀ i, A i → B i)
+    (x : PointedGluingSet A) (hx : x.val ≠ zeroStream) :
+    PointedGluingFun A B f x = prependZerosOne (firstNonzero x.val)
+      (f (firstNonzero x.val) ⟨stripZerosOne (firstNonzero x.val) x.val,
+        strip_mem_of_pointedGluingSet A x hx⟩).val := by
+  unfold PointedGluingFun;
+  grind
+
+/-
+`stripZerosOne i` is continuous as a map `(ℕ → ℕ) → (ℕ → ℕ)`.
+-/
+lemma continuous_stripZerosOne (i : ℕ) : Continuous (stripZerosOne i) := by
+  unfold stripZerosOne;
+  fun_prop
+
+/-
+The block set for index `i` (sequences starting with `i` zeros then a nonzero) is
+open in `ℕ → ℕ`.
+-/
+lemma isOpen_block (i : ℕ) :
+    IsOpen {x : ℕ → ℕ | (∀ k, k < i → x k = 0) ∧ x i ≠ 0} := by
+  convert isOpen_pi_iff.mpr _;
+  intro f hf;
+  refine' ⟨ Finset.range ( i + 1 ), fun k => if k < i then { 0 } else { x | x ≠ 0 }, _, _ ⟩ <;> simp_all +decide [ Set.subset_def ];
+  · grind;
+  · grind
+
+/-
+`firstNonzero x = i` when `x` starts with `i` zeros and `x i ≠ 0`.
+-/
+lemma firstNonzero_eq_of_block (x : ℕ → ℕ) (i : ℕ)
+    (h : (∀ k, k < i → x k = 0) ∧ x i ≠ 0) :
+    firstNonzero x = i := by
+  unfold firstNonzero;
+  split_ifs <;> simp_all +decide [ Nat.find_eq_iff ]
+
+/-
+For `y` in block `i` of the pointed gluing set, `y.val ≠ zeroStream`.
+-/
+lemma ne_zeroStream_of_block (y : ℕ → ℕ) (i : ℕ)
+    (hy : (∀ k, k < i → y k = 0) ∧ y i ≠ 0) : y ≠ zeroStream := by
+  exact fun h => hy.2 <| h ▸ rfl
+
+/-
+Strip membership for a specific block index.
+-/
+lemma strip_mem_of_block (A : ℕ → Set (ℕ → ℕ)) (y : PointedGluingSet A) (i : ℕ)
+    (hy : (∀ k, k < i → y.val k = 0) ∧ y.val i ≠ 0) :
+    stripZerosOne i y.val ∈ A i := by
+  convert strip_mem_of_pointedGluingSet A y _;
+  · exact Eq.symm ( firstNonzero_eq_of_block _ _ hy );
+  · exact Eq.symm ( firstNonzero_eq_of_block _ _ hy );
+  · exact fun h => hy.2 <| h ▸ rfl
+
+/-
+The restricted function on block `i` is continuous.
+-/
+lemma continuous_block_restrict
+    (A B : ℕ → Set (ℕ → ℕ)) (f : ∀ i, A i → B i) (hf : ∀ i, Continuous (f i)) (i : ℕ) :
+    Continuous (fun (y : {z : PointedGluingSet A // (∀ k, k < i → z.val k = 0) ∧ z.val i ≠ 0}) =>
+      prependZerosOne i
+        (f i ⟨stripZerosOne i y.val.val,
+          strip_mem_of_block A y.val i y.prop⟩).val) := by
+  refine' continuous_pi_iff.2 fun j => _;
+  by_cases hj : j < i;
+  · exact continuous_const.congr fun x => by rw [ prependZerosOne, if_pos hj ] ;
+  · simp +decide [ prependZerosOne, hj ];
+    by_cases h : j = i <;> simp_all +decide;
+    · exact continuous_const;
+    · exact continuous_apply _ |> Continuous.comp <| continuous_subtype_val.comp <| hf _ |> Continuous.comp <| Continuous.subtype_mk ( continuous_stripZerosOne _ |> Continuous.comp <| continuous_subtype_val.comp continuous_subtype_val ) _
+
+/-
+ContinuousAt of PointedGluingFun at a non-zero point.
+-/
+lemma continuousAt_pointedGluingFun_nonzero
+    (A B : ℕ → Set (ℕ → ℕ)) (f : ∀ i, A i → B i) (hf : ∀ i, Continuous (f i))
+    (x : PointedGluingSet A) (hx : x.val ≠ zeroStream) :
+    ContinuousAt (fun y : PointedGluingSet A => PointedGluingFun A B f y) x := by
+  obtain ⟨i, hi⟩ : ∃ i : ℕ, (∀ k : ℕ, k < i → x.val k = 0) ∧ x.val i ≠ 0 := by
+    exact ⟨ Nat.find ( show ∃ i, x.val i ≠ 0 from not_forall.mp fun h => hx <| funext h ), fun k hk => by_contra fun hk' => Nat.find_min ( show ∃ i, x.val i ≠ 0 from not_forall.mp fun h => hx <| funext h ) hk <| by aesop, Nat.find_spec ( show ∃ i, x.val i ≠ 0 from not_forall.mp fun h => hx <| funext h ) ⟩;
+  have hV : IsOpen {y : PointedGluingSet A | (∀ k : ℕ, k < i → y.val k = 0) ∧ y.val i ≠ 0} := by
+    exact isOpen_block i |> IsOpen.preimage ( continuous_subtype_val );
+  have h_cont_restrict : ContinuousOn (fun y : PointedGluingSet A => PointedGluingFun A B f y) {y : PointedGluingSet A | (∀ k : ℕ, k < i → y.val k = 0) ∧ y.val i ≠ 0} := by
+    rw [ continuousOn_iff_continuous_restrict ];
+    refine' Continuous.congr _ _;
+    use fun y => prependZerosOne i ( f i ⟨ stripZerosOne i y.val.val, strip_mem_of_block A y.val i y.prop ⟩ ).val;
+    · exact continuous_block_restrict A B f hf i;
+    · intro y; ext; simp [PointedGluingFun];
+      rw [ if_neg ( ne_zeroStream_of_block _ _ y.prop ) ];
+      rw [ firstNonzero_eq_of_block _ _ y.2 ];
+      grind;
+  exact h_cont_restrict.continuousAt ( hV.mem_nhds ⟨ hi.1, hi.2 ⟩ )
+
+/-
 **Fact (BasicsOnPointedGluing) — Part 1.**
 The pointed gluing operation preserves continuity: if each `f_i` is continuous, then
 `pgl_i f_i` is continuous (as a map between subspaces of the Baire space).
@@ -80,7 +197,27 @@ theorem pointedGluingFun_preserves_continuity
         unfold PointedGluingFun;
         split_ifs <;> simp_all +decide [ PointedGluingSet ];
         grind⟩ : PointedGluingSet B)) := by
-  sorry
+  refine Continuous.subtype_mk ?_ _
+  rw [continuous_iff_continuousAt]
+  intro x
+  by_cases hx : x.val = zeroStream
+  · rw [show x = ⟨zeroStream, zeroStream_mem_pointedGluingSet A⟩ from Subtype.ext hx]
+    -- Use the proof of zeroStream_continuity_point inline
+    unfold PointedGluingFun
+    refine' tendsto_pi_nhds.mpr _
+    intro n
+    simp [zeroStream]
+    rw [nhds_subtype_eq_comap]
+    refine' ⟨{ y : ℕ → ℕ | ∀ k < n + 1, y k = 0 }, _, _⟩ <;> norm_num [zeroStream]
+    · rw [nhds_pi]
+      simp +decide [Filter.mem_pi, zeroStream]
+      exact ⟨Finset.range (n + 1), Finset.finite_toSet _, fun _ => {0}, fun _ => by norm_num,
+        fun y hy k hk => by simpa using hy k (Finset.mem_range.mpr (Nat.lt_succ_of_le hk))⟩
+    · intro a ha h; split_ifs <;> simp_all +decide [zeroStream]
+      unfold firstNonzero
+      split_ifs <;> simp_all +decide [prependZerosOne]
+      exact False.elim <| ‹¬a = zeroStream› <| funext fun k => by aesop
+  · exact continuousAt_pointedGluingFun_nonzero A B f hf x hx
 
 /-
 **Fact (BasicsOnPointedGluing) — Part 2.**

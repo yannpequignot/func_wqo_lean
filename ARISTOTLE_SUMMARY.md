@@ -1,3 +1,23 @@
+# Summary of changes for run 589c5c15-2b86-4a2c-8442-882cc5249c2f
+I worked on removing `sorry` statements from `RequestProject/PointedGluing/Theorems.lean`. The file originally contained 14 `sorry` statements, all corresponding to deep mathematical theorems from a research memoir on continuous reducibility between functions.
+
+**Successfully proved (1 main theorem + 8 helper lemmas):**
+
+- **`pointedGluingFun_preserves_continuity`** — Fact 3.1: The pointed gluing operation preserves continuity. This was proved by decomposing it into 8 helper lemmas:
+  1. `strip_mem_of_pointedGluingSet` — membership of stripped sequence in the appropriate set
+  2. `pointedGluingFun_eq_on_block` — the function formula on non-zero elements
+  3. `continuous_stripZerosOne` — continuity of the strip operation
+  4. `isOpen_block` — openness of block sets in the product topology
+  5. `firstNonzero_eq_of_block` — determining the first nonzero index
+  6. `ne_zeroStream_of_block` — elements in blocks are not the zero stream
+  7. `strip_mem_of_block` — membership proof for specific block index
+  8. `continuous_block_restrict` — continuity of the restricted function on each block
+  9. `continuousAt_pointedGluingFun_nonzero` — continuity at non-zero points
+
+The main theorem proof combines continuity at the basepoint 0^ω (via the existing `zeroStream_continuity_point`) with the new `continuousAt_pointedGluingFun_nonzero` lemma.
+
+**Remaining 13 sorry statements** are all major theorems from the memoir (Propositions 3.2, 3.5, 3.8, 3.9, 3.12, Lemma 3.10, Proposition 3.11, Theorems 3.13, 3.14 Items 1&2, Proposition 3.15, and Corollary 3.16 Item 1). These are deep, interdependent results requiring extensive mathematical infrastructure (transfinite CB-rank analysis, construction of explicit continuous reductions, BQO theory) that could not be resolved within the available budget. The file compiles cleanly with the remaining sorries.
+
 # Summary of changes for run 0a0631b7-0fae-4d3c-beb8-695193b7ee51
 Successfully removed all `sorry` instances from `RequestProject/PrelimMemo/Gluing.lean`. 
 
