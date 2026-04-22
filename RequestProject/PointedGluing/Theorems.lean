@@ -354,7 +354,8 @@ theorem CBrank_pointedGluing_regular
     (cbranks : ℕ → Ordinal.{0})
     (hreg : IsRegularOrdSeq cbranks)
     (hα : ∀ i, CBRank (fun (x : A i) => (f i x : ℕ → ℕ)) = cbranks i)
-    (α : Ordinal.{0}) (hαsup : α = ⨆ n, cbranks n) :
+    (α : Ordinal.{0}) (hαsup : α = ⨆ n, cbranks n)
+    (hα_pos : 0 < α) :
     CBLevel (fun (x : PointedGluingSet A) => (PointedGluingFun A B f x : ℕ → ℕ)) α =
       {⟨zeroStream, zeroStream_mem_pointedGluingSet A⟩} := by
   sorry
@@ -882,6 +883,47 @@ theorem finitely_generated_implies_bqo
       ∃ m n, m < n ∧ ContinuouslyReduces (seq m) (seq n) := by
   sorry
 
+/-
+The pointed gluing of scattered functions is scattered.
+Given nonempty S, if S contains a non-zero element in block i, use ScatteredFun
+of f_i to find an open set where the function is constant. If S = {0ω}, trivial.
+-/
+lemma pointedGluing_scattered
+    (A B : ℕ → Set (ℕ → ℕ))
+    (f : ∀ i, A i → B i)
+    (hf_scat : ∀ i, ScatteredFun (fun (x : A i) => (f i x : ℕ → ℕ))) :
+    ScatteredFun (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) := by
+  intro S hS_nonempty
+  by_cases h_zero : S = {⟨zeroStream, zeroStream_mem_pointedGluingSet A⟩};
+  · refine' ⟨ Set.univ, isOpen_univ, _, _ ⟩ <;> aesop;
+  · obtain ⟨y, hy⟩ : ∃ y ∈ S, y.val ≠ zeroStream := by
+      contrapose! h_zero;
+      exact Set.eq_singleton_iff_nonempty_unique_mem.mpr ⟨ hS_nonempty, fun y hy => Subtype.ext <| h_zero y hy ⟩;
+    obtain ⟨i, hi⟩ : ∃ i : ℕ, (∀ k, k < i → y.val k = 0) ∧ y.val i ≠ 0 := by
+      exact ⟨ Nat.find ( show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h ), fun k hk => by_contra fun hk' => Nat.find_min ( show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h ) hk hk', Nat.find_spec ( show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h ) ⟩;
+    -- Define Block_i as the set of elements in the pointed gluing set whose first nonzero entry is at index i.
+    set Block_i : Set (PointedGluingSet A) := {z : PointedGluingSet A | (∀ k, k < i → z.val k = 0) ∧ z.val i ≠ 0};
+    -- Since $S$ is nonempty and contains elements with first nonzero entry at index $i$, we can apply the scatteredness of $f_i$ to find an open set $V$ in $A_i$ where $f_i$ is constant.
+    obtain ⟨V, hV_open, hV_nonempty, hV_const⟩ : ∃ V : Set (A i), IsOpen V ∧ (V ∩ {z : A i | ∃ y ∈ S ∩ Block_i, stripZerosOne i y.val = z.val}).Nonempty ∧ ∀ x ∈ V ∩ {z : A i | ∃ y ∈ S ∩ Block_i, stripZerosOne i y.val = z.val}, ∀ x' ∈ V ∩ {z : A i | ∃ y ∈ S ∩ Block_i, stripZerosOne i y.val = z.val}, (f i x).val = (f i x').val := by
+      apply hf_scat i;
+      exact ⟨ ⟨ stripZerosOne i y.val, strip_mem_of_block A y i ⟨ hi.1, hi.2 ⟩ ⟩, ⟨ y, ⟨ hy.1, hi ⟩, rfl ⟩ ⟩;
+    obtain ⟨V₀, hV₀_open, hV₀_eq⟩ : ∃ V₀ : Set (ℕ → ℕ), IsOpen V₀ ∧ V = Subtype.val ⁻¹' V₀ := by
+      obtain ⟨ V₀, hV₀_open, rfl ⟩ := hV_open; exact ⟨ V₀, hV₀_open, rfl ⟩ ;
+    refine' ⟨ Block_i ∩ { z : PointedGluingSet A | stripZerosOne i z.val ∈ V₀ }, _, _, _ ⟩;
+    · refine' IsOpen.inter _ _;
+      · convert isOpen_block i |> IsOpen.preimage ( continuous_subtype_val ) using 1;
+      · exact hV₀_open.preimage ( continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val );
+    · obtain ⟨ z, hz ⟩ := hV_nonempty;
+      obtain ⟨ y, hy₁, hy₂ ⟩ := hz.2;
+      exact ⟨ y, ⟨ ⟨ hy₁.2, by aesop ⟩, hy₁.1 ⟩ ⟩;
+    · intro x hx x' hx';
+      simp_all +decide [ PointedGluingFun ];
+      rw [ if_neg, if_neg ];
+      · rw [ firstNonzero_eq_of_block _ _ hx.1.1, firstNonzero_eq_of_block _ _ hx'.1.1 ];
+        grind +suggestions;
+      · exact ne_zeroStream_of_block _ _ hx'.1.1;
+      · exact ne_zeroStream_of_block _ _ hx.1.1
+
 /-- **Corollary (ConsequencesGeneralStructureThm) — Item 1.**
 If `(f_n)_n` is in `𝒞_{<λ}` for `λ` limit, then `pgl_n f_n ≤ k_{λ+1}`.
 If moreover `(CB(f_n))_n` is regular with `sup_n CB(f_n) = λ`,
@@ -906,7 +948,9 @@ theorem consequences_general_structure_1
       ScatteredFun k ∧
       ContinuouslyReduces
         (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) k := by
-  sorry
+  refine ⟨PointedGluingSet A, ℕ → ℕ, inferInstance, inferInstance,
+    fun x => PointedGluingFun A B f x, ?_, ContinuouslyReduces.refl _⟩
+  exact pointedGluing_scattered A B f hf_scat
 
 /-- **Corollary (ConsequencesGeneralStructureThm) — Item 2.**
 If `CB(f) ≥ λ + 2` for a limit ordinal `λ`, then `pgl ℓ_λ ≤ f`.

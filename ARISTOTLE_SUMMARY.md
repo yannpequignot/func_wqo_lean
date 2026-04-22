@@ -1,3 +1,57 @@
+# Summary of changes for run 52b18c96-ba7d-47ae-8ef6-189b835d14b9
+I was unable to eliminate additional `sorry` statements from `RequestProject/PointedGluing/Theorems.lean` beyond what the previous agent accomplished. The file still compiles successfully, but 12 `sorry` statements remain.
+
+**What was accomplished:**
+- I identified and fixed a bug in the statement of `CBrank_pointedGluing_regular` (Proposition 3.2): the original statement was **false** as formalized — a counterexample was found where all `cbranks` are 0, making `α = 0`, but `CBLevel f 0 = univ ≠ {0^ω}`. I added the hypothesis `(hα_pos : 0 < α)` to make the statement well-posed.
+
+**Why the remaining 12 theorems could not be proved:**
+These are deeply interdependent research-level results from a memoir on continuous reducibility between functions. They involve:
+- Transfinite induction over Cantor–Bendixson rank levels (using `Ordinal.limitRecOn`, which is particularly hard to work with in formal proofs)
+- Explicit constructions of continuous reductions (σ, τ pairs) with delicate continuity arguments
+- Existence of maximum/minimum functions via recursive pointed gluing constructions
+- Cross-level comparison theorems (the General Structure Theorem)
+- WQO/BQO arguments combining all of the above
+
+The remaining theorems and their key dependencies:
+1. `CBrank_pointedGluing_regular` — CB rank analysis of pointed gluings (self-contained but deep)
+2. `pointedGluing_upper_bound` — Proposition 3.5 (self-contained construction)
+3. `CBrank_regular_simple` — Proposition 3.8 (self-contained CB analysis)
+4. `maxFun_is_maximum` — Proposition 3.9 (depends on 1, 2, 3)
+5. `minFun_is_minimum` — Proposition 3.12 (depends on 6, 7)
+6. `pointedGluing_lower_bound_lemma` — Lemma 3.10 (self-contained construction)
+7. `pointedGluing_lower_bound` — Proposition 3.11 (depends on 6)
+8. `classification_compact_domains` — Theorem 3.13 (depends on 4, 5)
+9. `general_structure_theorem` — Theorem 3.14 (depends on 10, 11)
+10. `general_structure_limit` — Theorem 3.14 Item 1 (deep standalone result)
+11. `general_structure_successor` — Theorem 3.14 Item 2 (depends on 4, 5)
+12. `finitely_generated_implies_bqo` — Proposition 3.15 (depends on 9)
+
+Multiple proof strategies were attempted for each theorem, including detailed informal proof sketches, decomposition into helper lemmas, and well-founded induction approaches. The complexity of the transfinite recursion definitions (particularly `CBLevel` via `Ordinal.limitRecOn`) and the intricate topological constructions proved too challenging for automated proof search.
+
+# Summary of changes for run 233eb8a5-2465-4304-a2b4-a3f67dedf3bc
+I was able to partially address the request. Out of 13 original `sorry` statements in `RequestProject/PointedGluing/Theorems.lean`, I eliminated 1:
+
+**Proved:**
+- `consequences_general_structure_1` (Corollary 3.16, Item 1) — proved by introducing and proving a new helper lemma `pointedGluing_scattered`, which shows that the pointed gluing of scattered functions is itself scattered. The corollary then follows by taking the witness `k` to be the pointed gluing function itself, with `ContinuouslyReduces.refl`.
+
+**Still remaining (12 sorries):**
+The remaining theorems are deep results from the research memoir on continuous reducibility between functions. Each requires extensive mathematical infrastructure (transfinite induction, detailed CB-rank analysis, construction of maximum/minimum functions, etc.) that proved beyond what could be completed within the available proof search budget:
+
+1. `CBrank_pointedGluing_regular` — Proposition 3.2
+2. `pointedGluing_upper_bound` — Proposition 3.5
+3. `CBrank_regular_simple` — Proposition 3.8
+4. `maxFun_is_maximum` — Proposition 3.9
+5. `minFun_is_minimum` — Proposition 3.12
+6. `pointedGluing_lower_bound_lemma` — Lemma 3.10
+7. `pointedGluing_lower_bound` — Proposition 3.11
+8. `classification_compact_domains` — Theorem 3.13
+9. `general_structure_theorem` — Theorem 3.14
+10. `general_structure_limit` — Theorem 3.14, Item 1
+11. `general_structure_successor` — Theorem 3.14, Item 2
+12. `finitely_generated_implies_bqo` — Proposition 3.15
+
+These are genuinely deep research-level results. Many are interdependent (e.g., `classification_compact_domains` requires `maxFun_is_maximum` and `minFun_is_minimum`; `finitely_generated_implies_bqo` requires `general_structure_theorem`). The file compiles successfully with these sorries.
+
 # Summary of changes for run 589c5c15-2b86-4a2c-8442-882cc5249c2f
 I worked on removing `sorry` statements from `RequestProject/PointedGluing/Theorems.lean`. The file originally contained 14 `sorry` statements, all corresponding to deep mathematical theorems from a research memoir on continuous reducibility between functions.
 
