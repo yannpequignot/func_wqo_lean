@@ -181,11 +181,18 @@ def SetsConvergeTo {X : Type*} [TopologicalSpace X]
 ## CB-Rank
 -/
 
-/-- The CB-rank of a function: the supremum of ordinals `α` such that `CB_α(f)` is
+/-- The CB-rank of a  SCATTERED function can be defined by the supremum of ordinals `α` such that `CB_α(f)` is
 nonempty. Returns `0` for functions where only `CB_0(f) = univ` is nonempty (when the
 domain is empty). -/
+
+
+noncomputable def CBRank_scat {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    (f : X → Y) (fs: ScatteredFun f) : Ordinal.{0} :=
+  sSup {α : Ordinal.{0} | (CBLevel f α).Nonempty}
+
+/- In general we define the CB rank as the least ordinal such that the CB derivative stabilizes-/
 noncomputable def CBRank {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
     (f : X → Y) : Ordinal.{0} :=
-  sSup {α : Ordinal.{0} | (CBLevel f α).Nonempty}
+  sInf {α : Ordinal.{0} | (CBLevel f α) = (CBLevel f (Order.succ α))}
 
 end

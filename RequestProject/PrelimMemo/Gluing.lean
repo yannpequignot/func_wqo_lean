@@ -402,7 +402,10 @@ theorem gluing_backward_tau_cont
   apply continuousOn_piecewise_clopen;
   case S_i => exact fun i => { z : Baire | z 0 = i };
   any_goals tauto;
-  · exact?;
+  · intro i; constructor
+    · exact isClosed_eq (continuous_apply 0) continuous_const
+    · have : {z : ℕ → ℕ | z 0 = i} = (fun z => z 0) ⁻¹' {i} := by ext; simp
+      rw [this]; exact (isOpen_discrete {i}).preimage (continuous_apply 0)
   · lia;
   · intro i;
     refine' ContinuousOn.congr _ _;
@@ -469,13 +472,13 @@ theorem disjoint_union_reduces_gluing
   generalize_proofs at *;
   · have h_cont : Continuous (fun x : ℕ → ℕ =>prepend (partitionIndex P hcover x) x) := by
       have h_partitionIndex : IsLocallyConstant (partitionIndex P hcover) := by
-        exact?
+        exact partitionIndex_locallyConstant P hclopen hdisj hcover
       have h_cont : Continuous (fun x : ℕ → ℕ => partitionIndex P hcover x) := by
-        exact?
+        exact h_partitionIndex.continuous
       generalize_proofs at *;
       exact continuous_pi_iff.mpr fun n => by cases n <;> continuity;
     generalize_proofs at *;
-    exact?;
+    exact Continuous.subtype_mk h_cont _
   · refine' ⟨ fun x => x ∘ Nat.succ, _, _ ⟩ <;> norm_num [ Function.comp ];
     · exact Continuous.continuousOn ( by continuity );
     · unfold prepend unprepend; aesop;

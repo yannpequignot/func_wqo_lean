@@ -1,3 +1,72 @@
+# Summary of changes for run 2fcd637b-3f8d-44ec-9dc7-4d5724a715ca
+I resolved both theorems in the PointedGluing files:
+
+## 1. `theorem emptyFun` (in `RequestProject/PointedGluing/Theorems.lean`)
+
+The original `emtpyFun` was commented out because it was malformed (wrong case for `CBrank`, missing hypothesis name, invalid LaTeX `\emptyset` syntax). I wrote a corrected version:
+
+```lean
+theorem emptyFun (A B : Set (ℕ → ℕ)) (f : A → B)
+    (hf : ScatteredFun (fun x : A => (f x : ℕ → ℕ)))
+    (h : CBRank (fun x : A => (f x : ℕ → ℕ)) = 0) : A = ∅
+```
+
+Key changes from the original:
+- `CBrank` → `CBRank` (correct capitalization)
+- Added `ScatteredFun` hypothesis (the result is false without it — e.g., the identity on a perfect set has CBRank 0 but nonempty domain)
+- Named the hypothesis `h`
+- `\emptyset` → `∅`
+
+The proof uses three helper lemmas:
+- `CBLevel_zero_ne_succ_of_scattered_nonempty`: scattered functions on nonempty domains have nontrivial CB derivative
+- `CBRank_stabilization_set_nonempty`: the stabilization set is nonempty for scattered functions
+- `CBRank_pos_of_scattered_nonempty`: combining the above, CBRank > 0 for scattered functions on nonempty domains
+
+## 2. `theorem CBrank_pointedGluing_regular` (in `RequestProject/PointedGluing/Theorems.lean`)
+
+This is Proposition 3.2 from the memoir. I also fixed a syntax error in the statement (`h\alpha : \alpha>0` → `hαpos : α > 0`).
+
+The proof required substantial infrastructure, which I placed in a new file `RequestProject/PointedGluing/CBRankHelpers.lean`. The key helper lemmas are:
+
+- **Block correspondence lemmas**: `CBLevel_block_forward` and `CBLevel_block_backward` — these establish that the CB derivative of the pointed gluing on each block corresponds exactly to the CB derivative of the component function, proved by transfinite induction
+- **`isolatedLocus_block_transfer`**: transfers isolation information between the block and the full pointed gluing
+- **`CBLevel_block_empty_above_rank`**: blocks empty out once the CB rank of the component is exceeded
+- **`CBLevel_pointedGluing_subset`**: only zeroStream survives at level α (the ⊆ direction)
+- **`zeroStream_mem_CBLevel_le`**: zeroStream is in all CB levels up to α (the ⊇ direction)
+- Various topology helpers: `blockSet_isOpen`, `prependZerosOne_eventually_in_nhds`, `exists_large_cbrank`, etc.
+
+Both theorems compile without `sorry` and depend only on the standard axioms (`propext`, `Classical.choice`, `Quot.sound`).
+
+# Summary of changes for run 1fbadabe-5348-4efd-8a0d-a8ccda7f5746
+## Summary of Changes
+
+I reviewed the project — a formalization of a research memoir on continuous reducibility between functions on the Baire space — checking proofs against the .tex files, adapting theorems, optimizing proofs, and filling sorries where possible.
+
+### Build Fix
+- **`RequestProject/PointedGluing/Theorems.lean`**: Fixed a build error caused by a malformed theorem statement `emtpyFun` (line 343). The statement used `CBrank` (wrong capitalization, should be `CBRank`), had a parenthesized hypothesis without a name `(CBrank f = 0)`, and referenced `A.is_empty` which is not valid Lean syntax. Commented it out with an explanation.
+
+### Proof Optimizations (exact? cleanup)
+- **`RequestProject/PrelimMemo/Gluing.lean`**: Replaced 4 `exact?` tactic calls with explicit proof terms:
+  - `partitionIndex_locallyConstant P hclopen hdisj hcover` for IsLocallyConstant proof
+  - `h_partitionIndex.continuous` for continuity from locally constant
+  - `Continuous.subtype_mk h_cont _` for subtype continuity
+  - Explicit IsClopen proof for `{z | z 0 = i}` using `isClosed_eq` and `isOpen_discrete`
+
+### Sorry Elimination
+- **`RequestProject/PrelimMemo/Scattered.lean`**: Proved the **splitting lemma** (`nlc_splitting_lemma`) — a key helper for the Cantor scheme construction. This lemma states that for a nowhere locally constant continuous function from a metric space to a T₂ space, any open ball contains two disjoint sub-balls whose images are separated by disjoint open sets. The proof was found to be a consequence of the already-proven `splitting_lemma_nlc` in the same file (with slightly different parameter ordering). This also eliminated the `exact?` that was serving as a sorry inside `cantor_scheme_exists`.
+
+### What Remains
+The project still contains ~60 sorry statements across 6 files. These are all deep, interdependent research-level results from the memoir:
+
+- **IntroMemo.lean** (4 sorries): Main Theorems 1-3 (WQO results) and `scattered_imp_locallyConstantLocus_univ`
+- **PrelimMemo/Scattered.lean** (3 sorries): Sierpiński's theorem, first reduction theorem, clopen basis lemma, decomposition lemma
+- **PointedGluing/Theorems.lean** (12 sorries): CB-rank analysis, max/min functions, general structure theorem
+- **CenteredMemo/Theorems.lean** (9 sorries): Centered function characterization, rigidity, BQO results
+- **PreciseStructMemo/Theorems.lean** (21 sorries): Wedge operation, finite generation, precise structure theorem
+- **DoubleSuccMemo/Theorems.lean** (11 sorries): Fine partitions, diagonal/vertical theorems, double successor induction
+
+These are genuinely deep research-level results requiring transfinite induction over CB-rank levels, explicit constructions of continuous reductions, BQO/WQO theory, and intricate topological arguments that go well beyond what can be automated. The entire project builds successfully with these remaining sorries.
+
 # Summary of changes for run 52b18c96-ba7d-47ae-8ef6-189b835d14b9
 I was unable to eliminate additional `sorry` statements from `RequestProject/PointedGluing/Theorems.lean` beyond what the previous agent accomplished. The file still compiles successfully, but 12 `sorry` statements remain.
 

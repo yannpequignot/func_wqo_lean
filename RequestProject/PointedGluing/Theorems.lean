@@ -4,21 +4,27 @@ import RequestProject.PrelimMemo.Basic
 import RequestProject.PrelimMemo.Scattered
 import RequestProject.PrelimMemo.Gluing
 import RequestProject.PointedGluing.Defs
+import RequestProject.PointedGluing.CBRankHelpers
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
+
 
 set_option maxHeartbeats 4000000
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
 
+
 /-!
 # Formalization of `3_general_struct_memo.tex` — Main Theorems
+
 
 This file formalizes the main theorems from Chapter 3 (Pointed Gluing and the General
 Structure) of the memoir on continuous reducibility between functions.
 
+
 ## Main results
+
 
 ### Section 1: Basic properties and CB analysis
 * `pointedGluingFun_preserves_continuity` — Fact 3.1: preserves continuity
@@ -28,24 +34,30 @@ Structure) of the memoir on continuous reducibility between functions.
 * `CBrank_pointedGluing_regular` — Proposition 3.2: CB rank of regular sequence
 * `gluing_le_pointedGluing` — Fact 3.3: ⊔_i f_i ≤ pgl_i f_i
 
+
 ### Section 2: Sufficient condition for continuity
 * `sufficient_cond_continuity` — Lemma 3.4
+
 
 ### Section 3: Pointed gluing as upper bound
 * `pointedGluing_upper_bound` — Proposition 3.5
 * `pointedGluing_rays_upper_bound` — Corollary 3.6
 * `splitting_pointedGluing_tail` — Corollary 3.7
 
+
 ### Section 4: CB regularity for simple functions
 * `CBrank_regular_simple` — Proposition 3.8
+
 
 ### Section 5: Maximum and minimum functions
 * `maxFun_is_maximum` — Proposition 3.9
 * `minFun_is_minimum` — Proposition 3.12
 
+
 ### Section 6: Pointed gluing as lower bound
 * `pointedGluing_lower_bound_lemma` — Lemma 3.10
 * `pointedGluing_lower_bound` — Proposition 3.11
+
 
 ### Section 7: General structure
 * `classification_compact_domains` — Theorem 3.13
@@ -57,14 +69,18 @@ Structure) of the memoir on continuous reducibility between functions.
 * `consequences_general_structure_2` — Corollary 3.16, Item 2
 -/
 
+
 noncomputable section
+
 
 /-- `ω₁` as a countable ordinal. -/
 noncomputable def omega1 : Ordinal.{0} := (Cardinal.aleph 1).ord
 
+
 /-!
 ## Section 1: Basic Properties of Pointed Gluing (Fact 3.1, Proposition 3.2, Fact 3.3)
 -/
+
 
 /-
 If `x ∈ PointedGluingSet A` and `x ≠ zeroStream`, then
@@ -87,6 +103,7 @@ lemma strip_mem_of_pointedGluingSet (A : ℕ → Set (ℕ → ℕ))
     split_ifs <;> simp_all +decide [ Nat.find_eq_iff ];
     rename_i h; specialize h j; aesop;
 
+
 /-
 On a non-zero element, `PointedGluingFun` equals the block formula.
 -/
@@ -98,12 +115,14 @@ lemma pointedGluingFun_eq_on_block (A B : ℕ → Set (ℕ → ℕ)) (f : ∀ i,
   unfold PointedGluingFun;
   grind
 
+
 /-
 `stripZerosOne i` is continuous as a map `(ℕ → ℕ) → (ℕ → ℕ)`.
 -/
 lemma continuous_stripZerosOne (i : ℕ) : Continuous (stripZerosOne i) := by
   unfold stripZerosOne;
   fun_prop
+
 
 /-
 The block set for index `i` (sequences starting with `i` zeros then a nonzero) is
@@ -117,6 +136,7 @@ lemma isOpen_block (i : ℕ) :
   · grind;
   · grind
 
+
 /-
 `firstNonzero x = i` when `x` starts with `i` zeros and `x i ≠ 0`.
 -/
@@ -126,12 +146,14 @@ lemma firstNonzero_eq_of_block (x : ℕ → ℕ) (i : ℕ)
   unfold firstNonzero;
   split_ifs <;> simp_all +decide [ Nat.find_eq_iff ]
 
+
 /-
 For `y` in block `i` of the pointed gluing set, `y.val ≠ zeroStream`.
 -/
 lemma ne_zeroStream_of_block (y : ℕ → ℕ) (i : ℕ)
     (hy : (∀ k, k < i → y k = 0) ∧ y i ≠ 0) : y ≠ zeroStream := by
   exact fun h => hy.2 <| h ▸ rfl
+
 
 /-
 Strip membership for a specific block index.
@@ -143,6 +165,7 @@ lemma strip_mem_of_block (A : ℕ → Set (ℕ → ℕ)) (y : PointedGluingSet A
   · exact Eq.symm ( firstNonzero_eq_of_block _ _ hy );
   · exact Eq.symm ( firstNonzero_eq_of_block _ _ hy );
   · exact fun h => hy.2 <| h ▸ rfl
+
 
 /-
 The restricted function on block `i` is continuous.
@@ -160,6 +183,7 @@ lemma continuous_block_restrict
     by_cases h : j = i <;> simp_all +decide;
     · exact continuous_const;
     · exact continuous_apply _ |> Continuous.comp <| continuous_subtype_val.comp <| hf _ |> Continuous.comp <| Continuous.subtype_mk ( continuous_stripZerosOne _ |> Continuous.comp <| continuous_subtype_val.comp continuous_subtype_val ) _
+
 
 /-
 ContinuousAt of PointedGluingFun at a non-zero point.
@@ -182,6 +206,7 @@ lemma continuousAt_pointedGluingFun_nonzero
       rw [ firstNonzero_eq_of_block _ _ y.2 ];
       grind;
   exact h_cont_restrict.continuousAt ( hV.mem_nhds ⟨ hi.1, hi.2 ⟩ )
+
 
 /-
 **Fact (BasicsOnPointedGluing) — Part 1.**
@@ -218,6 +243,7 @@ theorem pointedGluingFun_preserves_continuity
       split_ifs <;> simp_all +decide [prependZerosOne]
       exact False.elim <| ‹¬a = zeroStream› <| funext fun k => by aesop
   · exact continuousAt_pointedGluingFun_nonzero A B f hf x hx
+
 
 /-
 **Fact (BasicsOnPointedGluing) — Part 2.**
@@ -292,6 +318,7 @@ theorem pointedGluingFun_preserves_injectivity
       · exact False.elim <| ‹stripZerosOne i ( prependZerosOne i z ) ∉ A i› <| by simpa [ stripZerosOne_prependZerosOne ] using hz.2;
       · exact False.elim <| ‹stripZerosOne i ( prependZerosOne i z ) ∉ A i› <| by simpa [ stripZerosOne_prependZerosOne ] using hz.2;
 
+
 /-
 **Fact (BasicsOnPointedGluing) — Part 3.**
 Pointed gluing commutes with identity: `id_{pgl_i X_i} = pgl_i id_{X_i}`.
@@ -313,6 +340,7 @@ theorem pointedGluingFun_comm_id (A : ℕ → Set (ℕ → ℕ)) :
     split_ifs <;> simp_all +decide [ prependZerosOne ];
     · simp_all +decide [ Nat.find_eq_iff, prependZerosOne ];
     · rename_i h; specialize h i; aesop;
+
 
 /-
 **Fact (BasicsOnPointedGluing) — Part 4.**
@@ -338,15 +366,60 @@ theorem zeroStream_continuity_point
     split_ifs <;> simp_all +decide [ prependZerosOne ];
     exact False.elim <| ‹¬a = zeroStream› <| funext fun k => by aesop;
 
-/-- **Proposition (CBrankofPgluingofregularsequence1).**
+lemma CBLevel_zero_ne_succ_of_scattered_nonempty {X Y : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y]
+    (f : X → Y) (hf : ScatteredFun f) (hne : Nonempty X) :
+    CBLevel f 0 ≠ CBLevel f (Order.succ 0) := by
+  intro h;
+  rw [ CBLevel_zero, CBLevel_succ' ] at h;
+  simp +decide [ Set.ext_iff ] at h;
+  contrapose! h;
+  exact Exists.elim ( scattered_isolatedLocus_nonempty f hf ( CBLevel f 0 ) ( by simp +decide [ CBLevel_zero ] ) ) fun x hx => ⟨ x, fun _ => hx ⟩
+
+/-
+For scattered functions on a Small.{0} type, the stabilization set for CBRank is nonempty.
+-/
+lemma CBRank_stabilization_set_nonempty {X Y : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y] [Small.{0} X]
+    (f : X → Y) (hf : ScatteredFun f) (hne : Nonempty X) :
+    {α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α)}.Nonempty := by
+  contrapose! hf;
+  obtain ⟨g, hg⟩ := CBLevel_strictAnti_of_ne f (by
+  exact fun α => fun h => hf.subset h);
+  exact False.elim ( not_injective_of_ordinal g hg )
+
+/-
+If f is scattered on a nonempty Small.{0} domain, then CBRank f > 0.
+-/
+lemma CBRank_pos_of_scattered_nonempty {X Y : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y] [Small.{0} X]
+    (f : X → Y) (hf : ScatteredFun f) (hne : Nonempty X) :
+    CBRank f > 0 := by
+  refine' pos_iff_ne_zero.mpr _;
+  have := CBLevel_zero_ne_succ_of_scattered_nonempty f hf hne;
+  exact fun h => this <| h ▸ csInf_mem ( CBRank_stabilization_set_nonempty f hf hne )
+
+theorem emptyFun (A B : Set (ℕ → ℕ)) (f : A → B)
+    (hf : ScatteredFun (fun x : A => (f x : ℕ → ℕ)))
+    (h : CBRank (fun x : A => (f x : ℕ → ℕ)) = 0) : A = ∅ := by
+  contrapose! h;
+  apply ne_of_gt;
+  apply CBRank_pos_of_scattered_nonempty;
+  · exact hf;
+  · exact h.to_subtype
+
+/-
+**Proposition (CBrankofPgluingofregularsequence1).**
 Let `f = pgl_{n ∈ ℕ} f_n` for a sequence of scattered functions in 𝒞.
 If `(CB(f_n))_n` is regular with supremum `α`, then `CB_α(f) = {0^ω}`.
 In particular, `f` is simple with distinguished point `0^ω` and `CB(f) = α + 1`.
 
+
 The proof uses: since `f_n ≡ f|_{N_{(0)^n(1)}}`, we have `CB(f_n) = CB(f|_{N_{(0)^n(1)}})`.
 If `β < α`, then by regularity, `CB_β(f) ∩ N_{(0)^n(1)}` is nonempty for infinitely
 many `n`, which implies `0^ω ∈ CB_{β+1}(f)`. Therefore `0^ω ∈ CB_α(f)`.
-Since `CB_α(f|_{N_{(0)^n(1)}}) = ∅` for all `n`, we get `CB_α(f) = {0^ω}`. -/
+Since `CB_α(f|_{N_{(0)^n(1)}}) = ∅` for all `n`, we get `CB_α(f) = {0^ω}`.
+-/
 theorem CBrank_pointedGluing_regular
     (A B : ℕ → Set (ℕ → ℕ))
     (f : ∀ i, A i → B i)
@@ -354,14 +427,18 @@ theorem CBrank_pointedGluing_regular
     (cbranks : ℕ → Ordinal.{0})
     (hreg : IsRegularOrdSeq cbranks)
     (hα : ∀ i, CBRank (fun (x : A i) => (f i x : ℕ → ℕ)) = cbranks i)
-    (α : Ordinal.{0}) (hαsup : α = ⨆ n, cbranks n)
-    (hα_pos : 0 < α) :
+    (α : Ordinal.{0}) (hαsup : α = ⨆ n, cbranks n) (hαpos : α > 0) :
     CBLevel (fun (x : PointedGluingSet A) => (PointedGluingFun A B f x : ℕ → ℕ)) α =
       {⟨zeroStream, zeroStream_mem_pointedGluingSet A⟩} := by
-  sorry
+  apply Set.eq_singleton_iff_unique_mem.mpr;
+  constructor;
+  · apply zeroStream_mem_CBLevel_le A B f hf_scat cbranks hreg hα α hαsup hαpos α (le_refl α);
+  · apply CBLevel_pointedGluing_subset;
+    all_goals tauto
 
 /-
 Given a sequence `(f_i)_i` in 𝒞, we have `⊔_i f_i ≤ pgl_i f_i`.
+
 
 The proof uses Gluingaslowerbound with `f = pgl_i f_i` and
 `B_i = N_{(0)^i(1)}`. -/
@@ -373,10 +450,12 @@ noncomputable def gluingToPointed (A : ℕ → Set (ℕ → ℕ)) (x : GluingSet
   ⟨prependZerosOne i a,
     Or.inr (Set.mem_iUnion.mpr ⟨i, a, h.choose_spec.2, rfl⟩)⟩
 
+
 /-- Map from (ℕ → ℕ) to (ℕ → ℕ): (0^i)(1)b ↦ (i)⌢b, and 0^ω ↦ 0^ω -/
 noncomputable def pointedToGluing (y : ℕ → ℕ) : ℕ → ℕ :=
   if y = zeroStream then zeroStream
   else prepend (firstNonzero y) (stripZerosOne (firstNonzero y) y)
+
 
 theorem prependZerosOne_ne_zeroStream (i : ℕ) (x : ℕ → ℕ) :
     prependZerosOne i x ≠ zeroStream := by
@@ -385,6 +464,7 @@ theorem prependZerosOne_ne_zeroStream (i : ℕ) (x : ℕ → ℕ) :
     exact ⟨ i, by simp [ prependZerosOne, zeroStream ] ⟩;
   exact fun h => h_neq.choose_spec <| congr_fun h _
 
+
 theorem firstNonzero_prependZerosOne (i : ℕ) (x : ℕ → ℕ) :
     firstNonzero (prependZerosOne i x) = i := by
   unfold firstNonzero;
@@ -392,10 +472,12 @@ theorem firstNonzero_prependZerosOne (i : ℕ) (x : ℕ → ℕ) :
   · unfold prependZerosOne; aesop;
   · rename_i h; specialize h i; simp_all +decide [ prependZerosOne ] ;
 
+
 theorem continuous_prependZerosOne (i : ℕ) : Continuous (prependZerosOne i) := by
   refine' continuous_pi fun n => _;
   unfold prependZerosOne;
   split_ifs <;> continuity
+
 
 theorem gluing_le_pointedGluing
     (A B : ℕ → Set (ℕ → ℕ))
@@ -475,9 +557,11 @@ theorem gluing_le_pointedGluing
   · unfold GluingFunVal pointedToGluing PointedGluingFun gluingToPointed;
     grind +suggestions
 
+
 /-!
 ## Section 2: Sufficient Condition for Continuity (Lemma 3.4)
 -/
+
 
 /-
 **Lemma (prop:sufficientcondforcont).**
@@ -486,6 +570,7 @@ If `U` is an open subset of `A` such that:
 1. `f` is continuous on `U` and on `A \ U`, and
 2. for all sequences `(x_n)` in `U` converging to `x ∈ A \ U`, `f(x_n) → f(x)`,
 then `f` is continuous.
+
 
 The proof uses sequential continuity in metrizable spaces. If `x ∈ U`, continuity
 follows from `f|_U`. If `x ∉ U`, partition the sequence into `I ∩ U` and `J ∩ Uᶜ`
@@ -534,14 +619,17 @@ theorem sufficient_cond_continuity
         exact hseq _ _ hn_k.2 hx ( hx_n.1.comp hn_k.1.tendsto_atTop );
       exact absurd ( h_subseq.eventually ( hV.1.mem_nhds hV.2.1 ) ) fun h => by obtain ⟨ k, hk ⟩ := h.exists; exact hx_n.2 ( n_k k ) hk;
 
+
 /-!
 ## Section 3: Pointed Gluing as an Upper Bound (Proposition 3.5, Corollaries 3.6–3.7)
 -/
+
 
 /-- **Proposition (Pgluingasupperbound). Pointed gluing as upper bound.**
 Let `f ∈ 𝒞` be continuous and `(g_i)_{i ∈ ℕ}` a sequence in 𝒞.
 If `y ∈ B` and `(Ray(f, y, j))_{j ∈ ℕ}` is reducible by pieces to `(g_i)_i`,
 then `f ≤ pgl_i g_i`.
+
 
 The proof constructs `σ` by mapping `f⁻¹({y})` to `{0^ω}` and gluing together the
 individual reductions on each ray. Continuity at `0^ω` follows from
@@ -566,10 +654,12 @@ theorem pointedGluing_upper_bound
       (fun (x : PointedGluingSet C) => PointedGluingFun C D g x) := by
   sorry
 
+
 /-
 **Corollary (Pgluingofraysasupperbound).**
 For any continuous `f : A → B` in 𝒞 and any `y ∈ B`,
 `f ≤ pgl_{i ∈ ℕ} Ray(f, y, i)`.
+
 
 This is a direct application of Pgluingasupperbound with the identity partition
 `I_j = {j}`.
@@ -602,9 +692,11 @@ theorem pointedGluing_rays_upper_bound
       · simp_all +decide [ firstNonzero, prependZerosOne ];
         unfold stripZerosOne at *; simp_all +decide [ prependZerosOne ] ;
 
+
 /-- **Corollary (SplittingaPgluingonatail).**
 For continuous `(f_i)_i` in 𝒞 and all `n ∈ ℕ`:
 `pgl_i f_i ≡ (⊔_{i<n} f_i) ⊔_bin (pgl_{i≥n} f_i)`.
+
 
 The forward direction uses Pgluingasupperbound with `y = 0^ω`.
 The backward uses Gluingaslowerbound with the clopen partition
@@ -619,13 +711,16 @@ theorem splitting_pointedGluing_tail
       (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) := by
   exact ContinuouslyEquiv.refl _
 
+
 /-!
 ## Section 4: CB Regularity for Simple Functions (Proposition 3.8)
 -/
 
+
 /-- **Proposition (CBrankofPgluingofregularsequence2simple).**
 If `f ∈ 𝒞` is scattered of CB-rank `α + 1` and simple with distinguished point `y`,
 then the sequence `(CB(Ray(f, y, n)))_n` is regular with supremum `α`.
+
 
 The proof shows: by simplicity, `CB_α(f) ⊆ f⁻¹({y})`, so
 `CB_α(Ray(f, y, i)) = ∅`, giving each `α_i ≤ α`. For regularity: if `∀ n > m`,
@@ -646,9 +741,11 @@ theorem CBrank_regular_simple
     IsRegularOrdSeq ray_cb ∧ ⨆ n, ray_cb n = α := by
   sorry
 
+
 /-!
 ## Section 5: Maximum and Minimum Functions (Propositions 3.9 and 3.12)
 -/
+
 
 /-- **Proposition (Maxfunctions). Maximum functions.**
 For all `α < ω₁`:
@@ -657,6 +754,7 @@ For all `α < ω₁`:
 2. `pgl ℓ_α` is a maximum for simple functions in `𝒞_{≤α+1}`.
 3. For all `n ∈ ℕ`, `(n+1) · k_{α+1}` is a maximum among functions of
    CB-type `(α+1, n+1)` with compact domains.
+
 
 The proof is by strong induction on `α`:
 - For the first item, use the Decomposition Lemma to write `f` as locally simple,
@@ -679,9 +777,11 @@ theorem maxFun_is_maximum
         ContinuouslyReduces f maxf) := by
   sorry
 
+
 /-- **Proposition (Minfunctions). Minimum functions.**
 For all `α < ω₁`, there exists a function `k_{α+1}` that is minimum in `𝒞_{≥α+1}`:
 for all `f ∈ 𝒞` with `CB(f) ≥ α + 1`, we have `k_{α+1} ≤ f`.
+
 
 The proof is by strong induction on `α`:
 - For `α = 0`, `k_1 ≡ id_1` reduces to any nonempty function.
@@ -704,9 +804,11 @@ theorem minFun_is_minimum
         ContinuouslyReduces minf f) := by
   sorry
 
+
 /-!
 ## Section 6: Pointed Gluing as a Lower Bound (Lemma 3.10, Proposition 3.11)
 -/
+
 
 /-- **Lemma (Pgluingaslowerbound).**
 Let `f : A → B` be a function between metrizable spaces and `(g_n)_n` a sequence in 𝒞.
@@ -716,6 +818,7 @@ If there is a point `x ∈ A` and a sequence `(A_n)_n` of clopen sets satisfying
 3. `A_n → x` (sets converge to `x`),
 4. `g_n ≤ f|_{A_n}` for all `n`,
 then `pgl_n g_n ≤ f`.
+
 
 The proof constructs `σ` mapping `0^ω ↦ x` and `(0)^n(1)x' ↦ σ_n(x')`, and
 `τ` mapping `f(x) ↦ 0^ω` and `y ↦ (0)^n(1)τ_n(y)` for `y ∈ f(A_n)`.
@@ -740,13 +843,16 @@ theorem pointedGluing_lower_bound_lemma
       f := by
   sorry
 
+
 /-- **Proposition (Pgluingaslowerbound2). Pointed gluing as lower bound.**
 Let `f : A → B` be continuous in 𝒞 and `(g_i)_i` a sequence in 𝒞.
 If for all `i ∈ ℕ` and all open neighborhoods `U ∋ x`, there is a continuous
 reduction `(σ, τ)` from `g_i` to `f` with `im(σ) ⊆ U` and
 `f(x) ∉ cl(im(f ∘ σ))`, then `pgl_i g_i ≤ f`.
 
+
 In fact, `pgl_i g_i ≤ f|_V` for all clopen neighborhoods `V` of `x`.
+
 
 The proof constructs a sequence `(A_n)_n` of clopen sets by induction, choosing
 each `A_n` so that `f(A_n)` is separated from the previous ones and from `f(x)`,
@@ -769,17 +875,21 @@ theorem pointedGluing_lower_bound
       f := by
   sorry
 
+
 /-!
 ## Section 7: General Structure (Theorems 3.13–3.14, Proposition 3.15, Corollary 3.16)
 -/
+
 
 /-- **Theorem (Compactdomains). Classification of functions with compact domains.**
 If `f` and `g` are in 𝒞 with compact domains, then `f ≤ g` iff
 `tp(f) ≤_{lex} tp(g)`, where `tp(f) = (CB(f), deg(f))` is the CB-type.
 
+
 More specifically, `f ≡ (n+1) · k_{α+1}` where `tp(f) = (α+1, n+1)`.
 In particular, continuous reducibility is a pre-well-order of length `ω₁` on
 functions in 𝒞 with compact domain.
+
 
 The proof follows from Maxfunctions and Minfunctions: the minimum function `k_{α+1}`
 reduces to any `f` with `CB(f) ≥ α + 1` (by Minfunctions), and any `f` with compact
@@ -798,8 +908,10 @@ theorem classification_compact_domains
     ContinuouslyEquiv f g := by
   sorry
 
+
 /-- **Theorem (JSLgeneralstructure). General Structure Theorem — Main consequence.**
 For all `f` and `g` in 𝒞: `2 · CB(f) < CB(g)` implies `f ≤ g`.
+
 
 This is the key inequality that governs continuous reducibility between scattered
 functions. -/
@@ -815,8 +927,10 @@ theorem general_structure_theorem
     ContinuouslyReduces f g := by
   sorry
 
+
 /-- **Theorem (JSLgeneralstructure) — Item 1.**
 If `CB(f) ≤ CB(g) = λ` where `λ` is a limit ordinal or zero, then `f ≤ g`.
+
 
 The proof finds a sequence of pairwise incomparable finite sequences in the tree
 of elements with CB-rank `λ`, and applies Gluingaslowerbound. -/
@@ -832,9 +946,11 @@ theorem general_structure_limit
     ContinuouslyReduces f g := by
   sorry
 
+
 /-- **Theorem (JSLgeneralstructure) — Item 2.**
 For all `n ∈ ℕ`, if `CB(f) = λ + n` and `λ + 2n + 1 ≤ CB(g)`, then `f ≤ g`,
 where `λ` is a limit ordinal or zero.
+
 
 The proof is by induction on `λ`. For the base case, use Maxfunctions and Minfunctions
 to get `f ≤ ℓ_{λ+n} ≤ k_{λ+2n+1} ≤ g`. For the inductive step, use
@@ -852,8 +968,10 @@ theorem general_structure_successor
     ContinuouslyReduces f g := by
   sorry
 
+
 /-- **Proposition (FGgivesBQO_2).**
 If `𝒞_β` is BQO for all `β < α`, then `𝒞_{<α}` is BQO.
+
 
 The proof defines the partial order `≤•` on ordinals by
 `α₀ ≤• α₁ iff α₀ = α₁ or 2α₀ < α₁`.
@@ -861,6 +979,7 @@ This is a BQO (as a sum of copies of `(ℕ, ≤•)` along the limit ordinals).
 The General Structure Theorem shows that the map `f ↦ (CB(f), f)` into the
 `≤•`-indexed sum of levels is a co-homomorphism for continuous reducibility.
 Since a co-homomorphic image of a BQO is BQO, `𝒞_{<α}` is BQO.
+
 
 In particular, if each level is finitely generated (Theorem 1.3), then
 `𝒞` is BQO (Theorems 1.4 and 1.5). -/
@@ -882,6 +1001,7 @@ theorem finitely_generated_implies_bqo
       (∀ n, CBRank (seq n) < α) →
       ∃ m n, m < n ∧ ContinuouslyReduces (seq m) (seq n) := by
   sorry
+
 
 /-
 The pointed gluing of scattered functions is scattered.
@@ -924,10 +1044,12 @@ lemma pointedGluing_scattered
       · exact ne_zeroStream_of_block _ _ hx'.1.1;
       · exact ne_zeroStream_of_block _ _ hx.1.1
 
+
 /-- **Corollary (ConsequencesGeneralStructureThm) — Item 1.**
 If `(f_n)_n` is in `𝒞_{<λ}` for `λ` limit, then `pgl_n f_n ≤ k_{λ+1}`.
 If moreover `(CB(f_n))_n` is regular with `sup_n CB(f_n) = λ`,
 then `pgl_n f_n ≡ k_{λ+1}`.
+
 
 The proof uses the General Structure Theorem to find `2 · CB(f_n) ≤ α_{k_n}`
 for a cofinal sequence, giving `f_n ≤ k_{α_{k_n}+1}`.
@@ -952,8 +1074,10 @@ theorem consequences_general_structure_1
     fun x => PointedGluingFun A B f x, ?_, ContinuouslyReduces.refl _⟩
   exact pointedGluing_scattered A B f hf_scat
 
+
 /-- **Corollary (ConsequencesGeneralStructureThm) — Item 2.**
 If `CB(f) ≥ λ + 2` for a limit ordinal `λ`, then `pgl ℓ_λ ≤ f`.
+
 
 The proof uses the General Structure Theorem: `ℓ_λ ≤ k_{λ+1}` (since
 `2 · λ < λ + 1` for limit `λ`), so `pgl ℓ_λ ≤ pgl k_{λ+1} = k_{λ+2}`.
@@ -970,5 +1094,6 @@ theorem consequences_general_structure_2
   obtain ⟨x, hx⟩ := hcb
   exact ⟨PUnit, PUnit, inferInstance, inferInstance, id,
     fun _ => x, continuous_const, fun _ => PUnit.unit, continuousOn_const, fun _ => rfl⟩
+
 
 end

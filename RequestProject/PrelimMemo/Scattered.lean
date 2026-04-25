@@ -472,6 +472,21 @@ noncomputable def cantorRatPrefix (x : CantorEventuallyZero) : List (Fin 2) := b
   exact PiNat.res x.val (Nat.find x.prop)
 
 /-
+**Splitting lemma.** In a nowhere locally constant continuous function on a metric space
+into a T₂ space, any ball contains two disjoint sub-balls with separated images.
+-/
+lemma nlc_splitting_lemma {X Y : Type*}
+    [MetricSpace X] [TopologicalSpace Y] [T2Space Y]
+    (g : X → Y) (hg : Continuous g) (hnlc : NowhereLocllyConstant g) :
+    ∀ x : X, ∀ ε > 0, ∃ x' : X, ∃ ε' > 0, ε' < ε ∧
+      Metric.closedBall x ε' ⊆ Metric.ball x ε ∧
+      Metric.closedBall x' ε' ⊆ Metric.ball x ε ∧
+      Disjoint (Metric.closedBall x ε') (Metric.closedBall x' ε') ∧
+      ∃ U₀ U₁ : Set Y, IsOpen U₀ ∧ IsOpen U₁ ∧ Disjoint U₀ U₁ ∧
+        g '' (Metric.ball x ε') ⊆ U₀ ∧ g '' (Metric.ball x' ε') ⊆ U₁ := by
+  exact fun x ε a => splitting_lemma_nlc hg hnlc x ε a
+
+/-!
 **Cantor scheme existence.** Given a continuous NLC function, there exist
 center/radius/open-set assignments satisfying all the Cantor scheme properties.
 -/
@@ -492,7 +507,7 @@ lemma cantor_scheme_exists {X Y : Type*}
       (∀ l (a : Fin 2), g '' Metric.ball (c (a :: l)) (r (a :: l)) ⊆ U (a :: l)) := by
   -- Define the functions c, r, U by recursion on lists using the splitting lemma.
   have h_split : ∀ x : X, ∀ ε > 0, ∃ x' : X, ∃ ε' > 0, ε' < ε ∧ Metric.closedBall x ε' ⊆ Metric.ball x ε ∧ Metric.closedBall x' ε' ⊆ Metric.ball x ε ∧ Disjoint (Metric.closedBall x ε') (Metric.closedBall x' ε') ∧ ∃ U₀ U₁ : Set Y, IsOpen U₀ ∧ IsOpen U₁ ∧ Disjoint U₀ U₁ ∧ g '' (Metric.ball x ε') ⊆ U₀ ∧ g '' (Metric.ball x' ε') ⊆ U₁ := by
-    exact?;
+    exact nlc_splitting_lemma g hg hnlc
   choose! x' ε' hε' hε'_lt hε'_closedBall hε'_closedBall' hε'_disjoint hU₀ hU₁ hU₀_open hU₁_open hU₀_disjoint hU₀_image hU₁_image using h_split;
   -- Define the functions c, r, U by recursion on lists using the splitting lemma and the chosen functions x', ε', hU₀, hU₁.
   have h_rec : ∃ (F : List (Fin 2) → X × ℝ × Set Y), F [] = (x₀, 1, Set.univ) ∧ (∀ l, 0 < (F l).2.1) ∧ (∀ l, (F (0 :: l)).1 = (F l).1) ∧ (∀ l, (F (1 :: l)).1 = x' (F l).1 (F l).2.1) ∧ (∀ l, (F (0 :: l)).2.1 = min ((F l).2.1 / 2) (ε' (F l).1 (F l).2.1)) ∧ (∀ l, (F (1 :: l)).2.1 = min ((F l).2.1 / 2) (ε' (F l).1 (F l).2.1)) ∧ (∀ l, (F (0 :: l)).2.2 = hU₀ (F l).1 (F l).2.1) ∧ (∀ l, (F (1 :: l)).2.2 = hU₁ (F l).1 (F l).2.1) := by
