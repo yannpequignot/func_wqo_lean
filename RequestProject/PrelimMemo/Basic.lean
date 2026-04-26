@@ -222,4 +222,8 @@ def zeroStream : ℕ → ℕ := fun _ => 0
 
 abbrev Baire := ℕ → ℕ
 
+
+/-- `ω₁` as a countable ordinal. -/
+noncomputable def omega1 : Ordinal.{0} := (Cardinal.aleph 1).ord
+
 end Notations

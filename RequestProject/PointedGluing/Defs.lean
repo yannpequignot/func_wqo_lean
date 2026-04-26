@@ -268,11 +268,15 @@ noncomputable def MaxDom : Ordinal.{0} → Set (ℕ → ℕ) :=
     (fun o hlim ih => GluingSet (fun n => ih (enumBelow o n)
       (enumBelow_lt o (Order.IsSuccLimit.ne_bot hlim) n)))
 
+noncomputable def SuccMaxDom : Ordinal.{0} → Set (ℕ → ℕ) :=
+  fun α => PointedGluingSet (fun _ => MaxDom α)
+
+
 /-- Domain of the minimum function `k_{α+1}` (Definition 3.5 in the memoir).
 `MinDom α` is the domain of the function `k_{α+1}`, which is the minimum
 of `𝒞_{≥α+1}` (all scattered functions of CB-rank at least `α + 1`).
 
-Note: `MinDom α` corresponds to `k_{α+1}` in the memoir notation. -/
+Note: `MinDom α` corresponds to `k_{α+1}` in the memoir notation.-/
 noncomputable def MinDom : Ordinal.{0} → Set (ℕ → ℕ) :=
   fun α => α.limitRecOn
     (PointedGluingSet (fun _ => ∅))
@@ -286,9 +290,14 @@ min and max functions are identity functions on their domains (subtype coercion)
 noncomputable def MaxFun (α : Ordinal.{0}) : MaxDom α → (ℕ → ℕ) :=
   Subtype.val
 
+noncomputable def SuccMaxFun (α : Ordinal.{0}) : SuccMaxDom α → (ℕ → ℕ) :=
+  Subtype.val
+
 /-- The minimum function `k_{α+1} : MinDom α → ℕ → ℕ` is the identity on `MinDom α`.
 Since the Gluing and Pointed Gluing operations commute with the identity, the
-min and max functions are identity functions on their domains (subtype coercion). -/
+min and max functions are identity functions on their domains (subtype coercion).
+Warning MinFun α has CB rank α +1!
+-/
 noncomputable def MinFun (α : Ordinal.{0}) : MinDom α → (ℕ → ℕ) :=
   Subtype.val
 

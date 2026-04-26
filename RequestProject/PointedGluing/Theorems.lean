@@ -75,9 +75,6 @@ Structure) of the memoir on continuous reducibility between functions.
 noncomputable section
 
 
-/-- `ω₁` as a countable ordinal. -/
-noncomputable def omega1 : Ordinal.{0} := (Cardinal.aleph 1).ord
-
 
 /-!
 ## Section 1: Basic Properties of Pointed Gluing (Fact 3.1, Proposition 3.2, Fact 3.3)
@@ -798,15 +795,14 @@ theorem CBrank_regular_simple
 -/
 
 
+
 /-- **Proposition (Maxfunctions). Maximum functions.**
 For all `α < ω₁`:
 1. There exists a function `ℓ_α` that is a maximum of `𝒞_{≤α}`:
    every scattered function with CB-rank `≤ α` reduces to `ℓ_α`.
 2. `pgl ℓ_α` is a maximum for simple functions in `𝒞_{≤α+1}`.
 3. For all `n ∈ ℕ`, `(n+1) · k_{α+1}` is a maximum among functions of
-   CB-type `(α+1, n+1)` with compact domains.
-
-
+  CB-type `(α+1, n+1)` with compact domains.
 The proof is by strong induction on `α`:
 - For the first item, use the Decomposition Lemma to write `f` as locally simple,
   then apply the induction hypothesis (item 2) and Gluingasupperbound.
@@ -814,21 +810,6 @@ The proof is by strong induction on `α`:
   and each ray has CB-rank `≤ α`, so `Ray(f, y, j) ≤ ℓ_α` by item 1.
 - For the third item, induction on `n` using the compact domain structure.
 
-The old existential formulation of maximum functions, kept for reference.
-See `maxFun_is_maximum` for the concrete version using `MaxFun`. -/
-theorem maxFun_is_maximum_exists
-    (α : Ordinal.{0}) (hα : α < omega1) :
-    ∃ (X : Type) (Y : Type) (_ : TopologicalSpace X) (_ : TopologicalSpace Y)
-      (maxf : X → Y),
-      ScatteredFun maxf ∧
-      (∀ β : Ordinal.{0}, α < β → CBLevel maxf β = ∅) ∧
-      (∀ (X' : Type) (Y' : Type) (_ : TopologicalSpace X') (_ : TopologicalSpace Y')
-        (f : X' → Y'),
-        ScatteredFun f → (∀ β : Ordinal.{0}, α < β → CBLevel f β = ∅) →
-        ContinuouslyReduces f maxf) := by
-  sorry
-
-/-- **Proposition 3.9 (Maximum functions).**
 The function `MaxFun α = ℓ_α` (the identity on `MaxDom α`, see Definition 3.5) is
 a maximum of `𝒞_{≤α}`: every scattered function with CB-rank at most `α` continuously
 reduces to `MaxFun α`.
@@ -837,17 +818,33 @@ The proof is by strong induction on `α`:
 - Use the Decomposition Lemma to write `f` as locally simple, then apply
   the induction hypothesis and `Gluingasupperbound`.
 - For the second item (simple functions), use `Pgluingofraysasupperbound`.
-- For the third item (compact domains), double induction on `n`. -/
+- For the third item (compact domains), double induction on `n`.
+- items 1 and 2 are proved simultaneuously in maxFun_is_maximum
+- I do not think item 3 is used later, skipping it for now -/
+
 theorem maxFun_is_maximum
     (α : Ordinal.{0}) (hα : α < omega1) :
-    -- MaxFun α is scattered with CB-rank ≤ α
-    ScatteredFun (MaxFun α) ∧
-    (∀ β : Ordinal.{0}, α < β → CBLevel (MaxFun α) β = ∅) ∧
     -- MaxFun α is maximum: for all scattered f with CB(f) ≤ α, f ≤ MaxFun α
-    (∀ (X' : Type) (Y' : Type) [TopologicalSpace X'] [TopologicalSpace Y']
-      (f : X' → Y'),
-      ScatteredFun f → (∀ β : Ordinal.{0}, α < β → CBLevel f β = ∅) →
-      ContinuouslyReduces f (MaxFun α)) := by
+    (∀ {A : Set (ℕ → ℕ)}
+    (f : A → ℕ → ℕ)
+    (hf : Continuous f)
+      ScatteredFun f → (∀ β : omega1, α < β → CBLevel f β = ∅) →
+      ContinuouslyReduces f (MaxFun α))∧
+    -- SuccMaxFun α is maximum for simple functions:
+    -- for all simple scattered f with CB(f) ≤ α+1, f ≤ SuccMaxFun α
+    (∀ {A : Set (ℕ → ℕ)}
+    (f : A → ℕ → ℕ)
+    (hf : Continuous f)
+    (β: Ordinal.{0}) (hβ : β ≤ α)
+    (hcb_ne : (CBLevel f β).Nonempty)
+    (hcb_empty : CBLevel f (Order.succ β) = ∅)
+    (y: ℕ →ℕ )
+    (hy_simple : ∀ x ∈ CBLevel f β, f x = y) → ContinuouslyReduces f (SuccMaxFun α)) := by
+  -- by strong induction on α
+  induction α using Ordinal.induction with
+  . -- for α = 0, we have MaxDom 0 = ∅ and we conclude by emptyFun for the left hand side
+  -- for the right hand side, SuccMaxDom 0 = {zerostream} and we conclude by constant_equiv_id_singleton
+  . -- for α>0 we use decomposition_lemma (yet to be proved)
   sorry
 
 
@@ -863,18 +860,12 @@ The proof is by strong induction on `α`:
 - For limit `α`, similarly find rays of growing CB-rank using regularity. -/
 theorem minFun_is_minimum
     (α : Ordinal.{0}) (hα : α < omega1) :
-    -- There exists a function k_{α+1} that is minimum in 𝒞_{≥α+1}
-    ∃ (X : Type) (Y : Type) (_ : TopologicalSpace X) (_ : TopologicalSpace Y)
-      (minf : X → Y),
-      -- minf is scattered with CB(minf) = α + 1
-      ScatteredFun minf ∧
-      (CBLevel minf (Order.succ α)).Nonempty ∧
-      CBLevel minf (Order.succ (Order.succ α)) = ∅ ∧
-      -- minf is minimum: for all f with CB(f) ≥ α + 1, minf ≤ f
-      (∀ (X' : Type) (Y' : Type) (_ : TopologicalSpace X') (_ : TopologicalSpace Y')
-        (f : X' → Y'),
+      -- minfun α is minimum: for all f with CB(f) ≥ α + 1, minf ≤ f
+      (∀ {A : Set (ℕ → ℕ)}
+      (f : A → ℕ → ℕ)
+      (hf : Continuous f),
         ScatteredFun f → (CBLevel f (Order.succ α)).Nonempty →
-        ContinuouslyReduces minf f) := by
+        ContinuouslyReduces (MinFun α) f) := by
   sorry
 
 
