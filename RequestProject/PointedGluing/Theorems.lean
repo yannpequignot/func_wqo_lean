@@ -789,7 +789,8 @@ theorem CBrank_regular_simple
       obtain ⟨n, hn1, hn2⟩ := hcofinal γ (Order.lt_succ_of_not_isMax (not_isMax γ)) m
       exact ⟨n, hn1, by rw [heq]; exact Order.succ_le_of_lt hn2⟩
     · -- by contradiction with h_succ
-      sorry
+      obtain ⟨γ, hγ⟩ := h_succ
+      exact absurd hγ.symm (Order.IsSuccLimit.succ_ne hlim γ)
 
 
 /-!
@@ -811,20 +812,42 @@ The proof is by strong induction on `α`:
   then apply the induction hypothesis (item 2) and Gluingasupperbound.
 - For the second item, use Pgluingofraysasupperbound: `f ≤ pgl_j Ray(f, y, j)`,
   and each ray has CB-rank `≤ α`, so `Ray(f, y, j) ≤ ℓ_α` by item 1.
-- For the third item, induction on `n` using the compact domain structure. -/
-theorem maxFun_is_maximum
+- For the third item, induction on `n` using the compact domain structure.
+
+The old existential formulation of maximum functions, kept for reference.
+See `maxFun_is_maximum` for the concrete version using `MaxFun`. -/
+theorem maxFun_is_maximum_exists
     (α : Ordinal.{0}) (hα : α < omega1) :
-    -- There exists a function ℓ_α that is maximum in 𝒞_{≤α}
     ∃ (X : Type) (Y : Type) (_ : TopologicalSpace X) (_ : TopologicalSpace Y)
       (maxf : X → Y),
-      -- maxf is scattered with CB(maxf) ≤ α
       ScatteredFun maxf ∧
       (∀ β : Ordinal.{0}, α < β → CBLevel maxf β = ∅) ∧
-      -- maxf is maximum: for all scattered f with CB(f) ≤ α, f ≤ maxf
       (∀ (X' : Type) (Y' : Type) (_ : TopologicalSpace X') (_ : TopologicalSpace Y')
         (f : X' → Y'),
         ScatteredFun f → (∀ β : Ordinal.{0}, α < β → CBLevel f β = ∅) →
         ContinuouslyReduces f maxf) := by
+  sorry
+
+/-- **Proposition 3.9 (Maximum functions).**
+The function `MaxFun α = ℓ_α` (the identity on `MaxDom α`, see Definition 3.5) is
+a maximum of `𝒞_{≤α}`: every scattered function with CB-rank at most `α` continuously
+reduces to `MaxFun α`.
+
+The proof is by strong induction on `α`:
+- Use the Decomposition Lemma to write `f` as locally simple, then apply
+  the induction hypothesis and `Gluingasupperbound`.
+- For the second item (simple functions), use `Pgluingofraysasupperbound`.
+- For the third item (compact domains), double induction on `n`. -/
+theorem maxFun_is_maximum
+    (α : Ordinal.{0}) (hα : α < omega1) :
+    -- MaxFun α is scattered with CB-rank ≤ α
+    ScatteredFun (MaxFun α) ∧
+    (∀ β : Ordinal.{0}, α < β → CBLevel (MaxFun α) β = ∅) ∧
+    -- MaxFun α is maximum: for all scattered f with CB(f) ≤ α, f ≤ MaxFun α
+    (∀ (X' : Type) (Y' : Type) [TopologicalSpace X'] [TopologicalSpace Y']
+      (f : X' → Y'),
+      ScatteredFun f → (∀ β : Ordinal.{0}, α < β → CBLevel f β = ∅) →
+      ContinuouslyReduces f (MaxFun α)) := by
   sorry
 
 

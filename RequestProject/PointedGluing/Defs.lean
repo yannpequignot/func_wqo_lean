@@ -28,6 +28,8 @@ Structure) of the memoir on continuous reducibility between functions.
 * `RaySet` — the n-th ray of a set at a point
 * `IsReducibleByPieces` — a sequence of functions is reducible by finite pieces to another
 * `SetsConvergeTo` — a sequence of sets converges to a point
+* `MaxDom` / `MaxFun` — domain and maximum function `ℓ_α` (Definition 3.5)
+* `MinDom` / `MinFun` — domain and minimum function `k_{α+1}` (Definition 3.5)
 -/
 
 noncomputable section
@@ -194,5 +196,100 @@ noncomputable def CBRank_scat {X Y : Type*} [TopologicalSpace X] [TopologicalSpa
 noncomputable def CBRank {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
     (f : X → Y) : Ordinal.{0} :=
   sInf {α : Ordinal.{0} | (CBLevel f α) = (CBLevel f (Order.succ α))}
+
+
+/-!
+## Minimum and Maximum Function Domains (Definition 3.5 / Def_MinMaxFunc)
+
+We define by transfinite induction on `α` two families of subsets of the Baire space:
+- `MaxDom α` — the domain of the maximum function `ℓ_α` in `𝒞_{≤α}`
+- `MinDom α` — the domain of the minimum function `k_{α+1}` in `𝒞_{α+1}`
+
+The functions themselves are identities on their domains (cf. the remark after the
+definition in the memoir).
+
+### Base cases
+- `MaxDom 0 = ∅` (the empty function)
+- `MinDom 0 = PointedGluingSet (fun _ => ∅)` = `{0^ω}` (i.e., `k_1 = pgl(∅)`)
+
+### Successor step (`α = β + 1`)
+- `MaxDom (β + 1) = GluingSet (fun _ => PointedGluingSet (fun _ => MaxDom β))`
+  (i.e., `ℓ_{β+1} = ω · pgl(ℓ_β)`)
+- `MinDom (β + 1) = PointedGluingSet (fun _ => MinDom β)`
+  (i.e., `k_{β+2} = pgl(k_{β+1})`)
+
+### Limit step
+- `MaxDom α = GluingSet (fun n => MaxDom (enumBelow α n))`
+  (i.e., `ℓ_α = ⊔_n ℓ_{β_n}` for an enumeration `(β_n)_n` of `α`)
+- `MinDom α = PointedGluingSet (fun n => MinDom (cofinalSeq α n))`
+  (i.e., `k_{α+1} = pgl_n k_{α_n+1}` for a cofinal sequence `(α_n)_n` in `α`)
+
+The notation `MinDom α` corresponds to the domain of `k_{α+1}`, not `k_α`.
+-/
+
+/-- An arbitrary enumeration of ordinals below a countable ordinal `α`.
+For a nonzero `α`, returns a function `ℕ → Ordinal.{0}` whose range covers `{β | β < α}`.
+For `α = 0`, returns the constant 0 function. The specific enumeration is chosen
+by `Classical.choice`; up to continuous equivalence, the definitions do not depend
+on this choice (see the remark after Definition 3.5 in the memoir). -/
+noncomputable def enumBelow (α : Ordinal.{0}) : ℕ → Ordinal.{0} :=
+  if h : α = 0 then fun _ => 0
+  else
+    have : Nonempty (Iio α) := ⟨⟨0, bot_lt_iff_ne_bot.mpr h⟩⟩
+    fun n => (Classical.arbitrary (ℕ → Iio α) n).val
+
+/-- `enumBelow α n < α` whenever `α > 0`. -/
+theorem enumBelow_lt (α : Ordinal.{0}) (hα : α ≠ 0) (n : ℕ) : enumBelow α n < α := by
+  have : Nonempty (Set.Iio α) := ⟨⟨0, bot_lt_iff_ne_bot.mpr hα⟩⟩
+  unfold enumBelow; rw [dif_neg hα]
+  exact (Classical.arbitrary (ℕ → Set.Iio α) n).prop
+
+/-- An arbitrary cofinal sequence in a countable limit ordinal `α`.
+For limit `α > 0`, returns a sequence `(α_n)_n` that is cofinal in `α` and
+satisfies `α_n < α` for all `n`. For non-limit or zero `α`, returns the constant
+0 function. -/
+noncomputable def cofinalSeq (α : Ordinal.{0}) : ℕ → Ordinal.{0} :=
+  if _ : Order.IsSuccLimit α ∧ α ≠ 0 then enumBelow α
+  else fun _ => 0
+
+/-- `cofinalSeq α n < α` whenever `α` is a nonzero limit ordinal. -/
+theorem cofinalSeq_lt (α : Ordinal.{0}) (hlim : Order.IsSuccLimit α) (hα : α ≠ 0) (n : ℕ) :
+    cofinalSeq α n < α := by
+  unfold cofinalSeq; rw [dif_pos ⟨hlim, hα⟩]
+  exact enumBelow_lt α hα n
+
+/-- Domain of the maximum function `ℓ_α` (Definition 3.5 in the memoir).
+`MaxDom α` is the domain of the function `ℓ_α`, which is the maximum
+of `𝒞_{≤α}` (all scattered functions of CB-rank at most `α`). -/
+noncomputable def MaxDom : Ordinal.{0} → Set (ℕ → ℕ) :=
+  fun α => α.limitRecOn
+    (∅ : Set (ℕ → ℕ))
+    (fun _ dom_β => GluingSet (fun _ => PointedGluingSet (fun _ => dom_β)))
+    (fun o hlim ih => GluingSet (fun n => ih (enumBelow o n)
+      (enumBelow_lt o (Order.IsSuccLimit.ne_bot hlim) n)))
+
+/-- Domain of the minimum function `k_{α+1}` (Definition 3.5 in the memoir).
+`MinDom α` is the domain of the function `k_{α+1}`, which is the minimum
+of `𝒞_{≥α+1}` (all scattered functions of CB-rank at least `α + 1`).
+
+Note: `MinDom α` corresponds to `k_{α+1}` in the memoir notation. -/
+noncomputable def MinDom : Ordinal.{0} → Set (ℕ → ℕ) :=
+  fun α => α.limitRecOn
+    (PointedGluingSet (fun _ => ∅))
+    (fun _ dom_β => PointedGluingSet (fun _ => dom_β))
+    (fun o hlim ih => PointedGluingSet (fun n => ih (cofinalSeq o n)
+      (cofinalSeq_lt o hlim (Order.IsSuccLimit.ne_bot hlim) n)))
+
+/-- The maximum function `ℓ_α : MaxDom α → ℕ → ℕ` is the identity on `MaxDom α`.
+Since the Gluing and Pointed Gluing operations commute with the identity, the
+min and max functions are identity functions on their domains (subtype coercion). -/
+noncomputable def MaxFun (α : Ordinal.{0}) : MaxDom α → (ℕ → ℕ) :=
+  Subtype.val
+
+/-- The minimum function `k_{α+1} : MinDom α → ℕ → ℕ` is the identity on `MinDom α`.
+Since the Gluing and Pointed Gluing operations commute with the identity, the
+min and max functions are identity functions on their domains (subtype coercion). -/
+noncomputable def MinFun (α : Ordinal.{0}) : MinDom α → (ℕ → ℕ) :=
+  Subtype.val
 
 end

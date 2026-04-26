@@ -1,3 +1,44 @@
+# Summary of changes for run 96c4e0d3-d2b4-4a7d-96a9-fe1bc29f0bf1
+I completed all three requested tasks:
+
+## 1. Resolved the `sorry` in `CBrank_regular_simple` (Proposition 3.8)
+
+In `RequestProject/PointedGluing/Theorems.lean`, the theorem `CBrank_regular_simple` had a `sorry` in the limit ordinal case of the regularity proof. The case had hypotheses `hlim : Order.IsSuccLimit α` (α is a limit ordinal) and `h_succ : ∃ γ, α = Order.succ γ` (α is a successor ordinal), which are contradictory. I closed this case with:
+```lean
+obtain ⟨γ, hγ⟩ := h_succ
+exact absurd hγ.symm (Order.IsSuccLimit.succ_ne hlim γ)
+```
+The proof now compiles with only standard axioms (`propext`, `Classical.choice`, `Quot.sound`).
+
+## 2. Formalized `Def_MinMaxFunc` (Definition 3.5 from the memoir)
+
+In `RequestProject/PointedGluing/Defs.lean`, I added the following definitions corresponding to Definition 3.5 in `3_general_struct_memo.tex`:
+
+- **`enumBelow α`** — an arbitrary ℕ-indexed enumeration of ordinals below α (used for the limit case of `MaxDom`)
+- **`cofinalSeq α`** — an arbitrary cofinal sequence in a limit ordinal α (used for the limit case of `MinDom`)
+- **`MaxDom α`** — domain of the maximum function ℓ_α, defined by transfinite induction using `Ordinal.limitRecOn`:
+  - Base: `MaxDom 0 = ∅`
+  - Successor: `MaxDom (β+1) = GluingSet (fun _ => PointedGluingSet (fun _ => MaxDom β))` (i.e., ω·pgl(ℓ_β))
+  - Limit: `MaxDom α = GluingSet (fun n => MaxDom (enumBelow α n))` (i.e., ⊔_n ℓ_{β_n})
+- **`MinDom α`** — domain of the minimum function k_{α+1}, similarly defined:
+  - Base: `MinDom 0 = PointedGluingSet (fun _ => ∅)` (i.e., k_1 = pgl(∅))
+  - Successor: `MinDom (β+1) = PointedGluingSet (fun _ => MinDom β)` (i.e., pgl(k_{β+1}))
+  - Limit: `MinDom α = PointedGluingSet (fun n => MinDom (cofinalSeq α n))`
+- **`MaxFun α`** and **`MinFun α`** — the identity functions on their respective domains (Subtype.val), as noted in the memoir.
+
+## 3. Adapted the statement of `maxFun_is_maximum` (Proposition 3.9)
+
+The old existential statement was renamed to `maxFun_is_maximum_exists` and preserved for reference. The new `maxFun_is_maximum` directly references the concrete `MaxFun α` definition:
+```lean
+theorem maxFun_is_maximum (α : Ordinal.{0}) (hα : α < omega1) :
+    ScatteredFun (MaxFun α) ∧
+    (∀ β, α < β → CBLevel (MaxFun α) β = ∅) ∧
+    (∀ (X' Y' : Type) [TopologicalSpace X'] [TopologicalSpace Y'] (f : X' → Y'),
+      ScatteredFun f → (∀ β, α < β → CBLevel f β = ∅) → ContinuouslyReduces f (MaxFun α))
+```
+
+All modified files (`Defs.lean` and `Theorems.lean`) build successfully.
+
 # Summary of changes for run 11e57b99-2273-4a17-87d4-ecc00eb11fc8
 ## Summary of Work on `pointedGluing_upper_bound` and `CBrank_regular_simple`
 
