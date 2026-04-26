@@ -1144,14 +1144,26 @@ on which `f` is simple.
 The proof uses `exists_clopen_subset_of_open` (clopen basis) and the CB analysis.
 Given `x`, the scatteredness of `f` provides an open `U` and a value `y` such that
 `f` is constantly `y` on `U ∩ {x}`. Using the CB rank of `x`, we find an open set
-where `f` is constant on the relevant CB level, then refine to a clopen subset. -/
-theorem decomposition_lemma {X Y : Type*}
-    [TopologicalSpace X] [SeparableSpace X] [MetrizableSpace X]
-    [TotallyDisconnectedSpace X]
-    [TopologicalSpace Y]
-    {f : X → Y} (hf : ScatteredFun f) :
-    ∀ x : X, ∃ U : Set X, IsClopen U ∧ x ∈ U ∧
-      SimpleFun (f ∘ (Subtype.val : U → X)) := by
+where `f` is constant on the relevant CB level, then refine to a clopen subset.
+commented this abstract version for a concrete one in the Baire space-/
+-- theorem decomposition_lemma {X Y : Type*}
+--     [TopologicalSpace X] [SeparableSpace X] [MetrizableSpace X]
+--     [TotallyDisconnectedSpace X]
+--     [TopologicalSpace Y]
+--     {f : X → Y} (hf : ScatteredFun f) :
+--     ∀ x : X, ∃ U : Set X, IsClopen U ∧ x ∈ U ∧
+--       SimpleFun (f ∘ (Subtype.val : U → X)) := by
+--   sorry
+
+theorem decomposition_lemma_baire
+    (A : Set Baire)
+    (f: A → Baire)
+    (hf : ScatteredFun f) :
+    ∀ x : Baire, ∃ U : Set Baire, IsClopen U ∧ x ∈ U ∧
+         SimpleFun ((f ∘ (Subtype.val : {a : A | (a : Baire) ∈ U} → A)))
+     := by
+  -- this uses the generalized reduction property
+  -- of open sets for subsets of the Baire space
   sorry
 
 end DecompositionLemma
