@@ -179,24 +179,6 @@ def SetsConvergeTo {X : Type*} [TopologicalSpace X]
     (A : ℕ → Set X) (a : X) : Prop :=
   ∀ U : Set X, IsOpen U → a ∈ U → ∃ m : ℕ, ∀ n, m ≤ n → A n ⊆ U
 
-/-!
-## CB-Rank
--/
-
-/-- The CB-rank of a  SCATTERED function can be defined by the supremum of ordinals `α` such that `CB_α(f)` is
-nonempty. Returns `0` for functions where only `CB_0(f) = univ` is nonempty (when the
-domain is empty). -/
-
-
-noncomputable def CBRank_scat {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    (f : X → Y) (fs: ScatteredFun f) : Ordinal.{0} :=
-  sSup {α : Ordinal.{0} | (CBLevel f α).Nonempty}
-
-/- In general we define the CB rank as the least ordinal such that the CB derivative stabilizes-/
-noncomputable def CBRank {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    (f : X → Y) : Ordinal.{0} :=
-  sInf {α : Ordinal.{0} | (CBLevel f α) = (CBLevel f (Order.succ α))}
-
 
 /-!
 ## Minimum and Maximum Function Domains (Definition 3.5 / Def_MinMaxFunc)

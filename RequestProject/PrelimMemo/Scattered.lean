@@ -124,6 +124,26 @@ theorem CBLevel_antitone {X Y : Type*} [TopologicalSpace X]
   · cases hαβ.eq_or_lt <;> simp_all +decide [ CBLevel ];
   · cases hαβ.eq_or_lt <;> simp_all +decide [ CBLevel ]
 
+/-!
+## CB-Rank
+-/
+
+/-- The CB-rank of a  SCATTERED function can be defined by the supremum of ordinals `α` such that `CB_α(f)` is
+nonempty. Returns `0` for functions where only `CB_0(f) = univ` is nonempty (when the
+domain is empty). -/
+
+
+noncomputable def CBRank_scat {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    (f : X → Y) (fs: ScatteredFun f) : Ordinal.{0} :=
+  sSup {α : Ordinal.{0} | (CBLevel f α).Nonempty}
+
+/- In general we define the CB rank as the least ordinal such that the CB derivative stabilizes-/
+noncomputable def CBRank {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    (f : X → Y) : Ordinal.{0} :=
+  sInf {α : Ordinal.{0} | (CBLevel f α) = (CBLevel f (Order.succ α))}
+
+
+
 end CBDerivative
 
 section ScatteredIffEmptyKernel
@@ -249,6 +269,29 @@ theorem scattered_iff_empty_perfectKernel_general {X Y : Type*}
 end ScatteredIffEmptyKernel
 
 section ReductionAndCB
+
+lemma local_cb_derivative {X Y : Type*}
+    [TopologicalSpace X]
+    [TopologicalSpace Y]
+    {f : X → Y}
+    (U: Set X) (hU: IsOpen U)
+    (α : Ordinal.{0}) (hα : α < omega1):
+    CBLevel (f ∘ (Subtype.val: U -> X)) α= (CBLevel f α) ∩ U := by
+  sorry
+
+lemma limit_locally_lower {X Y : Type*}
+    [TopologicalSpace X]
+    [TopologicalSpace Y]
+    {f : X → Y}
+    (hf : ScatteredFun f)
+    (lam : Ordinal)
+    (hlam : lam = CBRank f)
+    (hlim : Order.IsSuccLimit lam) :
+    ∀ x : X, ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ CBRank (f ∘ (Subtype.val : U → X)) < lam := by
+  sorry
+
+
+
 
 /-!
 ## Proposition 2.9 (CBbasicsfromJSL)
@@ -1162,8 +1205,20 @@ theorem decomposition_lemma_baire
     ∀ x : Baire, ∃ U : Set Baire, IsClopen U ∧ x ∈ U ∧
          SimpleFun ((f ∘ (Subtype.val : {a : A | (a : Baire) ∈ U} → A)))
      := by
-  -- this uses the generalized reduction property
+  -- this uses the generalized reduction property (baire_open_reduction_rel)
   -- of open sets for subsets of the Baire space
+  -- By induction on α = CBrank f.
+  -- Vacuously true if α=0.
+  --  If α is limit, then use limit_locally_lower
+  -- every $x\in \dom f$ admits a clopen neighbourhood $C$ such that $\CB(f\restr{C})<\CB(f)$
+  -- and the result follows by induction hypothesis and \cref{0dimanddisjointunion}.
+  -- Finally, assume that $\CB(f)=\beta+1$ and let $I= f(\CB_\beta(f))$. Since $f$ is locally constant on the closed set $\CB_\beta(f)$,
+  -- we can choose for each $y\in I$ an open set $U_y$ of $\dom(f)$ such that $U_y\cap \CB_\beta(f)=f^{-1}(\{y\})\cap \CB_\beta(f)$.
+  -- Applying the generalized reduction property of open sets \cite[22.16]{kechris} to the open cover of $\dom(f)$ given by $V_y=U_y\cup (\dom(f)\setminus \CB_\beta(f))$ for $y\in I$
+  -- yields a clopen partition $(C_y)_{y\in I}$ of $\dom(f)$ with $C_y\subseteq V_y$ for all $y\in I$.
+  -- Note that for all $y\in I$ we have $C_y\cap \CB_\beta(f)= f^{-1}(\{y\})\cap \CB_\beta(f)$,
+  -- which readily implies that each $f\restr{C_y}$ is simple of $\CB$-rank equal to $\beta+1$ using \cref{CBbasics0}~\cref{CBbasicsfromJSL2}, as desired.
+
   sorry
 
 end DecompositionLemma
