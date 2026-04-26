@@ -1,3 +1,33 @@
+# Summary of changes for run e020f2c4-7fbe-45c4-bcb5-eedc36c24cac
+All `sorry`s in `theorem baire_open_reduction_rel` in `RequestProject/PrelimMemo/blackboard.lean` have been resolved. The proof is fully formalized and compiles successfully, depending only on the standard axioms (`propext`, `Classical.choice`, `Quot.sound`).
+
+**Proof structure:**
+
+The theorem proves the *open reduction property* for subspaces of the Baire space: given a countable family of open sets `U n` in a subspace `A ⊆ ℕ → ℕ`, there exists a pairwise-disjoint family of open sets `V n` with `V n ⊆ U n` and `⋃ V n = ⋃ U n`.
+
+The proof proceeds through several helper lemmas building up the necessary infrastructure:
+
+1. **`baire_fiber_isClopen`** — The set `{f | f i = a}` is clopen in the Baire space (preimage of a clopen singleton under a continuous projection).
+
+2. **`baire_cylinder_isClopen`** — Cylinder sets (finite intersections of fibers) are clopen, proved by induction on the finset.
+
+3. **`nat_singleton_basis`** — Singletons form a topological basis for ℕ (discrete topology).
+
+4. **`baire_has_clopen_basis`** — The Baire space has a countable topological basis consisting of clopen cylinder sets.
+
+5. **`baire_open_eq_countable_union_clopen`** — Every open set in the Baire space is a countable union of clopen sets (using the clopen basis).
+
+6. **`subspace_open_eq_countable_union_clopen`** — The same holds in any subspace of the Baire space (traces of clopen sets are clopen in the subspace).
+
+7. **`disjointed_clopen`** — The `disjointed` operation preserves clopen-ness (since `disjointed f n = f n \ finite_union`, and clopen sets are closed under finite unions and differences).
+
+The main theorem then:
+- Decomposes each `U n` into clopen sets `C n k`
+- Flattens to a single sequence via `Nat.pair`/`Nat.unpair`
+- Applies `disjointed` to get pairwise-disjoint clopen pieces
+- Reassembles by grouping pieces back by their original index `n`
+- Verifies openness (union of clopen sets), subset inclusion, disjointness (from `disjoint_disjointed`), and union preservation (from `iUnion_disjointed`).
+
 # Summary of changes for run 96c4e0d3-d2b4-4a7d-96a9-fe1bc29f0bf1
 I completed all three requested tasks:
 
