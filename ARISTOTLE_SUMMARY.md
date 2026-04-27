@@ -1,3 +1,50 @@
+# Summary of changes for run 12d05ffb-fc56-45b7-ad60-a3fb6a85f0c8
+## Summary of completed work
+
+### 1. Resolved all sorries in section ReductionAndCB (`RequestProject/PrelimMemo/Scattered.lean`)
+
+**`local_cb_derivative`** — Proved that for an open set U, the CB levels of the restricted function `f ∘ Subtype.val` on U equal `CBLevel f α ∩ U` (as images under `Subtype.val`). The proof proceeds by transfinite induction on α. The omega1 hypothesis was removed since it was unnecessary — the proof works for all ordinals.
+
+**`limit_locally_lower`** — Proved that when the CB rank is a limit ordinal, every point has an open neighborhood where the CB rank of the restriction is strictly lower. This was decomposed into several helper lemmas:
+- `exit_ordinal_not_limit`: The exit ordinal of any point cannot be a limit ordinal
+- `exit_ordinal_is_successor`: The exit ordinal is always a successor
+- `isolatedLocus_clears_succ_level`: Points in the isolated locus have neighborhoods clearing the next CB level
+- `cbrank_restriction_le_of_empty_level`: Empty CB level in an open set bounds the rank of the restriction
+
+### 2. Formalized Proposition 0dimanddisjointunion from `2_prelim_memo.tex`
+
+Added the following definitions and theorems:
+
+- **`IsLocallyInClass`** — A function f is locally in class F if every point has a clopen neighborhood where the restriction belongs to F
+- **`IsDisjointUnion'`** — A function f is a disjoint union of functions (fᵢ) over a clopen partition (locally defined to avoid circular import with Gluing.lean)
+- **`disjoint_union_implies_locally`** (backward direction) — Proved: if f is a disjoint union of F-functions, then f is locally in F
+- **`locally_implies_disjoint_union_baire`** (forward direction) — Proved: if f is locally in F on a subspace of Baire, then f is a disjoint union of F-functions (with the natural hypothesis that F is closed under restriction to clopen subsets, matching the implicit assumption in the original paper)
+
+### 3. Proved `decomposition_lemma_baire`
+
+**Statement correction**: The original statement quantified over `∀ x : Baire`, which is incorrect when `x ∉ A` (the restricted domain may be empty, making `SimpleFun` false). The corrected version quantifies over `∀ x : A`. The original incorrect statement is preserved as a commented-out block.
+
+**Proof approach**: Instead of the paper's ordinal induction proof, a direct construction was used:
+1. For each point x : A, the CB hierarchy gives a successor exit ordinal β where x leaves
+2. The isolated locus provides an open neighborhood where f is constant on CBLevel f β
+3. This neighborhood is refined to a Baire-clopen set
+4. The restriction to this clopen set is shown to be simple
+
+Key helper lemmas proved:
+- `cb_stabilizing_set_nonempty`: The set of ordinals where CB levels stabilize is nonempty
+- `cbLevel_at_cbRank_empty`: The CB level at the CB rank is empty for scattered functions
+- `scattered_restriction_open`: Restrictions of scattered functions to open sets are scattered
+- `isolatedLocus_gives_simple_neighborhood`: The isolated locus provides neighborhoods with both constancy and level-clearing
+- `restriction_to_clopen_is_simple`: The key lemma connecting all ingredients to SimpleFun
+
+All proofs use only standard axioms (propext, Classical.choice, Quot.sound) — verified via `#print axioms`.
+
+### Pre-existing issues not addressed
+- `sierpinski_rat_homeomorph` (sorry, not requested)
+- `first_reduction_theorem` (sorry, not requested)  
+- `exists_clopen_subset_of_open` for general metrizable spaces (sorry, not requested — the Baire-specific version `baire_exists_clopen_subset_of_open` is proved)
+- Pre-existing syntax error in `RequestProject/PointedGluing/Theorems.lean` (line 831)
+
 # Summary of changes for run e020f2c4-7fbe-45c4-bcb5-eedc36c24cac
 All `sorry`s in `theorem baire_open_reduction_rel` in `RequestProject/PrelimMemo/blackboard.lean` have been resolved. The proof is fully formalized and compiles successfully, depending only on the standard axioms (`propext`, `Classical.choice`, `Quot.sound`).
 
