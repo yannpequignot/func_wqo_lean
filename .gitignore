@@ -1,3 +1,5 @@
 .lake/
 .vscode/
 build/
+.claude/
+.venv/
