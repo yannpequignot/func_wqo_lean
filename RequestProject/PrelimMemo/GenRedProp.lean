@@ -45,7 +45,7 @@ lemma nat_singleton_basis :
     IsTopologicalBasis {s : Set ℕ | ∃ n, s = {n}} := by
   refine' isTopologicalBasis_of_isOpen_of_nhds _ _;
   · aesop;
-  · exact fun a u ha hu => ⟨ { a }, ⟨ a, rfl ⟩, by simpa, by simpa ⟩
+  · exact fun a u ha hu => ⟨ { a }, ⟨ a, rfl ⟩, by simp, by simpa ⟩
 
 /-
 The Baire space has a topological basis consisting of clopen sets.
@@ -85,7 +85,7 @@ lemma baire_open_eq_countable_union_clopen {U : Set (ℕ → ℕ)} (hU : IsOpen 
     refine' ⟨ f, _, _ ⟩;
     · exact fun k => hB₃ _ <| hf.symm.subset ( Set.mem_range_self k ) |>.1;
     · convert h_union using 1;
-      simp +decide [ hf, Set.ext_iff ];
+      simp +decide [ hf];
   · simp_all +singlePass [ Set.not_nonempty_iff_eq_empty ];
     exact ⟨ fun _ => ∅, fun _ => by simp +decide [ IsClopen ], by simp +decide ⟩
 
@@ -116,7 +116,7 @@ lemma disjointed_clopen {X : Type*} [TopologicalSpace X]
     (f : ℕ → Set X) (hf : ∀ n, IsClopen (f n)) (n : ℕ) :
     IsClopen (disjointed f n) := by
   convert IsClopen.diff ( hf n ) _;
-  induction' ( Finset.Iio n ) using Finset.induction <;> simp_all +decide [ Finset.sup_insert, isClopen_iUnion ];
+  induction' ( Finset.Iio n ) using Finset.induction <;> simp_all +decide [ Finset.sup_insert];
   · exact isClopen_empty;
   · exact IsClopen.union ( hf _ ) ‹_›
 
