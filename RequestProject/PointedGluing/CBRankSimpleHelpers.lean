@@ -96,8 +96,7 @@ lemma ray_cb_le_alpha {A B : Set (ℕ → ℕ)}
     (α : Ordinal.{0})
     (y : ℕ → ℕ) (hy_simple : ∀ x ∈ CBLevel f α, f x = y) (n : ℕ) :
     CBRank (fun (x : {a : A | f a ∈ RaySet B y n}) => f x.val) ≤ α := by
-  apply CBRank_le_of_CBLevel_empty;
-  exact?
+  exact CBRank_le_of_CBLevel_empty _ _ (ray_CBLevel_alpha_empty f hf α y hy_simple n)
 
 /-
 If for all n, the ray has CB rank ≤ β, then all points in CBLevel f β map to y.
