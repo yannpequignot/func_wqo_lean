@@ -372,6 +372,33 @@ lemma MaxFun_monotone (α β: Ordinal.{0})
     (hα : α < omega1) (hβ : β < omega1)
     (hl: α ≤ β):
     ContinuouslyReduces (MaxFun α) (MaxFun β) := by
+  -- by induction on beta, we show that if α ≤ β then (MaxFun α) ≤ (MaxFun β)
+  -- beta = 0 implies α =0 and so trivial
+  -- \beta= \gamma+1 successor, we show that (MaxFun γ) ≤ (MaxFun β)
+  -- since (MaxFun β) is the gluing of copies pointedgluing of MaxFun γ,
+  -- we can choose σ to be x ↦ prepend 0 (prepend 1 x) and tau y↦ unprepend (unprepend y)
+  -- by induction hypothesis for every α ≤ γ we have
+  -- (MaxFun α) ≤ (MaxFun γ) so we conclude by transitivity
+  -- β limit, let α<β. By definition of (MaxFun β) is the gluing of MaxFun β_n
+  -- for a sequence β_n cofinal in β. So there exists n such that
+  -- α≤ β_n and by induction hypothesis  (MaxFun α) ≤ (MaxFun β_n)
+  -- now clearly  (MaxFun β_n) ≤ (MaxFun β) by σ : x↦ prepend n x and τ: y↦unprepend y
   sorry
 
+lemma MinFun_monotone (α β: Ordinal.{0})
+    (hα : α < omega1) (hβ : β < omega1)
+    (hl: α ≤ β):
+    ContinuouslyReduces (MinFun α) (MinFun β) := by
+  -- by induction on beta, we show that if α ≤ β then (MinFun α) ≤ (MinFun β)
+  -- beta = 0 implies α =0 and so trivial
+  -- \beta= \gamma+1 successor, we show that (MinFun γ) ≤ (MinFun β)
+  -- since (MinFun β) is the pointedgluing of copies of MinFun γ,
+  -- we can choose σ to be x ↦ prepend 1 x and tau y↦ unprepend y
+  -- by induction hypothesis for every α ≤ γ we have
+  -- (MinFun α) ≤ (MinFun γ) so we conclude by transitivity
+  -- β limit, let α<β. By definition of (MinFun β) is the pointedgluing of MinFun β_n
+  -- for a sequence β_n cofinal in β. So there exists n such that
+  -- α≤ β_n and by induction hypothesis  (MinFun α) ≤ (MinFun β_n)
+  -- now clearly  (MinFun β_n) ≤ (MinFun β) by σ : x↦ prepend 1 x and τ: y↦unprepend y
+  sorry
 end

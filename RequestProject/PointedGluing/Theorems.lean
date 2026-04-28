@@ -699,7 +699,9 @@ For continuous `(f_i)_i` in 𝒞 and all `n ∈ ℕ`:
 
 The forward direction uses Pgluingasupperbound with `y = 0^ω`.
 The backward uses Gluingaslowerbound with the clopen partition
-`{N_{(0)^i(1)}}_{i<n} ∪ {N_{(0)^n}}`. -/
+`{N_{(0)^i(1)}}_{i<n} ∪ {N_{(0)^n}}`.
+Formal statement does not match the memoir. 
+-/
 theorem splitting_pointedGluing_tail
     (A B : ℕ → Set (ℕ → ℕ))
     (f : ∀ i, A i → B i)
