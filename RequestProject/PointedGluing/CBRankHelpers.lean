@@ -239,7 +239,7 @@ lemma CBLevel_block_backward
           · convert CBLevel_block_forward A B f n β _ _ _ using 1;
             rotate_left;
             exact ⟨ prependZerosOne n y.val, prependZerosOne_mem_pointedGluingSet A n y.val y.prop ⟩;
-            exact?;
+            exact prependZerosOne_mem_blockSet n y.val;
             · grind +suggestions;
             · grind +suggestions;
   · rw [ CBLevel_limit _ _ ‹_› ] at h ⊢;
