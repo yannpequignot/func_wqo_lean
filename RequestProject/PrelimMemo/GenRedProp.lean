@@ -35,8 +35,8 @@ A cylinder set (finite intersection of fibers) in the Baire space is clopen.
 lemma baire_cylinder_isClopen (s : Finset ℕ) (g : ℕ → ℕ) :
     IsClopen {f : ℕ → ℕ | ∀ i ∈ s, f i = g i} := by
   induction s using Finset.induction <;> simp_all +decide [ Set.setOf_and ];
-  · exact?;
-  · exact IsClopen.inter ( by exact? ) ‹_›
+  · exact isClopen_univ
+  · exact IsClopen.inter (baire_fiber_isClopen _ _) ‹_›
 
 /-
 Singletons form a topological basis for the discrete topology on ℕ.
@@ -76,7 +76,7 @@ lemma baire_open_eq_countable_union_clopen {U : Set (ℕ → ℕ)} (hU : IsOpen 
     ∃ C : ℕ → Set (ℕ → ℕ), (∀ k, IsClopen (C k)) ∧ U = ⋃ k, C k := by
   obtain ⟨ B, hB₁, hB₂, hB₃ ⟩ := baire_has_clopen_basis;
   have h_union : U = ⋃₀ { s ∈ B | s ⊆ U } := by
-    exact?;
+    exact hB₁.open_eq_sUnion' hU
   have h_countable : Set.Countable { s ∈ B | s ⊆ U } := by
     exact hB₂.mono fun s hs => hs.1;
   have := h_countable.exists_eq_range;

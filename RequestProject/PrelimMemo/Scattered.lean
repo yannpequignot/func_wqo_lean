@@ -395,7 +395,14 @@ lemma limit_locally_lower {X Y : Type*}
     have h_iso_loc : x ∈ isolatedLocus f (CBLevel f β) := by
       simp_all +decide [ CBLevel_succ' ]
     have h_neighborhood : ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ CBLevel f (Order.succ β) ∩ U = ∅ := by
-      exact?
+      obtain ⟨U, hU_open, hxU, hU_const⟩ := h_iso_loc.2
+      refine ⟨U, hU_open, hxU, ?_⟩
+      ext y
+      simp only [Set.mem_inter_iff, Set.mem_empty_iff_false, iff_false, not_and]
+      intro hy_succ hyU
+      rw [CBLevel_succ'] at hy_succ
+      exact hy_succ.2 ⟨hy_succ.1, U, hU_open, hyU,
+        fun z hz => (hU_const z hz).trans (hU_const y ⟨hyU, hy_succ.1⟩).symm⟩
     obtain ⟨U, hU_open, hxU, hU_empty⟩ := h_neighborhood
     have h_cbrank_le : CBRank (f ∘ (Subtype.val : U → X)) ≤ Order.succ β := by
       apply cbrank_restriction_le_of_empty_level U hU_open β hU_empty
@@ -1330,9 +1337,10 @@ theorem locally_implies_disjoint_union_baire
     ∃ (I : Type) (P : I → Set A) (fi : ∀ i, P i → Baire),
       IsDisjointUnion' f P fi ∧ ∀ i, F (P i) (fi i) := by
   choose C hC hc using hloc;
+  -- use Lindelof property to get a countable subcover
   obtain ⟨I, hI⟩ : ∃ I : Set A, Set.Countable I ∧ ⋃ x ∈ I, C x = Set.univ := by
     have h_countable_subcover : IsLindelof (Set.univ : Set A) := by
-      exact?;
+      exact isLindelof_univ
     have := h_countable_subcover.elim_countable_subcover ( fun x => C x );
     exact Exists.elim ( this ( fun x => ( hC x ).isOpen ) ( fun x _ => Set.mem_iUnion_of_mem x ( hc x |>.1 ) ) ) fun r hr => ⟨ r, hr.1, Set.Subset.antisymm ( Set.subset_univ _ ) hr.2 ⟩;
   have := hI.1.exists_eq_range;
