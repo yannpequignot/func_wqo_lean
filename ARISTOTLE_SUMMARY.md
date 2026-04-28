@@ -1,3 +1,37 @@
+# Summary of changes for run a40225e2-e3dc-4b40-baa8-159c693ace75
+## Summary of Changes
+
+### MaxMinhelpers.lean (`RequestProject/PointedGluing/MaxMinhelpers.lean`)
+
+**Resolved 5 out of 6 sorries** (the original 3 sorries plus 3 new helper lemmas):
+
+1. **`maxfun_is_scatter_leq_α`** ✅ — Proved that `MaxFun α` (the maximum function at CB-rank α) is scattered with CB-rank ≤ α. The proof uses transfinite induction on α with the `Ordinal.induction` principle, leveraging helper lemmas for the GluingSet and PointedGluingSet operations.
+
+2. **`minfun_is_scatter_leq_succ_α`** ✅ — Proved that `MinFun α` (the minimum function at CB-rank α+1) is scattered with CB-rank ≤ α+1. The proof similarly uses transfinite induction, analyzing the base case (singleton), successor case, and limit case of the `MinDom` definition.
+
+3. **`MaxFun_monotone`** ❌ — Remains as sorry. This lemma requires `maxFun_is_maximum` (from `Theorems.lean`), which states that `MaxFun α` is the maximum element in the class of functions with CB-rank ≤ α. Since `maxFun_is_maximum` is itself unproved, `MaxFun_monotone` cannot be resolved without it.
+
+**New helper lemmas proved** (added to support the main proofs):
+- `PointedGluingFun_id` — Shows that `PointedGluingFun` with identity functions equals `Subtype.val`
+- `gluingSet_subtype_val_scattered` — `Subtype.val` on `GluingSet` is scattered if each block is scattered
+- `gluingSet_CBLevel_empty` — CBLevel of `Subtype.val` on `GluingSet` is empty if each block's CBLevel is empty
+- `MaxDom_zero`, `MaxDom_succ`, `MaxDom_limit` — Unfolding lemmas for the `MaxDom` definition
+- `MinDom_zero`, `MinDom_succ`, `MinDom_limit` — Unfolding lemmas for the `MinDom` definition
+- `CBLevel_pointedGluing_le` — CBLevel of pointed gluing at β is ⊆ {0^ω} when block CB-ranks ≤ β
+- `CBLevel_succ_empty_of_subset_singleton` — If CBLevel β ⊆ {x}, then CBLevel (succ β) = ∅
+- `pointedGluingSet_subtype_val_scattered` — `Subtype.val` on `PointedGluingSet` is scattered
+- `pointedGluingSet_subtype_val_CBLevel_empty` — CBLevel empties above the block CB-ranks for pointed gluings
+
+**Additional change**: Added imports for `CBRankHelpers`, `CBLevelOpenRestrict`, `CBRankSimpleHelpers`, and `Theorems` to access the existing CB-rank analysis infrastructure.
+
+### Theorems.lean (`RequestProject/PointedGluing/Theorems.lean`)
+
+**Fixed a syntax error** in the `maxFun_is_maximum` theorem statement (line 831): replaced malformed binder syntax `(hf : Continuous f) ScatteredFun f →` with proper `(_hf : Continuous f) (_hscat : ScatteredFun f) (_hcb : ...)`, and `(∀ β : omega1, ...)` with `(∀ β : Ordinal.{0}, ...)`.
+
+**All 10 sorries remain unresolved**. These are the main theorems of the memoir (Propositions 3.5, 3.8, 3.9, 3.10, 3.11, 3.12, Theorems 3.13, 3.14, and Proposition 3.15), each requiring extensive construction proofs involving pointed gluing upper/lower bounds, transfinite induction with decomposition lemmas, and deep structural arguments about continuous reducibility. These theorems form an interdependent hierarchy and each would require hundreds of lines of formal proof.
+
+Both files compile successfully with no errors (only sorry warnings and some unused variable warnings).
+
 # Summary of changes for run 12d05ffb-fc56-45b7-ad60-a3fb6a85f0c8
 ## Summary of completed work
 

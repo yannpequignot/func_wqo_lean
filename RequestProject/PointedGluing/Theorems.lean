@@ -827,9 +827,10 @@ theorem maxFun_is_maximum
     -- MaxFun α is maximum: for all scattered f with CB(f) ≤ α, f ≤ MaxFun α
     (∀ {A : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ)
-    (hf : Continuous f)
-      ScatteredFun f → (∀ β : omega1, α < β → CBLevel f β = ∅) →
-      ContinuouslyReduces f (MaxFun α))∧
+    (_hf : Continuous f)
+    (_hscat : ScatteredFun f)
+    (_hcb : ∀ β : Ordinal.{0}, α < β → CBLevel f β = ∅),
+      ContinuouslyReduces f (MaxFun α)) ∧
     -- SuccMaxFun α is maximum for simple functions:
     -- for all simple scattered f with CB(f) ≤ α+1, f ≤ SuccMaxFun α
     (∀ {A : Set (ℕ → ℕ)}
@@ -839,12 +840,8 @@ theorem maxFun_is_maximum
     (hcb_ne : (CBLevel f β).Nonempty)
     (hcb_empty : CBLevel f (Order.succ β) = ∅)
     (y: ℕ →ℕ )
-    (hy_simple : ∀ x ∈ CBLevel f β, f x = y) → ContinuouslyReduces f (SuccMaxFun α)) := by
-  -- by strong induction on α
-  induction α using Ordinal.induction with
-  . -- for α = 0, we have MaxDom 0 = ∅ and we conclude by emptyFun for the left hand side
-  -- for the right hand side, SuccMaxDom 0 = {zerostream} and we conclude by constant_equiv_id_singleton
-  . -- for α>0 we use decomposition_lemma (yet to be proved)
+    (hy_simple : ∀ x ∈ CBLevel f β, f x = y),
+    ContinuouslyReduces f (SuccMaxFun α)) := by
   sorry
 
 
