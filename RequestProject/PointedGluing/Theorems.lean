@@ -700,7 +700,7 @@ For continuous `(f_i)_i` in 𝒞 and all `n ∈ ℕ`:
 The forward direction uses Pgluingasupperbound with `y = 0^ω`.
 The backward uses Gluingaslowerbound with the clopen partition
 `{N_{(0)^i(1)}}_{i<n} ∪ {N_{(0)^n}}`.
-Formal statement does not match the memoir. 
+Formal statement does not match the memoir.
 -/
 theorem splitting_pointedGluing_tail
     (A B : ℕ → Set (ℕ → ℕ))
@@ -822,7 +822,35 @@ The proof is by strong induction on `α`:
 - For the second item (simple functions), use `Pgluingofraysasupperbound`.
 - For the third item (compact domains), double induction on `n`.
 - items 1 and 2 are proved simultaneuously in maxFun_is_maximum
-- I do not think item 3 is used later, skipping it for now -/
+- I do not think item 3 is used later, skipping it for now
+
+PROVIDED SOLUTION
+For all $\alpha<\omega_1$:
+1. the function $\Maximalfct{\alpha}$ (MaxFun α) is a maximum of $\sC_{\leq\alpha}$,
+2. the function $\pgl \Maximalfct{\alpha}$ (SuccMaxFun α) is a maximum for simple functions in $\sC_{\leq \alpha+1}$,
+
+First notice that if $\alpha\leq \beta$, then we have $\Maximalfct{\alpha}\leq\Maximalfct{\beta}$ and
+$\Minimalfct{\alpha+1}\leq\Minimalfct{\beta+1}$ by MaxFun_monotone and MinFun_monotone.
+For $\alpha=0$, we have $\Maximalfct{0}=\emptyset$ and $\Minimalfct{1}=\pgl\Maximalfct{0}=\id_{\set{\iw{0}}}\equiv\id_{\set{0}}$,
+so all items follows from \cref{LocallyConstantFunctions} (theorem constant_equiv_id_singleton).
+
+We prove the two items simultaneously by strong induction on $\alpha$: suppose they both hold for all $\beta<\alpha$.
+To see that $\Maximalfct{\alpha}$ is a maximum in $\sC_{\leq\alpha}$, let $f\in\sC$ with $\CB(f)\leq\alpha$.
+By the decomposition_lemma_baire \cref{JSLdecompositionlemma},
+$f$ is locally simple. If $\alpha$, is limit $f=\bigsqcup_i f_i$ with $f_i$ simple
+and $\CB(f_i)=\beta_i+1<\alpha$ and so by induction hypothesis the second item ensures that $f_i\leq \pgl \Maximalfct{\beta_i}\leq \Maximalfct{\beta_i+1}$.
+If $\alpha$ is successor, $f=\bigsqcup_i f_i$ with $f_i$ simple and $\CB(f_i)=\beta+1=\alpha$ and
+again the induction hypothesis implies that $f_i\leq \pgl \Maximalfct{\beta}$.
+In both, cases we get $\gl_{i}f_i\leq \Maximalfct{\alpha}$ and so $f\leq \Maximalfct{\alpha}$
+by gluingFun_upper_bound_backward.
+
+Now take $f$ simple in $\sC_{\leq \alpha+1}$ and call $y$ its distinguished point.
+By pointedGluing_rays_upper_bound we have $f\leq\pgl_{j\in\N}\ray{f}{y,j}$, but by simplicity of $f$
+we also have $\CB(\ray{f}{y,j})\leq\alpha$ for all $j\in\N$. As $\Maximalfct{\alpha}$ is a maximum
+in $\sC_{\alpha}$, we get $\ray{f}{y,j}\leq\Maximalfct{\alpha}$ for all $j\in \N$ and
+so $f\leq \pgl\Maximalfct{\alpha}$ by \cref{Pgluingasupperbound}.
+-/
+
 
 theorem maxFun_is_maximum
     (α : Ordinal.{0}) (hα : α < omega1) :
