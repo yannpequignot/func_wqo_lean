@@ -368,37 +368,141 @@ lemma minfun_is_scatter_leq_succ_α (α : Ordinal.{0}) (hα : α < omega1) : Sca
       unfold MinFun;
       rw [ MinDom_limit o ho ( by aesop ) ]
 
+/-
+Subtype.val on the n-th block of a GluingSet reduces to Subtype.val on the whole GluingSet.
+The embedding maps x ↦ prepend n x and the recovery maps y ↦ unprepend y.
+-/
+lemma gluingSet_block_reduces (A : ℕ → Set (ℕ → ℕ)) (n : ℕ) :
+    ContinuouslyReduces
+      (fun (x : A n) => (x.val : ℕ → ℕ))
+      (fun (x : GluingSet A) => (x.val : ℕ → ℕ)) := by
+  constructor;
+  refine' ⟨ _, _, continuous_unprepend.continuousOn, _ ⟩;
+  rotate_right;
+  exact fun x => ⟨ prepend n x.val, mem_gluingSet_prepend x.prop ⟩;
+  · exact Continuous.subtype_mk ( continuous_prepend n |> Continuous.comp <| continuous_subtype_val ) _;
+  · aesop
+
+/-
+Subtype.val on a set A reduces to Subtype.val on PointedGluingSet(fun _ => A),
+via embedding x ↦ prependZerosOne 0 x and recovery y ↦ stripZerosOne 0 y.
+-/
+lemma pointedGluingSet_block_reduces (A : Set (ℕ → ℕ)) (n : ℕ) :
+    ContinuouslyReduces
+      (fun (x : A) => (x.val : ℕ → ℕ))
+      (fun (x : PointedGluingSet (fun _ => A)) => (x.val : ℕ → ℕ)) := by
+  constructor;
+  swap;
+  exact fun x => ⟨ prependZerosOne n x, Or.inr ( Set.mem_iUnion.mpr ⟨ n, x, x.2, rfl ⟩ ) ⟩;
+  refine' ⟨ _, _ ⟩;
+  · refine' Continuous.subtype_mk _ _;
+    exact continuous_prependZerosOne n |> Continuous.comp <| continuous_subtype_val;
+  · refine' ⟨ fun x => stripZerosOne n x, _, _ ⟩;
+    · exact Continuous.continuousOn ( continuous_pi_iff.mpr fun _ => continuous_apply _ );
+    · exact?
+
+/-
+MaxFun γ reduces to MaxFun (succ γ).
+MaxDom(succ γ) = GluingSet(fun _ => PointedGluingSet(fun _ => MaxDom γ)),
+so we embed MaxDom γ into block 0 of the gluing, in the 0th pointed gluing block.
+σ: x ↦ prepend 0 (prependZerosOne 0 x), τ: y ↦ stripZerosOne 0 (unprepend y).
+-/
+lemma MaxFun_reduces_succ (γ : Ordinal.{0}) :
+    ContinuouslyReduces (MaxFun γ) (MaxFun (Order.succ γ)) := by
+  -- By definition of MaxFun, we know that MaxFun γ = subtype val on MaxDom γ.
+  unfold MaxFun;
+  convert pointedGluingSet_block_reduces _ 0 |> fun h => h.trans _;
+  convert gluingSet_block_reduces _ 0;
+  any_goals exact fun _ => PointedGluingSet fun _ => MaxDom γ;
+  all_goals norm_cast;
+  · -- By definition of MaxDom, we know that MaxDom (Order.succ γ) = GluingSet (fun _ => PointedGluingSet (fun _ => MaxDom γ)).
+    rw [MaxDom_succ];
+    exact?;
+  · exact?;
+  · exact?
+
+/--
+MinFun γ reduces to MinFun (succ γ).
+MinDom(succ γ) = PointedGluingSet(fun _ => MinDom γ),
+so we embed MinDom γ into the 0th pointed gluing block.
+σ: x ↦ prependZerosOne 0 x, τ: y ↦ stripZerosOne 0 y.
+-/
+lemma MinFun_reduces_succ (γ : Ordinal.{0}) :
+    ContinuouslyReduces (MinFun γ) (MinFun (Order.succ γ)) := by
+  unfold MinFun
+  show ContinuouslyReduces (Subtype.val : MinDom γ → _) (Subtype.val : MinDom (Order.succ γ) → _)
+  rw [MinDom_succ]
+  exact pointedGluingSet_block_reduces _ 0
+
+/-
+Helper: MaxFun (enumBelow β n) reduces to MaxFun β for limit β.
+-/
+lemma MaxFun_block_reduces_limit (β : Ordinal.{0})
+    (hlim : Order.IsSuccLimit β) (hne : β ≠ 0) (n : ℕ) :
+    ContinuouslyReduces (MaxFun (enumBelow β n)) (MaxFun β) := by
+  convert gluingSet_block_reduces ( fun n => MaxDom ( enumBelow β n ) ) n;
+  · exact?;
+  · exact?;
+  · unfold MaxFun;
+    congr! 1;
+    ext; simp [MaxDom_limit β hlim hne]
+
+/-- Helper: MinFun (cofinalSeq β n) reduces to MinFun β for limit β. -/
+lemma MinFun_block_reduces_limit (β : Ordinal.{0})
+    (hlim : Order.IsSuccLimit β) (hne : β ≠ 0) (n : ℕ) :
+    ContinuouslyReduces (MinFun (cofinalSeq β n)) (MinFun β) := by
+  have key : ContinuouslyReduces
+      (fun (x : (fun n => MinDom (cofinalSeq β n)) n) => (x.val : ℕ → ℕ))
+      (fun (x : PointedGluingSet (fun n => MinDom (cofinalSeq β n))) => (x.val : ℕ → ℕ)) := by
+    refine ⟨fun x => ⟨prependZerosOne n x.val, prependZerosOne_mem_pointedGluingSet _ n x.val x.prop⟩, ?_, ?_⟩
+    · exact Continuous.subtype_mk (continuous_prependZerosOne n |>.comp continuous_subtype_val) _
+    · refine ⟨stripZerosOne n, ?_, ?_⟩
+      · exact (continuous_pi fun _ => continuous_apply _).continuousOn
+      · intro x; exact (stripZerosOne_prependZerosOne n x.val).symm
+  unfold MinFun
+  show ContinuouslyReduces (Subtype.val : MinDom (cofinalSeq β n) → _)
+    (Subtype.val : MinDom β → _)
+  rw [MinDom_limit β hlim hne]
+  exact key
+
 lemma MaxFun_monotone (α β: Ordinal.{0})
     (hα : α < omega1) (hβ : β < omega1)
     (hl: α ≤ β):
     ContinuouslyReduces (MaxFun α) (MaxFun β) := by
-  -- by induction on beta, we show that if α ≤ β then (MaxFun α) ≤ (MaxFun β)
-  -- beta = 0 implies α =0 and so trivial
-  -- \beta= \gamma+1 successor, we show that (MaxFun γ) ≤ (MaxFun β)
-  -- since (MaxFun β) is the gluing of copies pointedgluing of MaxFun γ,
-  -- we can choose σ to be x ↦ prepend 0 (prepend 1 x) and tau y↦ unprepend (unprepend y)
-  -- by induction hypothesis for every α ≤ γ we have
-  -- (MaxFun α) ≤ (MaxFun γ) so we conclude by transitivity
-  -- β limit, let α<β. By definition of (MaxFun β) is the gluing of MaxFun β_n
-  -- for a sequence β_n cofinal in β. So there exists n such that
-  -- α≤ β_n and by induction hypothesis  (MaxFun α) ≤ (MaxFun β_n)
-  -- now clearly  (MaxFun β_n) ≤ (MaxFun β) by σ : x↦ prepend n x and τ: y↦unprepend y
-  sorry
+  induction' β using Ordinal.limitRecOn with β ih generalizing α;
+  · grind +suggestions;
+  · grind +suggestions;
+  · rename_i β hβ ih;
+    by_cases hαβ : α < β;
+    · have := enumBelow_surj β hβ ( by aesop ) ⟨ α, hαβ ⟩;
+      obtain ⟨ n, hn ⟩ := this;
+      have := MaxFun_block_reduces_limit β ‹_› ( by aesop ) n; aesop;
+    · rw [ le_antisymm hl ( not_lt.mp hαβ ) ];
+      exact?
 
 lemma MinFun_monotone (α β: Ordinal.{0})
     (hα : α < omega1) (hβ : β < omega1)
     (hl: α ≤ β):
     ContinuouslyReduces (MinFun α) (MinFun β) := by
-  -- by induction on beta, we show that if α ≤ β then (MinFun α) ≤ (MinFun β)
-  -- beta = 0 implies α =0 and so trivial
-  -- \beta= \gamma+1 successor, we show that (MinFun γ) ≤ (MinFun β)
-  -- since (MinFun β) is the pointedgluing of copies of MinFun γ,
-  -- we can choose σ to be x ↦ prepend 1 x and tau y↦ unprepend y
-  -- by induction hypothesis for every α ≤ γ we have
-  -- (MinFun α) ≤ (MinFun γ) so we conclude by transitivity
-  -- β limit, let α<β. By definition of (MinFun β) is the pointedgluing of MinFun β_n
-  -- for a sequence β_n cofinal in β. So there exists n such that
-  -- α≤ β_n and by induction hypothesis  (MinFun α) ≤ (MinFun β_n)
-  -- now clearly  (MinFun β_n) ≤ (MinFun β) by σ : x↦ prepend 1 x and τ: y↦unprepend y
-  sorry
+  induction' β using Ordinal.limitRecOn with β ih generalizing α;
+  · rw [ le_antisymm hl bot_le ];
+    exact?;
+  · grind +suggestions;
+  · rename_i β hβ ih;
+    by_cases hαβ : α < β;
+    · -- Since β is a limit ordinal, there exists some n such that α ≤ cofinalSeq β n.
+      obtain ⟨n, hn⟩ : ∃ n, α ≤ cofinalSeq β n := by
+        have := enumBelow_surj β hβ (Order.IsSuccLimit.ne_bot ‹_›);
+        obtain ⟨ n, hn ⟩ := this ⟨ α, by
+          exact hαβ ⟩
+        generalize_proofs at *;
+        simp_all +decide [ cofinalSeq ];
+        aesop;
+      refine' ih _ _ _ hα _ hn |> fun h => h.trans _;
+      · exact cofinalSeq_lt β ‹_› ( by aesop ) n;
+      · exact lt_of_lt_of_le ( cofinalSeq_lt β ‹_› ( by aesop ) n ) hβ.le;
+      · exact MinFun_block_reduces_limit β ‹_› ( ne_bot_of_gt hαβ ) n;
+    · rw [ le_antisymm hl ( not_lt.mp hαβ ) ];
+      exact?
+
 end
