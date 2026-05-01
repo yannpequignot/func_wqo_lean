@@ -74,8 +74,8 @@ lemma gluingSet_CBLevel_empty
     CBLevel (fun (x : GluingSet F) => (x.val : ℕ → ℕ)) β = ∅ := by
   set S : ℕ → Set (GluingSet F) := fun n => {x | x.val 0 = n};
   convert CBLevel_clopen_union_empty _ _ _ _ _ _ _;
-  exact?;
-  exact?;
+  exact Pi.topologicalSpace;
+  exact small_subtype (ℕ → ℕ) (Membership.mem (GluingSet F));
   convert hF_scat;
   exact fun n => { x : GluingSet F | x.val 0 = n };
   · intro n;
@@ -122,7 +122,7 @@ lemma gluingSet_CBLevel_empty
         · exact hU₂.2.1;
         · intro y hy;
           have := hU₂.2.2 ⟨ unprepend y.val.val, by
-            exact? ⟩ ⟨ hy.1, by
+            (expose_names; exact mem_preimage.mp (pf_2 y)) ⟩ ⟨ hy.1, by
             grind +revert ⟩
           generalize_proofs at *;
           simp_all +decide [ funext_iff, unprepend ];
@@ -253,26 +253,26 @@ lemma maxfun_is_scatter_leq_α (α : Ordinal.{0}) (hα : α < omega1) : Scattere
             apply pointedGluingSet_subtype_val_CBLevel_empty;
             exact fun _ => ih β ( Order.lt_succ β ) |>.1;
             exact fun _ => ih β ( Order.lt_succ β ) |>.2 _ ( Order.lt_succ β );
-            exact?;
+            exact Order.succ_le_iff.mpr hγ;
         unfold MaxFun;
         rw [ MaxDom_succ ] ; aesop;
       · have hα_limit : Order.IsSuccLimit α := by
           constructor;
-          · exact?;
+          · exact not_isMin_iff_ne_bot.mpr hα_zero;
           · intro β hβ;
             exact hα_succ ⟨ β, hβ.succ_eq.symm ⟩;
         have h_max_fun_limit : ScatteredFun (fun (x : GluingSet (fun n => MaxDom (enumBelow α n))) => (x.val : ℕ → ℕ)) := by
           apply gluingSet_subtype_val_scattered;
           intro n
           apply (ih (enumBelow α n) (by
-          exact?)).left;
+          exact enumBelow_lt α hα_zero n)).left;
         have h_max_fun_limit : ∀ β, α < β → CBLevel (fun (x : GluingSet (fun n => MaxDom (enumBelow α n))) => (x.val : ℕ → ℕ)) β = ∅ := by
           intros β hβ
           apply gluingSet_CBLevel_empty;
           · exact h_max_fun_limit;
           · intro i
             have hβ_gt_enum : enumBelow α i < α := by
-              exact?
+              exact enumBelow_lt α hα_zero i
             have hβ_gt_enum' : enumBelow α i < β := by
               exact lt_trans hβ_gt_enum hβ
             exact ih (enumBelow α i) hβ_gt_enum |>.2 β hβ_gt_enum';
@@ -325,7 +325,7 @@ lemma minfun_is_scatter_leq_succ_α (α : Ordinal.{0}) (hα : α < omega1) : Sca
       convert pointedGluingSet_subtype_val_CBLevel_empty ( fun _ => MinDom α ) _ ( Order.succ ( Order.succ α ) ) _ β _;
       · rw [ show MinFun ( Order.succ α ) = fun x : MinDom ( Order.succ α ) => ( x.val : ℕ → ℕ ) from ?_ ];
         · rw [ MinDom_succ ];
-        · exact?;
+        · exact List.map_inj.mp rfl;
       · exact fun _ => ih ( lt_of_le_of_lt ( Order.le_succ _ ) hα ) |>.1;
       · exact fun _ => ih ( lt_of_le_of_lt ( Order.le_succ _ ) hα ) |>.2 _ ( Order.lt_succ _ );
       · exact Order.succ_le_of_lt hβ;
@@ -363,7 +363,7 @@ lemma minfun_is_scatter_leq_succ_α (α : Ordinal.{0}) (hα : α < omega1) : Sca
           have h_ind' : cofinalSeq o n < omega1 := by
             exact lt_trans h_ind hα
           exact (ih (cofinalSeq o n) h_ind h_ind').left;
-        · exact?;
+        · exact Order.succ_le_iff.mpr hβ;
       convert h_pointedGluing_empty using 1;
       unfold MinFun;
       rw [ MinDom_limit o ho ( by aesop ) ]
@@ -399,7 +399,7 @@ lemma pointedGluingSet_block_reduces (A : Set (ℕ → ℕ)) (n : ℕ) :
     exact continuous_prependZerosOne n |> Continuous.comp <| continuous_subtype_val;
   · refine' ⟨ fun x => stripZerosOne n x, _, _ ⟩;
     · exact Continuous.continuousOn ( continuous_pi_iff.mpr fun _ => continuous_apply _ );
-    · exact?
+    · exact fun x => Eq.symm (stripZerosOne_prependZerosOne n ↑x)
 
 /-
 MaxFun γ reduces to MaxFun (succ γ).
@@ -417,9 +417,9 @@ lemma MaxFun_reduces_succ (γ : Ordinal.{0}) :
   all_goals norm_cast;
   · -- By definition of MaxDom, we know that MaxDom (Order.succ γ) = GluingSet (fun _ => PointedGluingSet (fun _ => MaxDom γ)).
     rw [MaxDom_succ];
-    exact?;
-  · exact?;
-  · exact?
+    exact setOf_inj.mp rfl;
+  · exact MaxDom_succ γ;
+  · exact MaxDom_succ γ
 
 /--
 MinFun γ reduces to MinFun (succ γ).
@@ -441,8 +441,8 @@ lemma MaxFun_block_reduces_limit (β : Ordinal.{0})
     (hlim : Order.IsSuccLimit β) (hne : β ≠ 0) (n : ℕ) :
     ContinuouslyReduces (MaxFun (enumBelow β n)) (MaxFun β) := by
   convert gluingSet_block_reduces ( fun n => MaxDom ( enumBelow β n ) ) n;
-  · exact?;
-  · exact?;
+  · exact MaxDom_limit β hlim hne;
+  · exact MaxDom_limit β hlim hne;
   · unfold MaxFun;
     congr! 1;
     ext; simp [MaxDom_limit β hlim hne]
@@ -478,7 +478,7 @@ lemma MaxFun_monotone (α β: Ordinal.{0})
       obtain ⟨ n, hn ⟩ := this;
       have := MaxFun_block_reduces_limit β ‹_› ( by aesop ) n; aesop;
     · rw [ le_antisymm hl ( not_lt.mp hαβ ) ];
-      exact?
+      exact ContinuouslyReduces.refl (MaxFun β)
 
 lemma MinFun_monotone (α β: Ordinal.{0})
     (hα : α < omega1) (hβ : β < omega1)
@@ -486,7 +486,7 @@ lemma MinFun_monotone (α β: Ordinal.{0})
     ContinuouslyReduces (MinFun α) (MinFun β) := by
   induction' β using Ordinal.limitRecOn with β ih generalizing α;
   · rw [ le_antisymm hl bot_le ];
-    exact?;
+    exact ContinuouslyReduces.refl (MinFun 0);
   · grind +suggestions;
   · rename_i β hβ ih;
     by_cases hαβ : α < β;
@@ -503,6 +503,6 @@ lemma MinFun_monotone (α β: Ordinal.{0})
       · exact lt_of_lt_of_le ( cofinalSeq_lt β ‹_› ( by aesop ) n ) hβ.le;
       · exact MinFun_block_reduces_limit β ‹_› ( ne_bot_of_gt hαβ ) n;
     · rw [ le_antisymm hl ( not_lt.mp hαβ ) ];
-      exact?
+      exact ContinuouslyReduces.refl (MinFun β)
 
 end

@@ -844,9 +844,16 @@ theorem pointedGluing_upper_bound
           apply rayIdx_tendsto_atTop_of_converge;
           any_goals tauto;
           simpa [ ha₀ ] using hf.continuousAt.tendsto.comp hx_n_tendsto;
-        exact?;
+        exact
+          disjoint_finset_member_tendsto_atTop hI_disj
+            (fun n =>
+              embed_block (rayIdx (x_n n) (hU_n n))
+                (σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩))
+            h_append_zero;
       have h_append_zero : Filter.Tendsto (fun n => prependZerosOne ((σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩).val 0) (unprepend (σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩).val)) Filter.atTop (nhds zeroStream) := by
-        exact?;
+        exact
+          prependZerosOne_tendsto_zeroStream h_append_zero fun n =>
+            unprepend ↑(σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩);
       grind
   · /- **Continuity of τ on range**. -/
     -- First prove the equation (needed for continuity at zeroStream)

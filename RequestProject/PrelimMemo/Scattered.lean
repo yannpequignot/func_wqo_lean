@@ -868,7 +868,7 @@ lemma cantor_sigma_continuous {X : Type*} [MetricSpace X]
       simpa using tendsto_const_nhds.div_atTop ( tendsto_pow_atTop_atTop_of_one_lt one_lt_two ) |> fun h => h.eventually ( gt_mem_nhds εpos ) |> fun h => h.exists;
     obtain ⟨ n, hn ⟩ := h_bound;
     refine' ⟨ n, lt_of_le_of_lt _ hn ⟩;
-    convert mul_le_mul_of_nonneg_left ( scheme_radius_bound hr_half ( PiNat.res x.val n ) ) zero_le_two using 1 ; ring;
+    convert mul_le_mul_of_nonneg_left ( scheme_radius_bound hr_half ( PiNat.res x.val n ) ) zero_le_two using 1 ; ring_nf;
     simp +decide [ PiNat.res ]
   have h_open : IsOpen {y : CantorEventuallyZero | PiNat.res y.val n = PiNat.res x.val n} := by
     have h_open : IsOpen (PiNat.cylinder x.val n) := by
@@ -1349,10 +1349,10 @@ theorem locally_implies_disjoint_union_baire
       exact this hI_empty;
     refine' ⟨ ℕ, fun n => disjointed ( fun n => C ( g n ) ) n, fun n => fun a => f a.val, _, _ ⟩ <;> simp_all +decide [ IsDisjointUnion' ];
     · refine' ⟨ _, _, _ ⟩;
-      · exact?;
+      · exact fun i => disjointed_clopen (fun n => C (g n)) (fun n => hC (↑(g n)) (g n).property) i;
       · exact fun i j hij => disjoint_disjointed _ hij;
       · convert hI.2 using 1;
-        exact?;
+        exact iUnion_disjointed;
     · intro n;
       apply hF_restrict;
       exact disjointed_subset _ _;
@@ -1517,7 +1517,7 @@ lemma restriction_to_clopen_is_simple
   · obtain ⟨ x, hx₁, hx₂ ⟩ := hx_exists; use ⟨ x, hx₁ ⟩ ; simp_all +decide [ local_cb_derivative ] ;
     have h_local : Subtype.val '' CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ V} → A)) β = (CBLevel f β) ∩ Subtype.val ⁻¹' V := by
       convert local_cb_derivative ( Subtype.val ⁻¹' V ) ( hV.2.preimage ( continuous_subtype_val ) ) β using 1;
-      exact?;
+      exact Pi.topologicalSpace;
     exact h_local.symm.subset ⟨ hx₂, hx₁ ⟩ |> fun ⟨ y, hy₁, hy₂ ⟩ => hy₂ ▸ hy₁;
   · have h_local_cb_derivative : Subtype.val '' CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ V} → A)) (Order.succ β) = CBLevel f (Order.succ β) ∩ Subtype.val ⁻¹' V := by
       apply local_cb_derivative;
