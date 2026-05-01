@@ -1,3 +1,96 @@
+# Summary of changes for run 00a36f1b-d845-4442-9deb-030e8778832a
+## Progress on `pointedGluing_upper_bound` and `maxFun_is_maximum`
+
+### `pointedGluing_upper_bound` (Proposition 3.5)
+
+**Previous state**: 2 sorry's remained (lines 948 and 951) in the continuity-of-τ proof for the non-zeroStream case.
+
+**Current state**: Reduced to 1 sorry (line 1025 in `Theorems.lean`).
+
+**What was done**:
+- Added a new helper lemma `continuousWithinAt_tau_at_block'` in `ContinuousOnTau.lean` — a weaker variant of `continuousWithinAt_tau_at_block` that only requires `ContinuousWithinAt` (not full `ContinuousOn`) of the replacement function at the target point.
+- Restructured the non-zeroStream continuity proof to use `ContinuousWithinAt.comp` with three sub-goals:
+  1. **ContinuousAt of pointedToGluing at z** (fully proved): Uses `continuousAt_congr` to reduce to continuity of `prepend i ∘ stripZerosOne i` on the open block.
+  2. **MapsTo pointedToGluing (S ∩ block_i) R'** (mostly proved): Shows that pointedToGluing maps elements of the range ∩ block into the range where τ_j is ContinuousOn. The proof unfolds GluingFunVal, uses `hfJ : findJ i = rayIdx a ha_ne` to transport across dependent types, and establishes the structural equality. The remaining sorry is a technical value equality after `simp` unfolding — both sides compute to `prepend i (g i ⟨..., proof⟩).val` where the proofs differ by proof irrelevance but the `simp` chain doesn't quite resolve the final step.
+  3. **ContinuousWithinAt.comp composition** (proved assuming MapsTo).
+
+**Remaining sorry**: A single equality after GluingFunVal unfolding and simp rewrites, likely resolvable with more careful tactic work on dependent types (e.g., using `Eq.rec` or manual transport).
+
+### `maxFun_is_maximum` (Proposition 3.9)
+
+**Status**: Unchanged — remains as `sorry`.
+
+This theorem requires transfinite induction using `decomposition_lemma_baire` (from `PrelimMemo/Scattered.lean`), which itself has multiple unresolved sorry's. Without the decomposition lemma, `maxFun_is_maximum` cannot be fully resolved.
+
+### Files Modified
+- `RequestProject/PointedGluing/Theorems.lean` — restructured the non-zeroStream case of τ continuity, reducing 2 sorry's to 1
+- `RequestProject/PointedGluing/ContinuousOnTau.lean` — added `continuousWithinAt_tau_at_block'` helper lemma
+
+All files build successfully.
+
+# Summary of changes for run a3856d0c-fbe5-4250-962a-6ea296d3f8ec
+## Summary of Progress
+
+### `pointedGluing_upper_bound` (Proposition 3.5)
+
+**Resolved the sequential convergence sorry** (originally at line 838): The proof that σ(x_n) → zeroStream when f(x_n) → y is now complete. This required:
+1. Creating `RequestProject/PointedGluing/UpperBoundHelpers.lean` with 5 fully proved helper lemmas:
+   - `rayIdx_tendsto_atTop_of_converge`: ray indices → ∞ when values converge to the base point
+   - `disjoint_finset_member_tendsto_atTop`: elements from pairwise disjoint finsets grow when indices grow
+   - `prependZerosOne_tendsto_zeroStream`: prependZerosOne with growing prefix converges to zeroStream
+   - `disjoint_finset_idx_tendsto_of_member_tendsto`: reverse direction of the above
+   - `finite_indices_with_small_members`: finiteness of indices with bounded members
+
+**Resolved the zeroStream case of ContinuousOn τ**: Created `RequestProject/PointedGluing/ContinuousOnTau.lean` with 4 fully proved helper lemmas:
+   - `firstNonzero_tendsto_of_converge_zeroStream`: first nonzero index → ∞ when converging to zeroStream
+   - `rayLike_tendsto_of_idx_tendsto`: values agreeing with target on growing prefixes converge
+   - `continuousWithinAt_tau_at_zeroStream`: continuity of τ at zeroStream using the filter argument
+   - `continuousWithinAt_tau_at_block`: continuity of τ at non-zero points via local agreement
+
+**Restructured the equation proof**: Duplicated the equation `f = τ ∘ PGF ∘ σ` as a local `have heq_main` inside the ContinuousOn τ goal, enabling its use for the zeroStream continuity argument.
+
+**Remaining sorry** (2 small sub-sorries in the non-zeroStream block case, lines 948 and 951): These require showing that on each block, the composition `τ_j(findJ i) ∘ pointedToGluing` is ContinuousWithinAt and agrees with τ locally. The proof skeleton is set up with the block structure, `firstNonzero` equivalence, and the `h_tau_eq_on_block` lemma. The sub-sorries are focused on the composition continuity and the local congr condition.
+
+### `maxFun_is_maximum` (Proposition 3.9)
+
+This theorem requires a complex transfinite induction that depends on `decomposition_lemma_baire` (which is itself sorry'd in `PrelimMemo/Scattered.lean`), making it impossible to fully resolve without first proving that dependency. The theorem remains as `sorry`.
+
+### Files Modified/Created
+- `RequestProject/PointedGluing/UpperBoundHelpers.lean` — **new**, 5 sorry-free helper lemmas
+- `RequestProject/PointedGluing/ContinuousOnTau.lean` — **new**, 4 sorry-free helper lemmas  
+- `RequestProject/PointedGluing/Theorems.lean` — modified with partial progress on `pointedGluing_upper_bound`
+
+All files build successfully with sorry warnings for the remaining unresolved statements.
+
+# Summary of changes for run 0985e61a-cdd3-42db-8f15-cd597401551a
+## Summary of work done
+
+### `pointedGluing_upper_bound` (Proposition 3.5)
+Significant progress was made on this theorem. The proof skeleton was fully set up (~200 lines) and several key challenges were resolved:
+
+1. **Fixed pre-existing compilation errors** in the original proof:
+   - Dependent type equality issues in `toPointed_pgluing` (resolved using `grind +splitImp`)
+   - Dependent type equality in `hσ_eq_on_Oj` (resolved using `convert rfl` + `rayIdx_on_ray`)
+   - `ContinuousOn.congr` direction mismatch (fixed)
+   - `unfold_let τ` invalid tactic (replaced with `show` + explicit term)
+
+2. **Proved ContinuousOn σ on each ray** (the composition toPointed j ∘ σ_j j is continuous)
+
+3. **Proved the equation** f(a) = τ(PointedGluingFun(σ(a))) (both cases: f(a)=y and f(a)≠y)
+
+4. **Two sorry holes remain** (lines 838 and 843):
+   - Sequential convergence to zeroStream (σ(x_n) → zeroStream when f(x_n) → y)  
+   - ContinuousOn τ on the range
+
+### `maxFun_is_maximum` (Proposition 3.9)
+- **Fixed the statement**: Changed `α < β` to `α ≤ β` in the CB-level condition (the original was off-by-one: it required CB rank ≤ α+1 instead of ≤ α, which made the theorem false for α=0)
+- The proof body remains as `sorry` — this requires a complex transfinite induction that could not be completed in this session
+
+### Other changes
+- The file `RequestProject/PointedGluing/Theorems.lean` builds successfully with sorry warnings
+- The dependent module `MaxMinhelpers.lean` also builds successfully
+- No other files were modified
+
 # Summary of changes for run f20efca7-8007-47aa-8229-ed6cd435ac57
 Successfully resolved all `sorry`s in `RequestProject/PointedGluing/MaxMinhelpers.lean`. Here's what was done:
 

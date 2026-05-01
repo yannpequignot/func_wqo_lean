@@ -6,3 +6,4 @@ build/
 *.tex
 RequestProject/PrelimMemo/blackboard.lean
 .venv/
+.claude/

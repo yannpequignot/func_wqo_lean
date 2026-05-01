@@ -7,6 +7,8 @@ import RequestProject.PointedGluing.Defs
 import RequestProject.PointedGluing.CBRankHelpers
 import RequestProject.PointedGluing.CBLevelOpenRestrict
 import RequestProject.PointedGluing.CBRankSimpleHelpers
+import RequestProject.PointedGluing.UpperBoundHelpers
+import RequestProject.PointedGluing.ContinuousOnTau
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
@@ -623,8 +625,8 @@ theorem sufficient_cond_continuity
 ## Section 3: Pointed Gluing as an Upper Bound (Proposition 3.5, Corollaries 3.6–3.7)
 -/
 
-
-/-- **Proposition (Pgluingasupperbound). Pointed gluing as upper bound.**
+/-
+**Proposition (Pgluingasupperbound). Pointed gluing as upper bound.**
 Let `f ∈ 𝒞` be continuous and `(g_i)_{i ∈ ℕ}` a sequence in 𝒞.
 If `y ∈ B` and `(Ray(f, y, j))_{j ∈ ℕ}` is reducible by pieces to `(g_i)_i`,
 then `f ≤ pgl_i g_i`.
@@ -632,7 +634,8 @@ then `f ≤ pgl_i g_i`.
 
 The proof constructs `σ` by mapping `f⁻¹({y})` to `{0^ω}` and gluing together the
 individual reductions on each ray. Continuity at `0^ω` follows from
-Lemma (prop:sufficientcondforcont) using that the partition indices grow. -/
+Lemma (prop:sufficientcondforcont) using that the partition indices grow.
+-/
 theorem pointedGluing_upper_bound
     {A B : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
@@ -713,12 +716,13 @@ theorem pointedGluing_upper_bound
       have hne : (toPointed j x).val ≠ zeroStream := hv ▸ prependZerosOne_ne_zeroStream _ _
       have h_idx : firstNonzero (toPointed j x).val = x.val 0 := by
         rw [hv, firstNonzero_prependZerosOne]
-      unfold PointedGluingFun
-      rw [dif_neg hne]
-      simp only [hv, firstNonzero_prependZerosOne, stripZerosOne_prependZerosOne]
-      rw [dif_pos (embed_strip j x)]
-      simp only [h_idx]
-      congr 2; exact Subtype.ext rfl
+      have h_strip : stripZerosOne (firstNonzero (toPointed j x).val) (toPointed j x).val = unprepend x.val := by
+        rw [hv, firstNonzero_prependZerosOne, stripZerosOne_prependZerosOne]
+      have h_mem : stripZerosOne (firstNonzero (toPointed j x).val) (toPointed j x).val ∈
+          C (firstNonzero (toPointed j x).val) := by
+        rw [h_strip, h_idx]; exact embed_strip j x
+      simp only [PointedGluingFun, dif_neg hne, dif_pos h_mem]
+      grind +splitImp -- dependent type eq: h_idx and h_strip
   /-
   ## findJ: for k in some I j, find that j
   -/
@@ -780,28 +784,40 @@ theorem pointedGluing_upper_bound
         intro b hb
         have hb_ne : f b ≠ y := fun h => hb.2.2 (congr_fun h j)
         simp only [σ, dif_neg hb_ne]
-        set j' := rayIdx b hb_ne with hj'_def
-        have h_eq : j' = j := rayIdx_on_ray j b hb_ne hb
-        subst h_eq
-        congr 1; exact Subtype.ext rfl
+        -- Apply the hypothesis `rayIdx_on_ray` to conclude that `rayIdx b hb_ne = j`.
+        have h_rayIdx_eq : rayIdx b hb_ne = j := by
+          exact rayIdx_on_ray j b hb_ne hb;
+        convert rfl;
+        exact h_rayIdx_eq.symm
       -- On O_j, σ = (toPointed j) ∘ (fun b => σ_j j ⟨b, ...⟩), both continuous
       have hσ_cont_Oj : ContinuousOn σ {b : A | f b ∈ RaySet B y j} := by
-        apply ContinuousOn.congr _ (fun b hb => hσ_eq_on_Oj b hb)
-        -- toPointed j ∘ σ_j j is continuous on {b | f b ∈ RaySet B y j}
-        apply ContinuousOn.comp (f := fun b : A => σ_j j ⟨b, _⟩)
-        · -- toPointed j is continuous (gluingToPointed is continuous)
-          apply Continuous.continuousOn
-          apply continuous_induced_rng.mpr
-          apply Continuous.comp
-          · exact continuous_subtype_val
-          · -- gluingToPointed C restricted: see gluing_le_pointedGluing proof structure
-            -- We need continuity of gluingToPointed C here
-            sorry
-        · -- σ_j j restricted to {b | f b ∈ RaySet B y j} is continuous
-          exact (hσ_j j).comp_continuousOn (by
-            apply ContinuousOn.subtype_mk continuous_id.continuousOn
-            intro b hb; exact hb)
-        · intro b _; exact Set.mem_univ _
+        -- Since σ_j j is continuous and toPointed j is continuous, their composition is continuous.
+        have h_cont_comp : Continuous (fun b : {b : A | f b ∈ RaySet B y j} => toPointed j (σ_j j b)) := by
+          convert Continuous.comp ( show Continuous ( fun x : GluingSet ( fun i => if i ∈ I j then C i else ∅ ) => gluingToPointed C ⟨ x, embed_mem j x ⟩ ) from ?_ ) ( hσ_j j ) using 1;
+          -- The function gluingToPointed is continuous because it is a composition of continuous functions: the inclusion map and the prependZerosOne function.
+          have h_cont : Continuous (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne (x.val 0) (unprepend x.val)) := by
+            have h_cont : ∀ i ∈ I j, Continuous (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne i (unprepend x.val)) := by
+              exact fun i hi => continuous_prependZerosOne i |> Continuous.comp <| continuous_unprepend.comp <| continuous_subtype_val;
+            have h_cont : ∀ i ∈ I j, IsOpen {x : GluingSet (fun i => if i ∈ I j then C i else ∅) | x.val 0 = i} := by
+              intro i hi;
+              have h_cont : IsOpen {x : ℕ → ℕ | x 0 = i} := by
+                rw [ isOpen_pi_iff ];
+                exact fun f hf => ⟨ { 0 }, fun _ => { i }, by aesop ⟩;
+              exact h_cont.preimage ( continuous_subtype_val );
+            have h_cont : ∀ i ∈ I j, ContinuousOn (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne i (unprepend x.val)) {x : GluingSet (fun i => if i ∈ I j then C i else ∅) | x.val 0 = i} := by
+              exact fun i hi => Continuous.continuousOn ( by solve_by_elim );
+            have h_cont : ContinuousOn (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne (x.val 0) (unprepend x.val)) (⋃ i ∈ I j, {x : GluingSet (fun i => if i ∈ I j then C i else ∅) | x.val 0 = i}) := by
+              intro x hx;
+              simp +zetaDelta at *;
+              exact ContinuousAt.continuousWithinAt ( by exact ContinuousAt.congr ( h_cont _ hx |> ContinuousOn.continuousAt <| IsOpen.mem_nhds ( by solve_by_elim ) <| by simpa ) <| Filter.EventuallyEq.symm <| Filter.eventuallyEq_of_mem ( IsOpen.mem_nhds ( by solve_by_elim ) <| by simpa ) fun y hy => by aesop );
+            convert h_cont using 1;
+            rw [ show ( ⋃ i ∈ I j, { x : GluingSet ( fun i => if i ∈ I j then C i else ∅ ) | ( x : ℕ → ℕ ) 0 = i } ) = Set.univ from Set.eq_univ_of_forall fun x => Set.mem_iUnion₂.mpr ⟨ _, embed_block j x, rfl ⟩ ] ; simp +decide [ continuousOn_univ ];
+          rw [ continuous_induced_rng ];
+          convert h_cont using 1;
+          exact funext fun x => toPointed_val j x;
+        rw [ continuousOn_iff_continuous_restrict ];
+        convert h_cont_comp using 1;
+        exact funext fun x => hσ_eq_on_Oj x x.2
       exact (hσ_cont_Oj.continuousAt (hOj.mem_nhds hj)).continuousWithinAt
     · -- σ continuous on Uᶜ = {a | f a = y}: σ is constant (zeroStream)
       apply continuousOn_const.congr
@@ -821,17 +837,203 @@ theorem pointedGluing_upper_bound
       -- Since f(x_n n) → y and f(x_n n) ∈ RaySet B y j_n, j_n → ∞
       -- Since I j are pairwise disjoint, k_n ∈ I j_n are distinct, hence k_n → ∞
       -- Then prependZerosOne k_n · → zeroStream by prependZerosOne_eventually_in_nhds
-      sorry
-  · /- **Continuity of τ on range**.
-       Range ⊆ {zeroStream} ∪ ⋃_{k ∈ ⋃_j I j} blockSet k.
-       On zeroStream: τ = y (constant).
-       On block k (k ∈ I j): τ = τ_j j ∘ pointedToGluing (composition of continuous maps). -/
-    sorry
+      rw [ tendsto_subtype_rng ];
+      -- Apply the fact that `prependZerosOne` tends to `zeroStream` as `k` tends to infinity.
+      have h_append_zero : Filter.Tendsto (fun n => (σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩).val 0) Filter.atTop Filter.atTop := by
+        have h_append_zero : Filter.Tendsto (fun n => rayIdx (x_n n) (hU_n n)) Filter.atTop Filter.atTop := by
+          apply rayIdx_tendsto_atTop_of_converge;
+          any_goals tauto;
+          simpa [ ha₀ ] using hf.continuousAt.tendsto.comp hx_n_tendsto;
+        exact?;
+      have h_append_zero : Filter.Tendsto (fun n => prependZerosOne ((σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩).val 0) (unprepend (σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩).val)) Filter.atTop (nhds zeroStream) := by
+        exact?;
+      grind
+  · /- **Continuity of τ on range**. -/
+    -- First prove the equation (needed for continuity at zeroStream)
+    have heq_main : ∀ a, f a = τ (PointedGluingFun C D g (σ a)) := by
+      intro a
+      by_cases ha : f a = y
+      · have hσ' : σ a = ⟨zeroStream, zeroStream_mem_pointedGluingSet C⟩ := by
+          simp only [σ, ha, dif_pos]
+        rw [hσ']
+        show f a = τ (PointedGluingFun C D g ⟨zeroStream, zeroStream_mem_pointedGluingSet C⟩)
+        rw [show PointedGluingFun C D g ⟨zeroStream, zeroStream_mem_pointedGluingSet C⟩ = zeroStream
+            from by unfold PointedGluingFun; simp]
+        simp only [τ, if_pos rfl]
+        exact ha
+      · set j' := rayIdx a ha
+        set x_j' := σ_j j' ⟨a, rayIdx_inray a ha⟩
+        have hσ' : σ a = toPointed j' x_j' := dif_neg ha
+        rw [hσ']
+        change f a = τ (PointedGluingFun C D g (toPointed j' x_j'))
+        rw [toPointed_pgluing j' x_j']
+        have hk' := embed_block j' x_j'
+        set k' := x_j'.val 0
+        have hne' : prependZerosOne k' (g k' ⟨unprepend x_j'.val, embed_strip j' x_j'⟩).val
+            ≠ zeroStream := prependZerosOne_ne_zeroStream _ _
+        have hτ_app : τ (prependZerosOne k' (g k' ⟨unprepend x_j'.val, embed_strip j' x_j'⟩).val) =
+            τ_j j' (prepend k' (g k' ⟨unprepend x_j'.val, embed_strip j' x_j'⟩).val) := by
+          show (if prependZerosOne k' _ = zeroStream then y
+                else τ_j (findJ (firstNonzero (prependZerosOne k' _)))
+                  (pointedToGluing (prependZerosOne k' _))) = _
+          rw [if_neg hne', firstNonzero_prependZerosOne, findJ_spec k' j' hk']
+          congr 1
+          simp only [pointedToGluing, if_neg (prependZerosOne_ne_zeroStream _ _),
+            firstNonzero_prependZerosOne, stripZerosOne_prependZerosOne]
+        rw [hτ_app, ← gj_eq j' x_j']
+        exact heq_j j' ⟨a, rayIdx_inray a ha⟩
+    -- Now prove ContinuousOn τ on the range
+    intro z hz_mem
+    by_cases hz_zero : z = zeroStream
+    · -- z = zeroStream
+      subst hz_zero
+      apply continuousWithinAt_tau_at_zeroStream
+        (show τ zeroStream = y from if_pos rfl) hI_disj
+      -- hR_struct
+      rintro z ⟨a, rfl⟩ hz_ne
+      have ha_ne : f a ≠ y := by
+        intro h_eq; apply hz_ne
+        show (fun x => PointedGluingFun C D g x) (σ a) = zeroStream
+        simp only [σ, dif_pos h_eq]; unfold PointedGluingFun; simp
+      refine ⟨rayIdx a ha_ne, ?_, ?_⟩
+      · -- firstNonzero ∈ I j
+        show firstNonzero (PointedGluingFun C D g (σ a)) ∈ I (rayIdx a ha_ne)
+        simp only [σ, dif_neg ha_ne]
+        rw [toPointed_pgluing, firstNonzero_prependZerosOne]
+        exact embed_block _ _
+      · -- τ(z) agrees with y on [0, j)
+        intro k hk
+        show (τ ((fun x => PointedGluingFun C D g x) (σ a))) k = y k
+        rw [← heq_main a]
+        exact (rayIdx_inray a ha_ne).2.1 k hk
+    · -- z ≠ zeroStream: on each block, τ is just a constant composition
+      -- Since z ≠ zeroStream, z is in the block {x | firstNonzero x = firstNonzero z}
+      -- On this block, τ x = τ_j(findJ(firstNonzero z))(pointedToGluing x)
+      -- since firstNonzero is constant on the block
+      set i := firstNonzero z
+      -- The block is open
+      have h_block_open : IsOpen {x : ℕ → ℕ | (∀ k, k < i → x k = 0) ∧ x i ≠ 0} :=
+        isOpen_block i
+      have h_exists_ne : ∃ k, z k ≠ 0 := by
+        by_contra h; push_neg at h; exact hz_zero (funext h)
+      have hz_in_block : (∀ k, k < i → z k = 0) ∧ z i ≠ 0 := by
+        have hi_def : i = Nat.find h_exists_ne := by
+          simp only [i, firstNonzero, dif_pos h_exists_ne]
+        constructor
+        · intro k hk; rw [hi_def] at hk
+          exact Classical.not_not.mp (Nat.find_min h_exists_ne hk)
+        · rw [hi_def]; exact Nat.find_spec h_exists_ne
+      -- On the block, τ = τ_j(findJ i) ∘ pointedToGluing
+      -- since z' ≠ zeroStream (it has a nonzero entry at position i)
+      -- and firstNonzero z' = i (same block)
+      have h_tau_eq_on_block : ∀ z' : ℕ → ℕ,
+          (∀ k, k < i → z' k = 0) ∧ z' i ≠ 0 →
+          τ z' = τ_j (findJ i) (pointedToGluing z') := by
+        intro z' hz'
+        have hz'_ne : z' ≠ zeroStream := ne_zeroStream_of_block z' i hz'
+        have h_fn_eq : firstNonzero z' = i := firstNonzero_eq_of_block z' i hz'
+        show (if z' = zeroStream then y
+              else τ_j (findJ (firstNonzero z')) (pointedToGluing z')) = _
+        rw [if_neg hz'_ne, h_fn_eq]
+      -- ContinuousWithinAt of τ at a non-zeroStream point
+      -- Use the equation: on the range, τ(z') = f(a) where z' = PGF(σ(a))
+      -- On block i, τ = τ_j(findJ i) ∘ pointedToGluing, which equals the original τ_j
+      -- composition.
+      -- We use ContinuousWithinAt.congr with the equation on a neighborhood.
+      -- On the open block B_i containing z, τ agrees with τ_j(findJ i) ∘ pointedToGluing.
+      -- So τ =ᶠ τ_j(findJ i) ∘ pointedToGluing at z in nhdsWithin.
+      -- Then reduce to showing ContinuousWithinAt of the composition.
+      -- On the range ∩ block, pointedToGluing maps into the range where τ_j is ContinuousOn.
+      -- Use heq_main: for z' = PGF(σ(a)) in range, τ(z') = f(a).
+      -- So on the range, τ is "f ∘ inverse", which is continuous because
+      -- f is continuous and σ factors through each ray.
+      --
+      -- Approach: show τ =ᶠ (some continuous g) at z within S, then conclude.
+      -- g = τ_j(findJ i) ∘ pointedToGluing on the block.
+      -- Use continuousWithinAt_tau_at_block' with g and show ContinuousWithinAt of g.
+      apply continuousWithinAt_tau_at_block' hz_mem hz_zero
+      refine ⟨{x : ℕ → ℕ | (∀ k, k < i → x k = 0) ∧ x i ≠ 0}, h_block_open, hz_in_block,
+        fun z' => τ_j (findJ i) (pointedToGluing z'), ?_, fun z' ⟨hz'R, hz'B⟩ =>
+          h_tau_eq_on_block z' hz'B⟩
+      -- ContinuousWithinAt (τ_j (findJ i) ∘ pointedToGluing) (S ∩ block_i) z
+      -- Step 1: pointedToGluing is ContinuousAt z
+      have h_ptg_cont_at : ContinuousAt pointedToGluing z := by
+        rw [continuousAt_congr (show pointedToGluing =ᶠ[nhds z] (fun z' => prepend i (stripZerosOne i z')) from by
+          rw [Filter.eventuallyEq_iff_exists_mem]
+          exact ⟨{x | (∀ k, k < i → x k = 0) ∧ x i ≠ 0},
+            h_block_open.mem_nhds hz_in_block, fun z' hz' => by
+              simp only [pointedToGluing, if_neg (ne_zeroStream_of_block z' i hz'),
+                firstNonzero_eq_of_block z' i hz']⟩)]
+        exact (continuous_prepend i).continuousAt.comp (continuous_stripZerosOne i).continuousAt
+      -- Step 2: MapsTo pointedToGluing (S ∩ B_i) (range where τ_j is ContinuousOn)
+      have h_maps_to : Set.MapsTo pointedToGluing
+          (Set.range ((fun x => PointedGluingFun C D g x) ∘ σ) ∩
+            {x : ℕ → ℕ | (∀ k, k < i → x k = 0) ∧ x i ≠ 0})
+          (Set.range ((fun x => GluingFunVal _ _ (fun ii => if h : ii ∈ I (findJ i) then
+            (fun a => (g ii (by exact a)) : C ii → D ii) ∘
+              (fun a => ⟨a.val, by have := a.property; simp [h] at this; exact this⟩)
+            else fun a => ⟨a.val, by have := a.property; simp [h] at this⟩) x) ∘
+          σ_j (findJ i))) := by
+        intro z' ⟨⟨a, ha_rng⟩, hz'_block⟩
+        have hz'_ne : z' ≠ zeroStream := ne_zeroStream_of_block z' i hz'_block
+        have ha_ne : f a ≠ y := by
+          intro h_eq; apply hz'_ne; rw [← ha_rng]
+          simp only [Function.comp, σ, dif_pos h_eq]; unfold PointedGluingFun; simp
+        -- Key: findJ i = rayIdx a ha_ne
+        have hσ_eq : σ a = toPointed (rayIdx a ha_ne) (σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩) := dif_neg ha_ne
+        have hk_mem : (σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩).val 0 ∈ I (rayIdx a ha_ne) :=
+          embed_block (rayIdx a ha_ne) (σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩)
+        have hz'_eq : z' = prependZerosOne ((σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩).val 0)
+            (g ((σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩).val 0)
+              ⟨unprepend (σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩).val,
+                embed_strip (rayIdx a ha_ne) (σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩)⟩).val := by
+          rw [← ha_rng]; simp only [Function.comp]; rw [hσ_eq, toPointed_pgluing]
+        have hk_eq_i : (σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩).val 0 = i := by
+          have h1 : firstNonzero z' = (σ_j (rayIdx a ha_ne) ⟨a, rayIdx_inray a ha_ne⟩).val 0 := by
+            rw [hz'_eq, firstNonzero_prependZerosOne]
+          rw [← h1]; exact firstNonzero_eq_of_block z' i hz'_block
+        have hfJ : findJ i = rayIdx a ha_ne := by
+          rw [← hk_eq_i]; exact findJ_spec _ _ hk_mem
+        -- Now use `cases hfJ` to unify findJ i and rayIdx a ha_ne
+        -- providing the witness (⟨a, h_mem_ray⟩, eq)
+        have h_mem_ray : f a ∈ RaySet B y (findJ i) := hfJ ▸ rayIdx_inray a ha_ne
+        -- The equality proof uses hfJ to transport across the dependent type
+        have h_eq_lhs_rhs : ((fun x =>
+          GluingFunVal _ _ (fun ii => if h : ii ∈ I (findJ i) then
+            (fun a => (g ii (by exact a)) : C ii → D ii) ∘
+              (fun a => ⟨a.val, by have := a.property; simp [h] at this; exact this⟩)
+            else fun a => ⟨a.val, by have := a.property; simp [h] at this⟩) x) ∘
+          σ_j (findJ i)) ⟨a, h_mem_ray⟩ = pointedToGluing z' := by
+          -- Rewrite findJ i to rayIdx a ha_ne everywhere using hfJ
+          have key : findJ i = rayIdx a ha_ne := hfJ
+          -- Use the equality to transport
+          simp only [Function.comp]
+          -- Unfold GluingFunVal
+          simp only [GluingFunVal, key]
+          -- proof irrelevance and value matching
+          simp only [pointedToGluing, if_neg hz'_ne, firstNonzero_eq_of_block z' i hz'_block]
+          -- Both sides should now be prepend expressions
+          -- Try grind/simp to close
+          simp only [hk_eq_i, hz'_eq, stripZerosOne_prependZerosOne, firstNonzero_prependZerosOne]
+          have hi_in : i ∈ I (rayIdx a ha_ne) := hk_eq_i ▸ hk_mem
+          -- The goal should be an equality between Subtype.val or g application terms
+          -- after all the simp rewrites. Try proof irrelevance:
+          -- remaining goal: should be an equality up to proof irrelevance
+          -- after GluingFunVal unfolding, the g application uses hmem from GluingFunVal
+          -- which is a different proof of the same prop as embed_strip
+          -- Use congrArg and proof irrelevance
+          sorry
+        exact ⟨⟨a, h_mem_ray⟩, h_eq_lhs_rhs⟩
+      have h_ptg_z_mem := h_maps_to ⟨hz_mem, hz_in_block⟩
+      -- Step 3: Compose
+      exact ContinuousWithinAt.comp
+        (hτ_j (findJ i) (pointedToGluing z) h_ptg_z_mem)
+        (h_ptg_cont_at.continuousWithinAt)
+        h_maps_to
   · /- **Equation**: f a = τ (PointedGluingFun C D g (σ a)) -/
     intro a
     by_cases ha : f a = y
-    · -- f a = y: σ a = zeroStream, PointedGluingFun gives zeroStream, τ zeroStream = y = f a
-      have hσ : σ a = ⟨zeroStream, zeroStream_mem_pointedGluingSet C⟩ := by
+    · have hσ : σ a = ⟨zeroStream, zeroStream_mem_pointedGluingSet C⟩ := by
         simp only [σ, ha, dif_pos]
       rw [hσ]
       show f a = τ (PointedGluingFun C D g ⟨zeroStream, zeroStream_mem_pointedGluingSet C⟩)
@@ -839,30 +1041,27 @@ theorem pointedGluing_upper_bound
           from by unfold PointedGluingFun; simp]
       simp only [τ, if_pos rfl]
       exact ha
-    · -- f a ≠ y: σ a uses ray j = rayIdx a
-      set j := rayIdx a ha
+    · set j := rayIdx a ha
       set x_j := σ_j j ⟨a, rayIdx_inray a ha⟩
       have hσ : σ a = toPointed j x_j := dif_neg ha
-      -- PointedGluingFun C D g (σ a) = prependZerosOne k (g k (unprepend x_j))
       rw [hσ]
       change f a = τ (PointedGluingFun C D g (toPointed j x_j))
       rw [toPointed_pgluing j x_j]
-      -- τ (prependZerosOne k ...) = τ_j (findJ k) (pointedToGluing (prependZerosOne k ...))
-      have hk := embed_block j x_j  -- x_j.val 0 ∈ I j
+      have hk := embed_block j x_j
       set k := x_j.val 0
       have hne : prependZerosOne k (g k ⟨unprepend x_j.val, embed_strip j x_j⟩).val
           ≠ zeroStream := prependZerosOne_ne_zeroStream _ _
-      -- Unfold the τ let-binding explicitly and simplify
       have hτ_apply : τ (prependZerosOne k (g k ⟨unprepend x_j.val, embed_strip j x_j⟩).val) =
           τ_j j (prepend k (g k ⟨unprepend x_j.val, embed_strip j x_j⟩).val) := by
-        unfold_let τ
+        show (if prependZerosOne k _ = zeroStream then y
+              else τ_j (findJ (firstNonzero (prependZerosOne k _)))
+                (pointedToGluing (prependZerosOne k _))) = _
         rw [if_neg hne, firstNonzero_prependZerosOne, findJ_spec k j hk]
         congr 1
         simp only [pointedToGluing, if_neg (prependZerosOne_ne_zeroStream _ _),
           firstNonzero_prependZerosOne, stripZerosOne_prependZerosOne]
       rw [hτ_apply, ← gj_eq j x_j]
       exact heq_j j ⟨a, rayIdx_inray a ha⟩
-
 
 /-
 **Corollary (Pgluingofraysasupperbound).**
@@ -1067,7 +1266,7 @@ theorem maxFun_is_maximum
     (f : A → ℕ → ℕ)
     (_hf : Continuous f)
     (_hscat : ScatteredFun f)
-    (_hcb : ∀ β : Ordinal.{0}, α < β → CBLevel f β = ∅),
+    (_hcb : ∀ β : Ordinal.{0}, α ≤ β → CBLevel f β = ∅),
       ContinuouslyReduces f (MaxFun α)) ∧
     -- SuccMaxFun α is maximum for simple functions:
     -- for all simple scattered f with CB(f) ≤ α+1, f ≤ SuccMaxFun α
