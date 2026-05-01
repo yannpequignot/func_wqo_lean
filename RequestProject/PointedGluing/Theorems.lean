@@ -1011,25 +1011,29 @@ theorem pointedGluing_upper_bound
               (fun a => ⟨a.val, by have := a.property; simp [h] at this; exact this⟩)
             else fun a => ⟨a.val, by have := a.property; simp [h] at this⟩) x) ∘
           σ_j (findJ i)) ⟨a, h_mem_ray⟩ = pointedToGluing z' := by
-          -- Rewrite findJ i to rayIdx a ha_ne everywhere using hfJ
-          have key : findJ i = rayIdx a ha_ne := hfJ
-          -- Use the equality to transport
-          simp only [Function.comp]
-          -- Unfold GluingFunVal
-          simp only [GluingFunVal, key]
-          -- proof irrelevance and value matching
-          simp only [pointedToGluing, if_neg hz'_ne, firstNonzero_eq_of_block z' i hz'_block]
-          -- Both sides should now be prepend expressions
-          -- Try grind/simp to close
-          simp only [hk_eq_i, hz'_eq, stripZerosOne_prependZerosOne, firstNonzero_prependZerosOne]
-          have hi_in : i ∈ I (rayIdx a ha_ne) := hk_eq_i ▸ hk_mem
-          -- The goal should be an equality between Subtype.val or g application terms
-          -- after all the simp rewrites. Try proof irrelevance:
-          -- remaining goal: should be an equality up to proof irrelevance
-          -- after GluingFunVal unfolding, the g application uses hmem from GluingFunVal
-          -- which is a different proof of the same prop as embed_strip
-          -- Use congrArg and proof irrelevance
-          sorry
+            -- Rewrite findJ i to rayIdx a ha_ne everywhere using hfJ
+            have key : findJ i = rayIdx a ha_ne := hfJ
+            -- Use the equality to transport
+            simp only [Function.comp]
+            -- Unfold GluingFunVal
+            simp only [GluingFunVal, key]
+            -- proof irrelevance and value matching
+            simp only [pointedToGluing, if_neg hz'_ne, firstNonzero_eq_of_block z' i hz'_block]
+            -- Both sides should now be prepend expressions
+            -- Try grind/simp to close
+            simp only [hk_eq_i, hz'_eq, stripZerosOne_prependZerosOne, firstNonzero_prependZerosOne]
+            have hi_in : i ∈ I (rayIdx a ha_ne) := hk_eq_i ▸ hk_mem
+            -- The goal should be an equality between Subtype.val or g application terms
+            -- after all the simp rewrites. Try proof irrelevance:
+            -- remaining goal: should be an equality up to proof irrelevance
+            -- after GluingFunVal unfolding, the g application uses hmem from GluingFunVal
+            -- which is a different proof of the same prop as embed_strip
+            -- Use congrArg and proof irrelevance
+            -- Both sides are now `(g i ⟨u, P⟩).val` for the same `u` but
+            -- different proofs P of `u ∈ C i`.
+            -- Lean 4 has definitional proof irrelevance for Prop, so `rfl` closes it.
+              rfl
+
         exact ⟨⟨a, h_mem_ray⟩, h_eq_lhs_rhs⟩
       have h_ptg_z_mem := h_maps_to ⟨hz_mem, hz_in_block⟩
       -- Step 3: Compose
