@@ -1,3 +1,87 @@
+# Summary of changes for run 231f6148-a950-44fa-a91b-27264c173fd5
+## Summary
+
+I made significant progress on proving `maxFun_is_maximum` (Proposition 3.9), resolving the vast majority of the proof structure. The proof lives in `RequestProject/PointedGluing/MaxFunMaximum.lean`.
+
+### What was accomplished
+
+The theorem `maxFun_is_maximum'` in `MaxFunMaximum.lean` has the same type as `maxFun_is_maximum` and is structured as a strong induction proving both items simultaneously:
+
+**Item 2** (SuccMaxFun α is maximum for simple functions) is **fully proved** via `maxFun_item2_from_item1'`, using:
+- `ray_reduces_to_maxFun`: each ray of a simple function reduces to MaxFun α
+- `ray_to_sub_gluing`: rays embed into the sub-gluing structure needed by `pointedGluing_upper_bound`
+- `pointedGluing_upper_bound` with I = singleton sets, C = D = MaxDom α, g = id
+- `PointedGluingFun_id` to convert from the pointed gluing form to SuccMaxFun α
+
+**Item 1** (MaxFun α is maximum for CB ≤ α) is proved via `maxFun_item1_from_ih'`, which handles two cases:
+- **CBRank f < α**: Uses the induction hypothesis (ih1) at the smaller ordinal CBRank f, then composes with `MaxFun_monotone`. **Fully proved.**
+- **CBRank f = α**: Requires the decomposition lemma + combining step. **One sorry remains here.**
+
+### Helper lemmas proved (all verified clean, no sorryAx)
+
+1. `CBLevel_homeomorph` — CBLevel is invariant under homeomorphisms
+2. `ray_reduces_to_maxFun` — Each ray of a simple function reduces to MaxFun α
+3. `scatteredFun_of_CBLevel_empty` — ScatteredFun follows from finite CB level
+4. `ray_to_sub_gluing` — Rays embed into sub-gluing structure
+5. `maxFun_item2_from_item1'` — Item 2 from Item 1 (fully proved)
+6. `simple_reduces_to_MaxFun` — Simple function with CB rank < α reduces to MaxFun α
+7. `isEmpty_of_CBLevel_zero_empty` — Empty domain from CBLevel 0 = ∅
+8. `continuouslyReduces_of_empty` — ContinuouslyReduces from empty type
+
+### Remaining sorry (1 total in `MaxFunMaximum.lean`, line ~308)
+
+The sorry is in `maxFun_item1_from_ih'`, specifically the case `CBRank f = α`. This requires:
+1. Using `decomposition_lemma_baire` to get a clopen cover where f is locally simple
+2. Refining to a disjoint cover via `baire_open_reduction_rel`
+3. Extending f to `Baire → Baire` (since `gluingFun_upper_bound_backward` requires a total function)
+4. Applying `gluingFun_upper_bound_backward` to combine the reductions
+5. Embedding `GluingSet(fun _ => MaxDom α)` back into `MaxDom α`
+
+This is a complex "continuous pasting" argument involving type-level plumbing between subtype functions and total functions on Baire space.
+
+### Note on `maxFun_is_maximum` in `Theorems.lean`
+
+The original sorry in `Theorems.lean` remains. Once the final sorry in `MaxFunMaximum.lean` is resolved, `maxFun_is_maximum` can be proved by `exact maxFun_is_maximum' α hα` (after importing MaxFunMaximum).
+
+# Summary of changes for run 5633a014-3dbf-42f5-9a96-3ad1bfa3b051
+## Summary
+
+I made significant progress on proving `maxFun_is_maximum` (Proposition 3.9) but was unable to fully resolve the sorry due to the extreme complexity of this theorem. Here's what was accomplished:
+
+### Architecture
+Due to a circular dependency between `Theorems.lean` and `MaxMinhelpers.lean`, the proof was developed in a new file `RequestProject/PointedGluing/MaxFunMaximum.lean` that can import both.
+
+### Proof Structure
+The theorem `maxFun_is_maximum'` in `MaxFunMaximum.lean` establishes the correct induction skeleton:
+- **Strong induction on α** proving both items simultaneously
+- **Item 1** (MaxFun α is maximum for CB ≤ α) is reduced to `maxFun_item1_from_ih'`
+- **Item 2** (SuccMaxFun α is maximum for simple functions) is reduced to `maxFun_item2_from_item1'`
+- The induction correctly threads the hypotheses between items
+
+### Helper Lemma: `ray_reduces_to_maxFun`
+This key lemma (needed for Item 2) was mostly proved. It shows that each ray of a simple function reduces to MaxFun α by:
+1. Reformulating the ray function on a flat subset A' ⊆ ℕ → ℕ (avoiding nested subtypes)
+2. Proving continuity of the reformulated function
+3. Proving scatteredness via `scattered_restrict`
+4. Converting the ContinuouslyReduces back through the embedding
+
+**One sorry remains**: showing `CBLevel f' γ = ∅` for γ ≥ α. This requires transferring the CB-rank bound across the subtype isomorphism between `{a : A | f a ∈ RaySet ...}` and `A'`.
+
+### Remaining Sorries (3 total in `MaxFunMaximum.lean`)
+1. **Line 78**: CBLevel empty condition in `ray_reduces_to_maxFun` (type coercion issue)
+2. **Line 95**: `maxFun_item2_from_item1'` — requires invoking `pointedGluing_upper_bound` with specific parameters
+3. **Line 113**: `maxFun_item1_from_ih'` — requires decomposition lemma + clopen partition combining
+
+The original `Theorems.lean` retains `maxFun_is_maximum` with a sorry and a reference to the partial proof in `MaxFunMaximum.lean`.
+
+### Why this is hard
+This theorem involves:
+- Transfinite strong induction on ordinals
+- Complex subtype conversions (subtypes of subtypes of ℕ → ℕ)  
+- The decomposition lemma (locally simple → globally reducible)
+- Combining clopen partition reductions via `gluingFun_upper_bound_backward` (which expects `f : Baire → Baire`, not `f : A → Baire`)
+- Type-level plumbing throughout that makes automation very difficult
+
 # Summary of changes for run 00a36f1b-d845-4442-9deb-030e8778832a
 ## Progress on `pointedGluing_upper_bound` and `maxFun_is_maximum`
 

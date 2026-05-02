@@ -10,6 +10,7 @@ import RequestProject.PointedGluing.CBRankSimpleHelpers
 import RequestProject.PointedGluing.UpperBoundHelpers
 import RequestProject.PointedGluing.ContinuousOnTau
 
+
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
@@ -1296,6 +1297,8 @@ theorem maxFun_is_maximum
     (y: ℕ →ℕ )
     (hy_simple : ∀ x ∈ CBLevel f β, f x = y),
     ContinuouslyReduces f (SuccMaxFun α)) := by
+  -- Partial proof structure in RequestProject/PointedGluing/MaxFunMaximum.lean
+  -- See maxFun_is_maximum' for the induction skeleton and helper lemmas.
   sorry
 
 
