@@ -1,7 +1,3 @@
-import Mathlib
-import RequestProject.PrelimMemo.Basic
-import RequestProject.PrelimMemo.Gluing
-import RequestProject.PointedGluing.Defs
 import RequestProject.PointedGluing.UpperBoundHelpers
 
 open scoped Topology

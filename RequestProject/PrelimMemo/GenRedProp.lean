@@ -1,4 +1,3 @@
-import Mathlib
 import RequestProject.PrelimMemo.Basic
 
 open scoped Topology

@@ -1,4 +1,3 @@
-import Mathlib
 import RequestProject.IntroMemo
 
 open scoped Topology

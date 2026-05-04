@@ -1,3 +1,54 @@
+# Summary of changes for run 78e7edd3-3e77-4ca9-870f-eaa8e5f42a0a
+## Refactoring Summary
+
+The project has been refactored into a cleaner modular structure with minimized imports and split large files. All changes compile successfully with `lake build`.
+
+### 1. Split Large Files
+
+**`PrelimMemo/Scattered.lean` (1601 → 3 sub-files + re-export):**
+- `PrelimMemo/Scattered/CBAnalysis.lean` (524 lines) — NowhereLocllyConstant, CB derivative, CB rank, scattered ↔ empty perfect kernel, reduction & CB monotonicity
+- `PrelimMemo/Scattered/NonScattered.lean` (704 lines) — Non-scattered embedding theorem (Theorem 2.5), Cantor scheme construction
+- `PrelimMemo/Scattered/Decomposition.lean` (411 lines) — SimpleFun definition, first reduction theorem, zero-dim/disjoint union, decomposition lemma
+- `PrelimMemo/Scattered.lean` (11 lines) — Re-export module that imports all three sub-files, so existing `import RequestProject.PrelimMemo.Scattered` statements continue to work
+
+**`PointedGluing/PointedGluingUpperBound.lean` (1134 → 2 sub-files + re-export):**
+- `PointedGluing/PointedGluingUpperBound/BasicProperties.lean` (496 lines) — Fact 3.1 (continuity/injectivity preservation), Proposition 3.2 (CB rank), Fact 3.3 (gluing ≤ pointed gluing)
+- `PointedGluing/PointedGluingUpperBound/UpperBound.lean` (593 lines) — Lemma 3.4 (sufficient condition for continuity), Proposition 3.5 (upper bound), scatteredness preservation
+- `PointedGluing/PointedGluingUpperBound.lean` (9 lines) — Re-export module
+
+### 2. Minimized Imports
+
+Eliminated ~150 redundant import lines across all files. Every file now imports only the minimal set of direct dependencies needed — typically 1–2 imports each instead of the previous 6–15 per file. Key changes:
+
+- Removed `import Mathlib` from all files except `IntroMemo.lean` and `Main.lean` (Mathlib is transitively available through the import chain)
+- Removed all redundant transitive project-local imports (e.g., if a file imports `PointedGluing.ClopenPartitionReduces` which transitively provides `PointedGluing.Defs`, the direct `Defs` import was removed)
+- Fixed a hidden redundant import: `PrelimMemo/Gluing.lean` was importing `Scattered` despite not using any of its definitions — changed to import only `PrelimMemo.Basic`
+
+### 3. Removed Empty File
+
+Deleted `PrelimMemo/blackboard.lean` (0 lines, no content).
+
+### Import Chain (simplified)
+
+```
+IntroMemo → Mathlib
+PrelimMemo.Basic → IntroMemo
+PrelimMemo.GenRedProp → Basic
+PrelimMemo.Gluing → Basic
+PrelimMemo.Scattered.CBAnalysis → GenRedProp
+PrelimMemo.Scattered.NonScattered → CBAnalysis
+PrelimMemo.Scattered.Decomposition → NonScattered + Gluing
+PointedGluing.Defs → Gluing
+PointedGluing.CBRankHelpers → Defs + Scattered.CBAnalysis
+  ↓ (linear chain through CB helpers, upper bound, max/min, etc.)
+PointedGluing.Theorems → MaxFunMaximum
+CenteredMemo → PointedGluing (Defs + Theorems)
+PreciseStructMemo → CenteredMemo.Theorems
+DoubleSuccMemo → PreciseStructMemo.Theorems
+```
+
+All files are now under 720 lines (down from 1601 max). The build produces the same warnings and `sorry` count as before — no functional changes were made.
+
 # Summary of changes for run 0e303e45-f561-4194-bb1d-74d20ee39a7b
 ## Summary of Progress on MinFun.lean
 

@@ -1,16 +1,4 @@
-import Mathlib
-import RequestProject.IntroMemo
-import RequestProject.PrelimMemo.Basic
-import RequestProject.PrelimMemo.Scattered
-import RequestProject.PrelimMemo.Gluing
-import RequestProject.PointedGluing.Defs
-import RequestProject.PointedGluing.CBRankHelpers
-import RequestProject.PointedGluing.CBLevelOpenRestrict
-import RequestProject.PointedGluing.CBRankSimpleHelpers
-import RequestProject.PointedGluing.UpperBoundHelpers
-import RequestProject.PointedGluing.ContinuousOnTau
 import RequestProject.PointedGluing.Theorems
-import RequestProject.PointedGluing.MaxMinhelpers
 import RequestProject.PointedGluing.MinFunHelpers
 
 open scoped Topology

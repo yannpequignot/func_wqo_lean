@@ -1,7 +1,4 @@
-import Mathlib
-import RequestProject.IntroMemo
 import RequestProject.PrelimMemo.Basic
-import RequestProject.PrelimMemo.Scattered
 
 open scoped Topology
 open Set Function TopologicalSpace

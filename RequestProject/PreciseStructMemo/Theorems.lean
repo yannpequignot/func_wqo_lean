@@ -1,13 +1,5 @@
-import Mathlib
-import RequestProject.IntroMemo
-import RequestProject.PrelimMemo.Basic
-import RequestProject.PrelimMemo.Scattered
-import RequestProject.PrelimMemo.Gluing
-import RequestProject.PointedGluing.Defs
-import RequestProject.PointedGluing.Theorems
-import RequestProject.CenteredMemo.Defs
-import RequestProject.CenteredMemo.Theorems
 import RequestProject.PreciseStructMemo.Defs
+import RequestProject.PrelimMemo.Scattered.Decomposition
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
