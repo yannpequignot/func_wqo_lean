@@ -38,7 +38,7 @@ then `pgl_n g_n ≤ f`.
 The proof constructs `σ` mapping `0^ω ↦ x` and `(0)^n(1)x' ↦ σ_n(x')`, and
 `τ` mapping `f(x) ↦ 0^ω` and `y ↦ (0)^n(1)τ_n(y)` for `y ∈ f(A_n)`.
 Continuity follows from Lemma (prop:sufficientcondforcont). -/
-theorem pointedGluing_lower_bound_lemma'
+theorem pointedGluing_lower_bound_lemma
     {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
     {B : Type*} [TopologicalSpace B] [MetrizableSpace B]
     (f : A → B)
@@ -554,7 +554,7 @@ In fact, `pgl_i g_i ≤ f|_V` for all clopen neighborhoods `V` of `x`.
 The proof constructs a sequence `(A_n)_n` of clopen sets by induction, choosing
 each `A_n` so that `f(A_n)` is separated from the previous ones and from `f(x)`,
 and `A_n ⊆ N_{x|_n}`. Then applies Lemma (Pgluingaslowerbound). -/
-theorem pointedGluing_lower_bound'
+theorem pointedGluing_lower_bound
     {A B : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
     (hf : Continuous f)
@@ -583,7 +583,7 @@ The proof is by strong induction on `α`:
 - For successor `α = β + 1`, use Pgluingaslowerbound2: find a ray of CB-rank `α`
   in any neighborhood of a CB_α-point, and apply the induction hypothesis.
 - For limit `α`, similarly find rays of growing CB-rank using regularity. -/
-theorem minFun_is_minimum'
+theorem minFun_is_minimum
     (α : Ordinal.{0}) (hα : α < omega1) :
       -- minfun α is minimum: for all f with CB(f) ≥ α + 1, minf ≤ f
       (∀ {A : Set (ℕ → ℕ)}
