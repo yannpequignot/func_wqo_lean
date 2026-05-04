@@ -1,3 +1,34 @@
+# Summary of changes for run 0e303e45-f561-4194-bb1d-74d20ee39a7b
+## Summary of Progress on MinFun.lean
+
+### What was accomplished
+
+**Proved `pointedGluing_lower_bound_lemma`** (Lemma 3.10 — Pointed Gluing as Lower Bound): This is the most substantial theorem in the file. The proof constructs σ and τ witnessing the continuous reduction, and verifies:
+- Continuity of σ (using the `sufficient_cond_continuity` lemma with block decomposition)
+- ContinuousOn of τ on the relevant range (two-case analysis: at the basepoint f(x) and away from it)
+- The functional equation PointedGluingFun = τ ∘ f ∘ σ
+
+The proof was decomposed into four helper lemmas in a new file `RequestProject/PointedGluing/MinFunHelpers.lean`:
+1. `pgl_lower_bound_equation` — the equation part
+2. `pgl_lower_bound_sigma_seq` — the sequential convergence condition for σ
+3. `pgl_sigma_eq_on_block` — σ agrees with σ_n on each open block
+4. `pgl_lower_bound_sigma_cont_on_U` — ContinuousOn σ on the non-zero-stream set
+5. `pgl_lower_bound_tau_cont` — ContinuousOn τ on the range
+
+All five helper lemmas are fully proved (no sorry).
+
+### What remains (2 sorries)
+
+1. **`pointedGluing_lower_bound`** (Proposition 3.11 — line 102): This requires constructing a sequence of clopen sets by induction from the local reducibility hypothesis `hloc`, then applying `pointedGluing_lower_bound_lemma`. The construction is intricate and involves the Baire space structure.
+
+2. **`minFun_is_minimum`** (Proposition — Minimum Functions — line 113): This requires strong induction on ordinals α < ω₁, using `pointedGluing_lower_bound` at each step along with CB-rank analysis. It depends on `pointedGluing_lower_bound` being proved first.
+
+### Files modified/created
+- `RequestProject/PointedGluing/MinFun.lean` — proved `pointedGluing_lower_bound_lemma`, 2 sorries remain
+- `RequestProject/PointedGluing/MinFunHelpers.lean` — new file with 5 fully proved helper lemmas
+
+The project builds successfully with these changes.
+
 # Summary of changes for run 094152e9-bc3a-4c17-afc6-be73b4811790
 ## Summary
 
