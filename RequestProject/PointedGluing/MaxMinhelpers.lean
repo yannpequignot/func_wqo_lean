@@ -7,7 +7,7 @@ import RequestProject.PointedGluing.Defs
 import RequestProject.PointedGluing.CBRankHelpers
 import RequestProject.PointedGluing.CBLevelOpenRestrict
 import RequestProject.PointedGluing.CBRankSimpleHelpers
-import RequestProject.PointedGluing.Theorems
+import RequestProject.PointedGluing.PointedGluingUpperBound
 
 open scoped Topology
 open Set Function TopologicalSpace Classical

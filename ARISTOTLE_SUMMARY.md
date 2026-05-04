@@ -1,3 +1,83 @@
+# Summary of changes for run 094152e9-bc3a-4c17-afc6-be73b4811790
+## Summary
+
+Successfully resolved the `sorry` in `maxFun_is_maximum` (Proposition 3.9 — Maximum functions).
+
+### What was done
+
+The theorem `maxFun_is_maximum` states that for all ordinals α < ω₁:
+1. `MaxFun α` is the maximum of all scattered functions with CB-rank ≤ α
+2. `SuccMaxFun α` is the maximum for simple functions with CB-rank ≤ α+1
+
+The proof was structured as a strong induction on α, with the key missing piece being `cbrank_eq_case` — handling the case when `CBRank f = α`.
+
+### Proof structure
+
+The proof of `cbrank_eq_case` follows the paper's outline:
+1. **Local simplicity**: Use `decomposition_lemma_baire` to show that each point has a clopen neighborhood on which `f` is simple.
+2. **Each piece reduces to MaxFun α**: Each simple piece has CB-rank β+1 ≤ α (so β < α), and by the induction hypothesis (item 2 at β), it reduces to `SuccMaxFun β ≤ MaxFun α`.
+3. **Combine globally**: Use Lindelöf + disjointing to get a countable clopen partition, then combine all pieces via a gluing argument and self-similarity.
+
+### New files and lemmas
+
+**`RequestProject/PointedGluing/ClopenPartitionReduces.lean`** (new file):
+- `ContinuouslyReduces.restrict_subtype` — ContinuouslyReduces is preserved under restriction to subtypes
+- `ContinuouslyReduces.restrict_of_subset` — restriction to D ⊆ C preserves reductions
+- `clopen_partition_to_gluing_reduces` — if each piece of a clopen partition reduces to Subtype.val on B, then f reduces to Subtype.val on GluingSet(fun _ => B)
+- `locally_reduces_to_maxfun_implies_reduces` — local reducibility to MaxFun α implies global reducibility
+- `subtypeInterHomeo` — homeomorphism between {a ∈ A | a.val ∈ U} and A ∩ U
+- `subtype_inter_fun_eq` — equation relating f ∘ Subtype.val and the transferred function
+
+**`RequestProject/PointedGluing/MaxFunMaximum.lean`** (modified):
+- Added `simple_piece_reduces_to_maxfun` — transfers SimpleFun data via homeomorphism and applies `simple_reduces_to_MaxFun`
+- Filled in `cbrank_eq_case` using the helpers above
+
+**`RequestProject/PointedGluing/Theorems.lean`** (modified):
+- Replaced `sorry` in `maxFun_is_maximum` with `exact maxFun_is_maximum' α hα`
+- Fixed a pre-existing duplicate declaration of `pointedGluing_scattered`
+- Removed a stray `end` keyword
+
+### Verification
+
+Both `maxFun_is_maximum` and `maxFun_is_maximum'` are fully proved with only standard axioms (`propext`, `Classical.choice`, `Quot.sound`). No sorry remains in `MaxFunMaximum.lean` or `ClopenPartitionReduces.lean`.
+
+# Summary of changes for run 3b722add-04e8-4104-b20e-4b699522aa9f
+## Summary of Progress on `maxFun_is_maximum`
+
+### What was accomplished
+
+The original sorry in `maxFun_item1_from_ih'` (in `RequestProject/PointedGluing/MaxFunMaximum.lean`) has been **resolved** — the file now contains zero sorries. The proof structure is complete:
+
+- **`maxFun_item1_from_ih'`** (Item 1 of Proposition 3.9): Fully proved via two cases:
+  - **CBRank f < α**: Uses the induction hypothesis directly, composing with `MaxFun_monotone`.
+  - **CBRank f = α**: Delegates to `cbrank_eq_case` (in the new file `SelfSimilarity.lean`).
+
+- **`maxFun_is_maximum'`** (the full Proposition 3.9): Proved by strong induction, combining Items 1 and 2.
+
+### New file created: `RequestProject/PointedGluing/SelfSimilarity.lean`
+
+This file contains the self-similarity infrastructure needed for combining local reductions:
+
+1. **`gluingSet_flatten_const`** — ✅ Proved. Shows that `GluingSet(fun _ => GluingSet(fun _ => S)) ≤ GluingSet(fun _ => S)` via Cantor pairing/unpairing of indices.
+
+2. **`gluingSet_copies_reduces_to_MaxFun_succ`** — ✅ Proved. Self-similarity for successor ordinals, using `gluingSet_flatten_const` and `MaxDom_succ`.
+
+3. **`gluingSet_MaxDom_limit_inner_mem`** — ✅ Proved. Helper extracting the inner block structure of elements for limit ordinals.
+
+4. **`mem_MaxDom_limit_prepend`** — ✅ Proved. Helper for membership in MaxDom at limit ordinals.
+
+5. **`gluingSet_copies_reduces_to_MaxFun`** — ❌ **One sorry remains.** This is the full self-similarity lemma: `GluingSet(fun _ => MaxDom α) ≤ MaxFun α`. The base case (α = 0) and successor case are proved. The limit ordinal case requires constructing piecewise-continuous σ and τ functions using the induction hypothesis at each `enumBelow α j`, which involves intricate type-level plumbing.
+
+6. **`cbrank_eq_case`** — ✅ Proved (depends on 5).
+
+### Remaining sorry
+
+**One sorry** remains in `SelfSimilarity.lean` at line 83: the limit case of `gluingSet_copies_reduces_to_MaxFun`. This is a pure topological/combinatorial statement about Baire space operations. The proof strategy is clear (transfinite induction with the IH providing σ_j, τ_j for each inner block, then pasting on clopen partitions), but the Lean formalization of the piecewise continuity argument proved resistant to automation.
+
+### Relationship to Theorems.lean
+
+The `maxFun_is_maximum` theorem in `Theorems.lean` still has its original sorry, because `MaxFunMaximum.lean` imports `Theorems.lean` (creating a circular dependency). A comment in `Theorems.lean` explains that the proof is available as `maxFun_is_maximum'` in `MaxFunMaximum.lean`. To resolve this, one could break the circular dependency by refactoring imports.
+
 # Summary of changes for run 231f6148-a950-44fa-a91b-27264c173fd5
 ## Summary
 

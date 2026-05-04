@@ -9,9 +9,10 @@ import RequestProject.PointedGluing.CBLevelOpenRestrict
 import RequestProject.PointedGluing.CBRankSimpleHelpers
 import RequestProject.PointedGluing.UpperBoundHelpers
 import RequestProject.PointedGluing.ContinuousOnTau
-import RequestProject.PointedGluing.Theorems
+import RequestProject.PointedGluing.PointedGluingUpperBound
 import RequestProject.PointedGluing.MaxMinhelpers
 import RequestProject.PointedGluing.SelfSimilarity
+import RequestProject.PointedGluing.ClopenPartitionReduces
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
@@ -261,6 +262,119 @@ lemma isEmpty_of_CBLevel_zero_empty {X Y : Type*}
   unfold CBLevel at h;
   simp +zetaDelta at *;
   exact h
+
+/-
+A simple piece from the decomposition lemma reduces to MaxFun α.
+    Uses CBLevel_homeomorph to transfer SimpleFun data from {a ∈ A | a.val ∈ U}
+    to A ∩ U, then applies simple_reduces_to_MaxFun, then transfers back.
+-/
+lemma simple_piece_reduces_to_maxfun
+    (α : Ordinal.{0}) (hα : α < omega1)
+    (ih2 : ∀ (β : Ordinal.{0}), β < α → ∀ {A : Set (ℕ → ℕ)}
+      (f : A → ℕ → ℕ) (hf : Continuous f)
+      (γ : Ordinal.{0}) (hγ : γ ≤ β)
+      (hcb_ne : (CBLevel f γ).Nonempty)
+      (hcb_empty : CBLevel f (Order.succ γ) = ∅)
+      (y : ℕ → ℕ)
+      (hy_simple : ∀ x ∈ CBLevel f γ, f x = y),
+      ContinuouslyReduces f (SuccMaxFun β))
+    {A : Set (ℕ → ℕ)}
+    (f : A → ℕ → ℕ) (hf : Continuous f)
+    (hcb : ∀ β : Ordinal.{0}, α ≤ β → CBLevel f β = ∅)
+    (hrank_eq : CBRank f = α)
+    (U : Set (ℕ → ℕ)) (hU : IsClopen U)
+    (h_simple : SimpleFun (f ∘ (Subtype.val : {a : A | (a : ℕ → ℕ) ∈ U} → A))) :
+    ContinuouslyReduces (fun a : {a : A | (a : ℕ → ℕ) ∈ U} => f a.val) (MaxFun α) := by
+  have := h_simple.2;
+  obtain ⟨β, hβ_ne, hβ_empty, y, hy_simple⟩ := this
+  have hβ_lt_α : β < α := by
+    contrapose! hcb;
+    obtain ⟨ x, hx ⟩ := hβ_ne;
+    refine' ⟨ β, hcb, _ ⟩;
+    exact ⟨ x.val, by simpa using CBLevel_open_restrict f ( { a : A | ( a : ℕ → ℕ ) ∈ U } ) ( hU.isOpen.preimage continuous_subtype_val ) β x |>.1 hx ⟩;
+  convert simple_reduces_to_MaxFun α hα ih2 _ _ β hβ_lt_α _ _ y _ using 1;
+  rotate_left;
+  exact A ∩ U;
+  use fun x => f ⟨ x.val, x.prop.1 ⟩;
+  · fun_prop;
+  · convert hβ_ne using 1;
+    constructor <;> rintro ⟨ x, hx ⟩;
+    · grind;
+    · use ⟨ x.val, x.val.prop, x.prop ⟩;
+      convert CBLevel_homeomorph ( subtypeInterHomeo A U ) ( fun x => f ⟨ x.val, x.prop.1 ⟩ ) β |>.symm ▸ hx using 1;
+  · convert hβ_empty using 1;
+    constructor <;> intro h <;> simp_all +decide [ Set.ext_iff ];
+    convert hβ_empty using 1;
+    convert Iff.rfl;
+    convert CBLevel_homeomorph ( subtypeInterHomeo A U ) ( fun x => f ⟨ x.val, x.prop.1 ⟩ ) ( Order.succ β ) using 1;
+    constructor <;> intro h <;> simp_all +decide [ Set.ext_iff ];
+    · grind +suggestions;
+    · exact?;
+  · convert hy_simple using 1;
+    constructor <;> intro h x hx;
+    · exact hy_simple x hx;
+    · convert h ⟨ ⟨ x.val, x.prop.1 ⟩, x.prop.2 ⟩ _;
+      convert hx using 1;
+      convert CBLevel_homeomorph ( subtypeInterHomeo A U ) ( fun x => f ⟨ x.val, x.prop.1 ⟩ ) β using 1;
+      simp +decide [ Set.ext_iff, CBLevel ];
+      constructor <;> intro h;
+      · convert CBLevel_homeomorph ( subtypeInterHomeo A U ) ( fun x => f ⟨ x.val, x.prop.1 ⟩ ) β using 1;
+        simp +decide [ Set.ext_iff, CBLevel ];
+      · convert h x.val x.prop.1 x.prop.2 using 1;
+  · ext;
+    constructor <;> intro h <;> rcases h with ⟨ σ, hσ, τ, hτ, h ⟩;
+    · use fun x => σ ⟨ ⟨ x.val, x.prop.1 ⟩, x.prop.2 ⟩;
+      refine' ⟨ _, τ, _, _ ⟩;
+      · fun_prop;
+      · convert hτ using 1;
+        ext; simp [Function.comp];
+        exact ⟨ fun ⟨ a, ha, ha' ⟩ => ⟨ a, ha.1, ha.2, ha' ⟩, fun ⟨ a, ha, ha', ha'' ⟩ => ⟨ a, ⟨ ha, ha' ⟩, ha'' ⟩ ⟩;
+      · exact fun x => h ⟨ ⟨ x.val, x.prop.1 ⟩, x.prop.2 ⟩;
+    · use σ ∘ (subtypeInterHomeo A U);
+      refine' ⟨ hσ.comp _, τ, _, _ ⟩;
+      · exact?;
+      · convert hτ using 1;
+        ext; simp [subtypeInterHomeo];
+        grind;
+      · intro x; specialize h ( subtypeInterHomeo A U x ) ; aesop;
+
+/-
+Main lemma: the CBRank f = α case.
+When CBRank f = α, decompose f into simple pieces using decomposition_lemma_baire,
+each reducing to MaxFun α via simple_reduces_to_MaxFun, then combine via gluing.
+-/
+lemma cbrank_eq_case
+    (α : Ordinal.{0}) (hα : α < omega1)
+    (ih1 : ∀ (β : Ordinal.{0}), β < α → ∀ {A : Set (ℕ → ℕ)}
+      (f : A → ℕ → ℕ) (_hf : Continuous f) (_hscat : ScatteredFun f)
+      (_hcb : ∀ γ : Ordinal.{0}, β ≤ γ → CBLevel f γ = ∅),
+      ContinuouslyReduces f (MaxFun β))
+    (ih2 : ∀ (β : Ordinal.{0}), β < α → ∀ {A : Set (ℕ → ℕ)}
+      (f : A → ℕ → ℕ) (hf : Continuous f)
+      (γ : Ordinal.{0}) (hγ : γ ≤ β)
+      (hcb_ne : (CBLevel f γ).Nonempty)
+      (hcb_empty : CBLevel f (Order.succ γ) = ∅)
+      (y : ℕ → ℕ)
+      (hy_simple : ∀ x ∈ CBLevel f γ, f x = y),
+      ContinuouslyReduces f (SuccMaxFun β))
+    {A : Set (ℕ → ℕ)}
+    (f : A → ℕ → ℕ) (hf : Continuous f)
+    (hscat : ScatteredFun f)
+    (hcb : ∀ β : Ordinal.{0}, α ≤ β → CBLevel f β = ∅)
+    (h_empty : (CBLevel f 0).Nonempty)
+    (hrank_eq : CBRank f = α) :
+    ContinuouslyReduces f (MaxFun α) := by
+  -- Step 1: Get local simplicity from decomposition_lemma_baire
+  have h_loc := decomposition_lemma_baire A f hscat
+  -- Step 2: Each local piece reduces to MaxFun α
+  have hloc_reduces : ∀ x : A, ∃ C : Set A, IsClopen C ∧ x ∈ C ∧
+      ContinuouslyReduces (fun a : C => f a.val) (MaxFun α) := by
+    intro x
+    obtain ⟨U, hU_clopen, hxU, hU_simple⟩ := h_loc x
+    refine ⟨Subtype.val ⁻¹' U, hU_clopen.preimage continuous_subtype_val, hxU, ?_⟩
+    exact simple_piece_reduces_to_maxfun α hα ih2 f hf hcb hrank_eq U hU_clopen hU_simple
+  -- Step 3: Locally reduces → globally reduces
+  exact locally_reduces_to_maxfun_implies_reduces α hα f hloc_reduces
 
 /-
 Item 1 from IH Item 2.
