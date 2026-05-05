@@ -178,8 +178,8 @@ end ZeroDimAndDisjointUnion
 Let $f$ be a scattered function and $(A_i)_{i\in I}$ be an open covering of $\dom(f)$ for some set $I$.
 Then $\CB(f)=\sup_{i\in I}\CB(f\restr{A_i})$.
 -/
-theorem cb_rank_of_clopen_union {X Y : Type*} [TopologicalSpace X]
-    (f : X → Y) (I : Type*) (A : I → Set X)
+theorem cb_rank_of_clopen_union (D: Set Baire)
+    (f : D → Baire) (I : Type*) (A : I → Set D)
     (h_cover : (⋃ i, A i) = Set.univ)
     (h_clopen : ∀ i, IsClopen (A i)):
     CBRank f = ⨆ i, CBRank (fun (x : A i) => f x.val) := by
