@@ -180,7 +180,7 @@ Then $\CB(f)=\sup_{i\in I}\CB(f\restr{A_i})$.
 -/
 theorem cb_rank_of_clopen_union (D: Set Baire)
     (f : D → Baire) (I : Type*) (A : I → Set D)
-    (h_cover : (⋃ i, A i) = Set.univ)
+    (h_cover : (⋃ i, A i) = D)
     (h_clopen : ∀ i, IsClopen (A i)):
     CBRank f = ⨆ i, CBRank (fun (x : A i) => f x.val) := by
   -- let α = ⨆ i, CBRank (fun (x : A i) => f x.val)
