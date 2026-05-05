@@ -218,7 +218,7 @@ theorem maxFun_is_maximum
     (f : A → ℕ → ℕ)
     (_hf : Continuous f)
     (_hscat : ScatteredFun f)
-    (_hcb : ∀ β : Ordinal.{0}, α ≤ β → CBLevel f β = ∅),
+    (_hcb : ∀ β : Ordinal.{0}, α ≤ β → CBLevel f β = ∅), -- CB f ≤ α
       ContinuouslyReduces f (MaxFun α)) ∧
     -- SuccMaxFun α is maximum for simple functions:
     -- for all simple scattered f with CB(f) ≤ α+1, f ≤ SuccMaxFun α
@@ -227,7 +227,7 @@ theorem maxFun_is_maximum
     (hf : Continuous f)
     (β: Ordinal.{0}) (hβ : β ≤ α)
     (hcb_ne : (CBLevel f β).Nonempty)
-    (hcb_empty : CBLevel f (Order.succ β) = ∅)
+    (hcb_empty : CBLevel f (Order.succ β) = ∅) -- CBRank f = β +1≤ α +1
     (y: ℕ →ℕ )
     (hy_simple : ∀ x ∈ CBLevel f β, f x = y),
     ContinuouslyReduces f (SuccMaxFun α)) := by
@@ -510,4 +510,3 @@ theorem consequences_general_structure_2
   obtain ⟨x, hx⟩ := hcb
   exact ⟨PUnit, PUnit, inferInstance, inferInstance, id,
     fun _ => x, continuous_const, fun _ => PUnit.unit, continuousOn_const, fun _ => rfl⟩
-

@@ -174,6 +174,28 @@ theorem locally_implies_disjoint_union_baire
 
 end ZeroDimAndDisjointUnion
 
+/-- Corollary \label{CBrankofclopenunion}
+Let $f$ be a scattered function and $(A_i)_{i\in I}$ be an open covering of $\dom(f)$ for some set $I$.
+Then $\CB(f)=\sup_{i\in I}\CB(f\restr{A_i})$.
+-/
+theorem cb_rank_of_clopen_union {X Y : Type*} [TopologicalSpace X]
+    (f : X → Y) (I : Type*) (A : I → Set X)
+    (h_cover : (⋃ i, A i) = Set.univ)
+    (h_clopen : ∀ i, IsClopen (A i)):
+    CBRank f = ⨆ i, CBRank (fun (x : A i) => f x.val) := by
+  -- let α = ⨆ i, CBRank (fun (x : A i) => f x.val)
+  -- we prove CBRank f ≤ α and α ≤ CBRank f
+  -- to show CBRank f ≤ α, we show CBLevel f α = ∅
+  -- use isolatedLocus_open_restrict to get CBLevel (f|_{A i}) α = ∅ for all i
+  -- use CBLevel_clopen_union_empty to get CBLevel f α = ∅,
+  -- use CBLevel_eq_empty_at_rank to get CBRank f ≤ α
+  -- to show α ≤ CBRank f, let β < α  and show CBLevel f β ≠ ∅
+  -- then for some i we have CBLevel f β ⊇ CBLevel f β ∩ A i = CBLevel (f|_{A i}) β ≠ ∅
+  -- since CBLevel f β ≠ ∅, we have CBRank f > β
+  -- since β < α, we have CBRank f > β for all β < α
+  -- therefore CBRank f ≥ α
+  sorry
+
 section DecompositionLemma
 
 /-!
@@ -353,16 +375,6 @@ theorem decomposition_lemma {X Y : Type*}
 SimpleFun (f ∘ (Subtype.val : U → X)) := by
 sorry
 
-Original statement (incorrect for x ∉ A since the restricted domain
-may be empty, making SimpleFun false). See `decomposition_lemma_baire` below
-for the corrected version.
-theorem decomposition_lemma_baire_orig
-(A : Set Baire)
-(f: A → Baire)
-(hf : ScatteredFun f) :
-∀ x : Baire, ∃ U : Set Baire, IsClopen U ∧ x ∈ U ∧
-SimpleFun ((f ∘ (Subtype.val : {a : A | (a : Baire) ∈ U} → A)))
-:= by sorry
 
 **Decomposition Lemma (corrected).** Any scattered function `f : A → Baire`
 with `A ⊆ Baire` is locally simple: around each point of `A` there is a clopen
@@ -375,19 +387,7 @@ theorem decomposition_lemma_baire
     ∀ x : A, ∃ U : Set Baire, IsClopen U ∧ (x : Baire) ∈ U ∧
          SimpleFun ((f ∘ (Subtype.val : {a : A | (a : Baire) ∈ U} → A)))
      := by
-  -- this uses the generalized reduction property (baire_open_reduction_rel)
-  -- of open sets for subsets of the Baire space
-  -- By induction on α = CBrank f.
-  -- Vacuously true if α=0.
-  --  If α is limit, then use limit_locally_lower
-  -- every $x\in \dom f$ admits a clopen neighbourhood $C$ such that $\CB(f\restr{C})<\CB(f)$
-  -- and the result follows by induction hypothesis and \cref{0dimanddisjointunion}.
-  -- Finally, assume that $\CB(f)=\beta+1$ and let $I= f(\CB_\beta(f))$. Since $f$ is locally constant on the closed set $\CB_\beta(f)$,
-  -- we can choose for each $y\in I$ an open set $U_y$ of $\dom(f)$ such that $U_y\cap \CB_\beta(f)=f^{-1}(\{y\})\cap \CB_\beta(f)$.
-  -- Applying the generalized reduction property of open sets \cite[22.16]{kechris} to the open cover of $\dom(f)$ given by $V_y=U_y\cup (\dom(f)\setminus \CB_\beta(f))$ for $y\in I$
-  -- yields a clopen partition $(C_y)_{y\in I}$ of $\dom(f)$ with $C_y\subseteq V_y$ for all $y\in I$.
-  -- Note that for all $y\in I$ we have $C_y\cap \CB_\beta(f)= f^{-1}(\{y\})\cap \CB_\beta(f)$,
-  -- which readily implies that each $f\restr{C_y}$ is simple of $\CB$-rank equal to $\beta+1$ using \cref{CBbasics0}~\cref{CBbasicsfromJSL2}, as desired.
+  -- proof differ from the mmemoir. It relies on the exit ordinal for each point in the domain.
   intros x
   obtain ⟨β, hβ⟩ : ∃ β : Ordinal.{0}, x ∈ CBLevel f β ∧ x ∉ CBLevel f (Order.succ β) := by
     have h_empty : CBLevel f (CBRank f) = ∅ := by

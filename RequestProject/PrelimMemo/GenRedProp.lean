@@ -18,6 +18,36 @@ The proof goes through a clopen decomposition in the zero-dimensional Baire spac
 
 section ClopenBasis
 
+def nbhd (x : Baire) (n : ℕ) : Set Baire :=
+  {h : Baire | ∀ i ∈ Finset.range n, h i = x i}
+
+/-- neighborhood of a point in the Baire space is clopen -/
+lemma baire_nbhd_isClopen (x : Baire) (n : ℕ) :
+    IsClopen (nbhd x n) := by
+  -- Rewrite as a finite intersection
+  have h_eq : nbhd x n = ⋂ i ∈ Finset.range n, {h : Baire | h i = x i} := by
+    ext h
+    simp [nbhd]
+  rw [h_eq]
+
+  -- PROOF 1: The intersection is Closed
+  have h_closed : IsClosed (⋂ i ∈ Finset.range n, {h : Baire | h i = x i}) := by
+    apply isClosed_biInter
+    intro i _
+    exact isClosed_eq (continuous_apply i) continuous_const
+
+  -- PROOF 2: The intersection is Open
+  have h_open : IsOpen (⋂ i ∈ Finset.range n, {h : Baire | h i = x i}) := by
+    apply Set.Finite.isOpen_biInter (Finset.finite_toSet ( Finset.range n ) );
+    intro i _
+    have h_preimage : {h : Baire | h i = x i} = (fun h => h i) ⁻¹' {x i} := rfl
+    rw [ isOpen_pi_iff ];
+    exact fun h hf => ⟨ { i }, fun _ => { x i }, by aesop ⟩
+  -- Combine them explicitly (IsClopen is defined as IsClosed ∧ IsOpen)
+  exact ⟨h_closed, h_open⟩
+
+  
+
 /-
 In the Baire space ℕ → ℕ, the set `{f | f i = a}` is clopen for every `i a : ℕ`.
 -/

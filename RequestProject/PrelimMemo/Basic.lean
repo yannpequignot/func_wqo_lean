@@ -122,6 +122,8 @@ end EmbeddingAndReduction
 
 section BasicReductionFacts
 
+
+
 /-
 Restriction to a subset reduces to the whole function.
 -/

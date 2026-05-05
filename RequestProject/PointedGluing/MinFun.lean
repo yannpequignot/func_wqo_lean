@@ -13,6 +13,22 @@ set_option relaxedAutoImplicit false
 ## Section 6: Pointed Gluing as a Lower Bound (Lemma 3.10, Proposition 3.11)
 -/
 
+
+/-
+MinFun 0 reduces to any function with nonempty domain.
+-/
+lemma minFun_zero_reduces {A : Set (ℕ → ℕ)}
+    (f : A → ℕ → ℕ) (hf : Continuous f)
+    (hne : A.Nonempty) :
+    ContinuouslyReduces (MinFun 0) f := by
+  obtain ⟨ x, hx ⟩ := hne;
+  refine' ⟨ fun _ => x, _, _ ⟩;
+  · exact continuous_const;
+  · refine' ⟨ fun _ => zeroStream, _, _ ⟩ <;> norm_num [ MinFun ];
+    · exact continuousOn_const;
+    · simp +decide [ MinDom ];
+      simp +decide [ PointedGluingSet ]
+
 /-- **Lemma (Pgluingaslowerbound).**
 hclopen hypothesis is not used,
 check the proof in the memoir to see
@@ -212,13 +228,55 @@ theorem pointedGluing_lower_bound'
     intro n
     sorry
 
-    
+
 /-- **Proposition (Minfunctions). Minimum functions.** -/
+
+-- Warning MinFun α has CB rank α+1!
+/--
+PROVIDED SOLUTION
+
+For $\alpha=0$, note that MinFun 0 continuously reduces to any non\-empty function.
+So suppose that $\alpha>0$ and that the statement holds for every $\beta<\alpha$.
+
+Take a simple function $f\in\sC_{\alpha+1}$ and let $y\in\im f$ be the distinguished point of $f$.
+Seeing that $\Minimalfct{\alpha+1}$ is a pointed gluing, we seek to apply \cref{Pgluingaslowerbound2} for some point $x\in\CB_\alpha(f)$. Let $U\ni x$ be any open set of $\dom f$.
+Notice first that as $x\in\CB_\alpha(f)$ and $x\in U$ we get that $f_U=f\restr{U}$ is simple and $\CB(f_U)=\alpha+1$ by \cref{CBbasics0}~\cref{CBbasicsfromJSL2}.
+Note that by \cref{CBrankofPgluingofregularsequence2simple} the sequence $(\CB(\ray{f_{U}}{y,n}))_n$ is regular of supremum $\alpha$. If $\alpha=\beta+1$ is successor, then there exists $N$ such that $\alpha=\CB(\ray{f_U}{y,N})$. By the induction hypothesis combined with our first remark, we get $\Minimalfct{\alpha}\leq \ray{f_{U}}{y,N}$.
+Notice that if $(\sigma, \tau)$ witnesses this reduction then both $\im \sigma \subseteq U$ and $\overline{\im f\sigma}\subseteq \ray{B}{y,N}$ hold. This ensures that $\Minimalfct{\alpha+1}=\pgl \Minimalfct{\alpha} \leq f$ by \cref{Pgluingaslowerbound2}.
+
+
+If $\alpha$ is limit, for all $\beta< \alpha$ there exists $N$ such that $\beta+1\leq \CB(\ray{f_{U}}{y,N})< \alpha$. So by the induction hypothesis combined with our first remark, we get $\Minimalfct{\beta+1}\leq \ray{f_{U}}{y,N}$.
+So similarly as in the successor case, we get $\Minimalfct{\alpha+1}=\pgl_{k}\Minimalfct{\beta_k+1}\leq f$, for $(\beta_k)_k$ cofinal in $\alpha$.
+-/
+lemma minFun_is_minimum_simple
+    (α : Ordinal.{0}) (hα : α < omega1) :
+      (∀ {A : Set (ℕ → ℕ)}
+      (f : A → ℕ → ℕ)
+      (hf : Continuous f),
+        ScatteredFun f →
+        (CBLevel f α).Nonempty →
+        (CBLevel f (Order.succ α)) = ∅ → -- CBRank f = α +1
+        (∃ y ∈ Baire,(hy_simple : ∀ x ∈ CBLevel f α, f x = y)) → -- f is simple
+        ContinuouslyReduces (MinFun α) f) := by
+  sorry
+
+/--
+PROVIDED SOLUTION
+-- by induction on α using Ordinal.induction
+  -- base case: α = 0, MinFun 0 is the constant function on zerostream, which reduces to any f with nonempty domain
+  -- induction step: Assume the statement holds for all β < α. We want to show it holds for α.
+  -- Let f : A → ℕ → ℕ be continuous and scattered with (CB level f (succ α)).Nonempty. We want to show MinFun α reduces to f.
+  -- Apply decomposition_lemma_baire to f
+  -- Apply locally_implies_disjoint_union_baire to get a sequence of clopen sets An such that the restriction of f to each An is simple
+  -- Apply cb_rank_of_clopen_union to get that the CB rank of f is the supremum of the CB ranks of f|An
+  -- Let β such that β+1 ≤ CBRank f, then there exists An such that CBRank (f|An) ≥ β+1, so for $γCBRank (f|An) ≥ β+2, so (CBLevel (f|An) (β+1)).Nonempty
+-/
 theorem minFun_is_minimum'
     (α : Ordinal.{0}) (hα : α < omega1) :
       (∀ {A : Set (ℕ → ℕ)}
       (f : A → ℕ → ℕ)
       (hf : Continuous f),
-        ScatteredFun f → (CBLevel f (Order.succ α)).Nonempty →
+        ScatteredFun f →
+        (CBLevel f α).Nonempty → -- this implies CBRank f > α+1
         ContinuouslyReduces (MinFun α) f) := by
   sorry
