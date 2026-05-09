@@ -260,7 +260,7 @@ theorem minFun_is_minimum
 -/
 
 
-/-- **Lemma (Pgluingaslowerbound).**
+/-! **Lemma (Pgluingaslowerbound).**
 Let `f : A → B` be a function between metrizable spaces and `(g_n)_n` a sequence in 𝒞.
 If there is a point `x ∈ A` and a sequence `(A_n)_n` of clopen sets satisfying:
 1. `f(x) ∉ cl(f(A_n))` for all `n`,
@@ -269,32 +269,11 @@ If there is a point `x ∈ A` and a sequence `(A_n)_n` of clopen sets satisfying
 4. `g_n ≤ f|_{A_n}` for all `n`,
 then `pgl_n g_n ≤ f`.
 
-
-The proof constructs `σ` mapping `0^ω ↦ x` and `(0)^n(1)x' ↦ σ_n(x')`, and
-`τ` mapping `f(x) ↦ 0^ω` and `y ↦ (0)^n(1)τ_n(y)` for `y ∈ f(A_n)`.
-Continuity follows from Lemma (prop:sufficientcondforcont). -/
-theorem pointedGluing_lower_bound_lemma
-    {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
-    {B : Type*} [TopologicalSpace B] [MetrizableSpace B]
-    (f : A → B)
-    (C D : ℕ → Set (ℕ → ℕ))
-    (g : ∀ n, C n → D n)
-    (x : A)
-    (An : ℕ → Set A)
-    (hclopen : ∀ n, IsClopen (An n))
-    (hsep : ∀ n, f x ∉ closure (f '' (An n)))
-    (hpart : ∀ m n, m ≠ n → Disjoint (f '' (An m)) (f '' (An n)))
-    (hconv : SetsConvergeTo An x)
-    (hred : ∀ n, ContinuouslyReduces
-      (fun (z : C n) => (g n z : ℕ → ℕ))
-      (f ∘ (Subtype.val : An n → A))) :
-    ContinuouslyReduces
-      (fun (z : PointedGluingSet C) => PointedGluingFun C D g z)
-      f := by
-  sorry
+see file LowerBoundLemma.lean
+-/
 
 
-/-- **Proposition (Pgluingaslowerbound2). Pointed gluing as lower bound.**
+/-! **Proposition (Pgluingaslowerbound2). Pointed gluing as lower bound.**
 Let `f : A → B` be continuous in 𝒞 and `(g_i)_i` a sequence in 𝒞.
 If for all `i ∈ ℕ` and all open neighborhoods `U ∋ x`, there is a continuous
 reduction `(σ, τ)` from `g_i` to `f` with `im(σ) ⊆ U` and
@@ -302,28 +281,9 @@ reduction `(σ, τ)` from `g_i` to `f` with `im(σ) ⊆ U` and
 
 
 In fact, `pgl_i g_i ≤ f|_V` for all clopen neighborhoods `V` of `x`.
+see file MinFun.lean
+-/
 
-
-The proof constructs a sequence `(A_n)_n` of clopen sets by induction, choosing
-each `A_n` so that `f(A_n)` is separated from the previous ones and from `f(x)`,
-and `A_n ⊆ N_{x|_n}`. Then applies Lemma (Pgluingaslowerbound). -/
-theorem pointedGluing_lower_bound
-    {A B : Set (ℕ → ℕ)}
-    (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
-    (hf : Continuous f)
-    (C D : ℕ → Set (ℕ → ℕ))
-    (g : ∀ i, C i → D i)
-    (x : A)
-    (hloc : ∀ (i : ℕ) (U : Set A), IsOpen U → x ∈ U →
-      ∃ (σ : C i → A) (τ : (ℕ → ℕ) → ℕ → ℕ),
-        Continuous σ ∧
-        (∀ z, f (σ z) = τ (g i z)) ∧
-        (∀ z, σ z ∈ U) ∧
-        f x ∉ closure (Set.range (fun z => f (σ z)))) :
-    ContinuouslyReduces
-      (fun (z : PointedGluingSet C) => PointedGluingFun C D g z)
-      f := by
-  sorry
 
 
 /-!

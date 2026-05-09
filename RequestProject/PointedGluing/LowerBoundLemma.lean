@@ -19,8 +19,6 @@ set_option relaxedAutoImplicit false
 
 
 /-
-  MinFun.lean  —  refactored version of pointedGluing_lower_bound_lemma'
-
   CHANGES FROM THE ORIGINAL
   ──────────────────────────
   1. A private helper `firstNonzero_val_ne` is lifted out of the proof body
@@ -112,11 +110,145 @@ lemma firstNonzero_zero {z : ℕ → ℕ} (hz : z ≠ zeroStream) :
   push_neg at this
   exact this
 
+/-
+============================================================
+HELPER LEMMAS FOR THE MAIN THEOREM
+============================================================
+
+On each piece (ray block), σ is continuous.
+-/
+lemma sigma_cont_on_pieces
+    {A : Type*} [TopologicalSpace A]
+    {C : ℕ → Set (ℕ → ℕ)}
+    {An : ℕ → Set A}
+    (x : A)
+    (σ_n : ∀ n, ↑(C n) → ↑(An n))
+    (hσ_n : ∀ n, Continuous (σ_n n))
+    (i : ℕ) :
+    let σ : ↑(PointedGluingSet C) → A := fun z =>
+      if h : z.val = zeroStream then x
+      else (σ_n (firstNonzero z.val)
+        ⟨stripZerosOne (firstNonzero z.val) z.val,
+         strip_mem_of_pointedGluingSet C z h⟩).val
+    let piece := Subtype.val ⁻¹' RaySet (PointedGluingSet C) zeroStream i
+    Continuous (fun z : ↑piece => σ z.val) := by
+  refine' Continuous.congr _ _;
+  refine' fun z => ( σ_n i ⟨ stripZerosOne i z.val.val, strip_mem_of_block C z.val i z.2.2 ⟩ ).val;
+  · refine' Continuous.comp _ _;
+    · exact continuous_subtype_val;
+    · exact hσ_n i |> Continuous.comp <| Continuous.subtype_mk ( continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val.comp <| continuous_subtype_val ) _;
+  · intro z
+    simp [RaySet] at z;
+    rename_i h;
+    have := h.2.2;
+    have h_firstNonzero : firstNonzero h.val.val = i := by
+      unfold firstNonzero;
+      split_ifs <;> simp_all +decide [ Nat.find_eq_iff ];
+      · exact ⟨ this.2, fun n hn => rfl ⟩;
+      · exact False.elim ( this.2 ( by rfl ) );
+    cases h ; aesop
+
+/-- ContinuousOn τ_global on range(f ∘ σ): for any y in the range, ContinuousWithinAt holds.
+    Uses that range(f ∘ σ) = {f x} ∪ ⋃ In n, and τ_global is continuous on each In n
+    (as τ ∘ inclusion) and satisfies a sequential condition at f x. -/
+lemma tau_global_continuousOn
+    {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
+    {B : Type*} [TopologicalSpace B] [MetrizableSpace B]
+    (f : A → B) (hf : Continuous f)
+    {C : ℕ → Set (ℕ → ℕ)}
+    (x : A)
+    (An : ℕ → Set A)
+    (hsep : ∀ n, f x ∉ closure (f '' (An n)))
+    (σ_n : ∀ n, ↑(C n) → ↑(An n))
+    (τ_n : ℕ → B → ℕ → ℕ)
+    (hτ_n : ∀ n, ContinuousOn (τ_n n) (Set.range ((f ∘ Subtype.val) ∘ σ_n n)))
+    (hpart : ∀ m n, m ≠ n → Disjoint (f '' (An m)) (f '' (An n)))
+    (σ : ↑(PointedGluingSet C) → A)
+    (σ_cont : Continuous σ)
+    (hσ_def : σ = fun z =>
+      if h : z.val = zeroStream then x
+      else (σ_n (firstNonzero z.val)
+        ⟨stripZerosOne (firstNonzero z.val) z.val,
+         strip_mem_of_pointedGluingSet C z h⟩).val)
+    (In : ℕ → Set B)
+    (hIn_def : In = fun n => Set.range ((f ∘ Subtype.val) ∘ σ_n n))
+    (h_refine : ∀ n, In n ⊆ f '' (An n))
+    (hrelclop' : IsRelativeClopenPartition In)
+    (τi : ↑(⋃ n, In n) → ℕ)
+    (hτi_n : ∀ (y : ↑(⋃ n, In n)) (n : ℕ), y.val ∈ In n → τi y = n)
+    (hτi_cont : Continuous τi)
+    (τ : ↑(⋃ n, In n) → ℕ → ℕ)
+    (hτ_def : τ = fun y => prependZerosOne (τi y) (τ_n (τi y) y.val))
+    (hτ_cont : Continuous τ)
+    (τ_global : B → ℕ → ℕ)
+    (hτg_def : τ_global = fun y => if h : y ∈ ⋃ n, In n then τ ⟨y, h⟩ else zeroStream)
+    (hfx_notUI : f x ∉ ⋃ n, In n)
+    (h_incl : ∀ z : ↑(PointedGluingSet C), z.val ≠ zeroStream → f (σ z) ∈ ⋃ n, In n)
+    (hcomp : Continuous (fun z : ↑(PointedGluingSet C) => τ_global (f (σ z)))) :
+    ContinuousOn τ_global (Set.range (f ∘ σ)) := by
+  -- Step 1: range(f ∘ σ) ⊆ {f x} ∪ ⋃ In n
+  have hrange : Set.range (f ∘ σ) ⊆ {f x} ∪ ⋃ n, In n := by
+    rintro y ⟨z, rfl⟩
+    by_cases hz : z.val = zeroStream
+    · left; show f (σ z) = f x; congr 1; rw [hσ_def]; simp [hz]
+    · right; exact h_incl z hz
+  -- Step 2: ContinuousOn τ_global (⋃ In n)
+  have h_cont_UI : ContinuousOn τ_global (⋃ n, In n) := by
+    rw [continuousOn_iff_continuous_restrict]
+    exact hτ_cont.congr (fun ⟨y, hy⟩ => by
+      simp only [Set.restrict, hτg_def, dif_pos hy])
+  -- Step 3: ContinuousWithinAt at f x (the hard part)
+  -- We use continuousWithinAt_pi to reduce to each coordinate.
+  -- For coordinate j, τ_global y j = 0 for y near f x in range(f ∘ σ),
+  -- because y ∈ In(m) forces m > j when y is close enough to f x.
+  have hcwat_fx : ContinuousWithinAt τ_global (range (f ∘ σ)) (f x) := by
+    rw [continuousWithinAt_pi]
+    intro j
+    rw [ContinuousWithinAt]
+    have hval : τ_global (f x) j = 0 := by
+      rw [hτg_def]; simp [hfx_notUI, zeroStream]
+    rw [hval]
+    -- The j-th coordinate is eventually 0 near f x, so it tends to 0
+    have h_ev : (fun y => τ_global y j) =ᶠ[nhdsWithin (f x) (range (f ∘ σ))] (fun _ => (0 : ℕ)) := by
+      have hU : (⋂ m ∈ Finset.range (j+1), (closure (f '' An m))ᶜ) ∈ nhds (f x) :=
+        (isOpen_biInter_finset
+          (fun m _ => isOpen_compl_iff.mpr isClosed_closure)).mem_nhds
+          (Set.mem_iInter₂.mpr (fun m _ => hsep m))
+      apply Filter.eventually_of_mem (inter_mem_nhdsWithin _ hU)
+      intro y ⟨hy_range, hy_open⟩
+      rcases hrange hy_range with h | h
+      · rw [Set.mem_singleton_iff.mp h, hτg_def]; simp [hfx_notUI, zeroStream]
+      · obtain ⟨m, hm⟩ := Set.mem_iUnion.mp h
+        have hm_large : j < m := by
+          by_contra hle; push_neg at hle
+          exact Set.mem_iInter₂.mp hy_open m (Finset.mem_range.mpr (Nat.lt_succ_of_le hle))
+            (subset_closure (h_refine m hm))
+        show τ_global y j = 0
+        simp only [hτg_def, dif_pos h, hτ_def, hτi_n ⟨y, h⟩ m hm]
+        exact prependZerosOne_head_eq_zero m _ j hm_large
+    exact tendsto_const_nhds.congr' h_ev.symm
+  -- Step 4: Combine
+  intro y hy
+  by_cases hy_UI : y ∈ ⋃ n, In n
+  · apply (h_cont_UI y hy_UI).mono_of_mem_nhdsWithin
+    rw [mem_nhdsWithin]
+    refine ⟨{z | z ≠ f x}, isOpen_ne, ?_, ?_⟩
+    · intro heq; exact hfx_notUI (heq ▸ hy_UI)
+    · intro z ⟨hz1, hz2⟩
+      rcases hrange hz2 with h | h
+      · exact absurd (Set.mem_singleton_iff.mp h) hz1
+      · exact h
+  · have : y = f x := by
+      rcases hrange hy with h | h
+      · exact Set.mem_singleton_iff.mp h
+      · exact absurd h hy_UI
+    rw [this]; exact hcwat_fx
+
 -- ============================================================
 --  MAIN THEOREM
 -- ============================================================
 
-theorem pointedGluing_lower_bound_lemma'
+theorem pointedGluing_lower_bound_lemma
     {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
     {B : Type*} [TopologicalSpace B] [MetrizableSpace B]
     (f : A → B) (hf : Continuous f)
@@ -294,7 +426,7 @@ theorem pointedGluing_lower_bound_lemma'
   --   intro i
   --   exact (hpart_open i).ContinuousOn.comp_continuous (continuous_subtype_val)
   have hσ_pieces : ∀ i, Continuous (fun z : piece i => σ z.val) := by
-      sorry
+      intro i; exact sigma_cont_on_pieces x σ_n hσ_n i
 
   have σ_cont_on_U : ContinuousOn σ
       {z : PointedGluingSet C | z.val ≠ zeroStream} := by
@@ -427,9 +559,8 @@ theorem pointedGluing_lower_bound_lemma'
     intro n
     apply continuous_const.congr
     intro ⟨y, hy⟩
-    have hu : y∈ (⋃ n, In n) := Set.mem_iUnion.mpr ⟨n, hy⟩
-    sorry
-    sorry
+    show n = (τi ∘ Set.inclusion (Set.subset_iUnion In n)) ⟨y, hy⟩
+    exact (hτi_n ⟨y, Set.mem_iUnion.mpr ⟨n, hy⟩⟩ n hy).symm
   -- ══════════════════════════════════════════════════════════
   --  PHASE 3 — Define τ, τ_global and prove continuity
   -- ══════════════════════════════════════════════════════════
@@ -548,22 +679,12 @@ theorem pointedGluing_lower_bound_lemma'
         {z : PointedGluingSet C | z.val ≠ zeroStream}
       · exact isOpen_compl_singleton.preimage continuous_subtype_val
       · -- Continuity on U: factor through the subtype lift into UI.
-        apply ContinuousOn.congr
-        · intro z hz
-          simp only [Set.mem_setOf_eq] at hz
-          apply ContinuousAt.continuousWithinAt
-          -- ★ SORRY 2 lives here ★
-          -- Replace with:
-          --   have hopen : IsOpen UI := isOpen_iUnion (fun n => ...)
-          --   exact (hτ_cont.continuousAt.comp
-          --           ((hf.comp σ_cont).continuousAt.codRestrict
-          --             (fun w => h_incl w (by ...)) hopen (h_incl z hz)))
-          sorry
-        · intro z hz
-          simp only [Set.mem_setOf_eq] at hz
-          simp [τ_global, dif_pos (h_incl z hz)]
-          sorry
-        sorry
+        rw [continuousOn_iff_continuous_restrict]
+        exact (hτ_cont.comp
+            (((hf.comp σ_cont).comp continuous_subtype_val).subtype_mk
+              (fun z => h_incl z.val z.prop))).congr
+            (fun z => by simp only [Function.comp, Set.restrict, τ_global,
+                          dif_pos (h_incl z.val z.prop)])
       · -- On Uᶜ: z = zeroStream, τ_global(f(σ z)) = zeroStream (constant).
         apply (continuousOn_const (c := zeroStream)).congr
         intro z hz
@@ -602,7 +723,16 @@ theorem pointedGluing_lower_bound_lemma'
           Filter.eventually_atTop.mp (Filter.tendsto_atTop.mp hfnz_tendsto N)
         apply Filter.eventually_atTop.mpr ⟨M, fun k hk => hN ?_⟩
         have hmem_UI : f (σ (zk k)) ∈ UI := h_incl (zk k) (hzk_ne k)
-        sorry
+        simp only [Function.comp, dif_pos hmem_UI, τ]
+        have hτi_eq : τi ⟨f (σ (zk k)), hmem_UI⟩ = firstNonzero (zk k).val := by
+          apply hτi_n
+          exact ⟨⟨stripZerosOne _ (zk k).val,
+            strip_mem_of_pointedGluingSet C (zk k) (hzk_ne k)⟩,
+            by simp [σ, dif_neg (hzk_ne k)]⟩
+        rw [hτi_eq]
+        intro i hi
+        exact prependZerosOne_head_eq_zero _ _ i
+          (lt_of_lt_of_le (Finset.mem_range.mp hi) (hM k hk))
         -- rw [dif_pos hmem_UI]
         -- simp only [τ]
         -- rw [hτi_n ⟨f (σ (zk k)), hmem_UI⟩ (firstNonzero (zk k).val)
@@ -613,12 +743,9 @@ theorem pointedGluing_lower_bound_lemma'
         -- simp only [nbhd, Finset.mem_range] at hi
         -- exact prependZerosOne_eq_zero (hi.trans_le (hM k hk))
     -- Derive ContinuousOn on the range from the continuous composition.
-    -- LEAN: `continuousOn_iff_continuous_restrict` reduces ContinuousOn on a
-    -- range to continuity of the restricted map.
-    rw [continuousOn_iff_continuous_restrict]
-    sorry
-    -- rintro ⟨y, z, rfl⟩
-    -- exact hcomp.continuousAt.continuousWithinAt
+    exact tau_global_continuousOn f hf x An hsep σ_n τ_n hτ_n hpart
+      σ σ_cont rfl In rfl h_refine hrelclop'
+      τi hτi_n hτi_cont τ rfl hτ_cont τ_global rfl hfx_notUI h_incl hcomp
 
   -- ── Goal 2: functional equation ────────────────────────────────────
   --
@@ -633,18 +760,20 @@ theorem pointedGluing_lower_bound_lemma'
     · -- Basepoint case: PointedGluingFun sends zeroStream to zeroStream.
       have hσz : σ z = x := dif_pos h
       simp [τ_global, hσz, hfx_notUI]
-      sorry
+      simp [PointedGluingFun, h]
     · -- Non-basepoint case.
+      show PointedGluingFun C D g z = τ_global (f (σ z))
       set n  := firstNonzero z.val
-      sorry
-      -- set z' := ⟨stripZerosOne n z.val, strip_mem_of_pointedGluingSet C z h⟩
-      -- f(σ z) = f(σₙ n z').val ∈ In n ⊆ UI
-      -- have hfσ_UI : f (σ_n n z').val ∈ UI :=
-      --   Set.mem_iUnion.mpr ⟨n, z', rfl⟩
-      -- simp only [σ, dif_neg h, τ_global, dif_pos hfσ_UI, τ]
-      -- -- τi gives n on In n (by hτi_n)
-      -- rw [hτi_n ⟨f (σ_n n z').val, hfσ_UI⟩ n ⟨z', rfl⟩]
-      -- -- prependZerosOne n (τₙ n ...) = PointedGluingFun C D g z
-      -- -- via hτ_n_eq and PointedGluingFun_eq
-      -- rw [← hτ_n_eq n z']
-      -- exact PointedGluingFun_eq C D g z h n z' rfl rfl
+      set z' : ↑(C n) := ⟨stripZerosOne n z.val, strip_mem_of_pointedGluingSet C z h⟩
+      have hσz : σ z = (σ_n n z').val := dif_neg h
+      have hfσ_UI : f (σ z) ∈ UI := h_incl z h
+      have hfσ_In : f (σ z) ∈ In n := by rw [hσz]; exact ⟨z', rfl⟩
+      have hτi_eq : τi ⟨f (σ z), hfσ_UI⟩ = n := hτi_n ⟨f (σ z), hfσ_UI⟩ n hfσ_In
+      -- LHS: use pointedGluingFun_eq_on_block
+      rw [pointedGluingFun_eq_on_block C D g z h]
+      -- RHS: unfold τ_global and τ
+      have hrhs : τ_global (f (σ z)) = prependZerosOne n (τ_n n (f (σ z))) := by
+        simp only [τ_global, dif_pos hfσ_UI, τ, hτi_eq]
+      rw [hrhs, hσz]
+      congr 1
+      exact hτ_n_eq n z'

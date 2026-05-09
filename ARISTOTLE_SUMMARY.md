@@ -1,3 +1,62 @@
+# Summary of changes for run d859e2d4-83fe-4855-b798-1ff8fe0e86be
+I resolved the `sorry`s in `RequestProject/PointedGluing/MinFun.lean` as follows:
+
+## Completed: `pointedGluing_lower_bound'` (fully proved)
+
+This theorem had 5 `sorry`s that were all resolved:
+
+1. **Threading lemma (`lseq p ≤ kseq q`)**: The original construction used `∀ n, ∃ k l m σ τ, GoodData ...` followed by `choose`, which lost the cross-step relationship `kseq(n+1) = lseq(n)`. I restructured the construction to use explicit `Nat.rec` recursion:
+   - Defined a `mkStep` function that produces `(l, m, σ, τ)` given `(n, prevl)` with `l ≥ prevl + 1`
+   - Built `kseq` via `Nat.rec 0 (fun n prev => (mkStep n prev).choose)`
+   - This preserves `lseq n = kseq (n+1)` by definition, making `kseq` strictly monotone
+   - The threading lemma then follows from `kseq_strictMono.monotone`
+
+2. **hsep** (`f x ∉ closure (f '' An n)`): Proved using `hclos n` (closure disjoint from `cylfx (mseq n)`) and `hfx_cylfx` (f x ∈ cylfx (mseq n)).
+
+3. **hrelclop** (`IsRelativeClopenPartition`): 
+   - Disjointness: For `i < j`, threading gives `f '' An j ⊆ cylfx (mseq i)`, and `hclos i` gives `f '' An i ∩ cylfx (mseq i) = ∅`.
+   - Relatively open: Each piece is separated by clopen sets (finite intersections of `cylfx` neighborhoods).
+
+4. **hconv** (`SetsConvergeTo An x`): Since `An n ⊆ cyl (kseq n)` and `kseq n ≥ n`, for any open U ∋ x, eventually `An n ⊆ U`.
+
+5. **hred** (ContinuouslyReduces): Used `σ_n n` and `τseq n` with continuity from `hσc n` and equation from `hcomm n`.
+
+## Remaining: 2 `sorry`s
+
+Two deep theorems remain unproved:
+
+- **`minFun_is_minimum_simple`** (line 273): States that MinFun α continuously reduces to any simple scattered function f with CB rank exactly α+1. The proof requires transfinite induction, ray function decomposition, regular sequences, and CB rank analysis — infrastructure that is partially present but incomplete in the project.
+
+- **`minFun_is_minimum'`** (line 440): States that MinFun α continuously reduces to any scattered function with (CBLevel f α).Nonempty. This builds on `minFun_is_minimum_simple` via decomposition into simple pieces.
+
+Both theorems reference key infrastructure (ray functions restricted to ray sets, regular ordinal sequences, cofinal sequence properties) that would need substantial additional development to formalize.
+
+## Cleanup
+
+- Removed a large (~435 line) commented-out block of old code to keep the file manageable.
+- Fixed linter warnings (unused simp args, `simpa` → `simp`).
+- The project builds successfully with only the two `sorry` warnings.
+
+# Summary of changes for run cd470e87-384b-4841-9212-acaec6f847a8
+Successfully resolved all sorry's in `RequestProject/PointedGluing/LowerBoundLemma.lean`. The file originally contained 10 sorry placeholders within the theorem `pointedGluing_lower_bound_lemma'`. Here's a summary of what was done:
+
+**Helper lemmas added above the main theorem:**
+1. `sigma_cont_on_pieces` — proves that σ is continuous on each ray block (piece). The proof works by showing σ agrees with a continuous composition on each piece using `pgl_sigma_eq_on_block`, `continuous_stripZerosOne`, and `firstNonzero_eq_of_block`.
+
+2. `tau_global_continuousOn` — proves ContinuousOn τ_global on range(f ∘ σ). The proof splits into two cases:
+   - For points in ⋃ In n: uses that τ_global restricted to the union equals the continuous τ, combined with `ContinuousWithinAt.mono_of_mem_nhdsWithin`.
+   - For the base point f x: uses `continuousWithinAt_pi` to reduce to coordinatewise convergence, then shows each coordinate j is eventually 0 near f x (because points near f x must lie in In(m) with m > j, making prependZerosOne m (...) j = 0).
+
+**Fixes within the main theorem:**
+- **τi continuity** (was 2 sorry's): Fixed by providing the constant value `n` and using `hτi_n` to show τi equals n on each piece In n.
+- **ContinuousOn on U** (was 3 sorry's): Restructured to use `codRestrict`/`subtype_mk` composition approach, factoring through the subtype ↑UI.
+- **Sequential condition** (was 1 sorry): Proved that τ_global(f(σ(zk k))) ∈ nbhd zeroStream N by showing τi picks the block index and using `prependZerosOne_head_eq_zero`.
+- **ContinuousOn derivation** (was 1 sorry): Now uses `tau_global_continuousOn` helper.
+- **Basepoint equation** (was 1 sorry): Proved by unfolding `PointedGluingFun` at zeroStream.
+- **Non-basepoint equation** (was 1 sorry): Proved by combining `pointedGluingFun_eq_on_block`, `hτi_n`, and `hτ_n_eq`.
+
+All proofs compile cleanly and depend only on standard axioms (propext, Classical.choice, Quot.sound).
+
 # Summary of changes for run b37ceb33-6ff8-4c6b-a63e-c1b2b713f1ae
 ## Summary of Changes to MinFun.lean
 
