@@ -43,6 +43,7 @@ lemma CBLevel_eq_empty_at_rank {X Y : Type*}
       exact fun α => fun h => hS ⟨ α, h ⟩;
     exact False.elim ( not_injective_of_ordinal h_inj.choose h_inj.choose_spec )
 
+
 /-- The block set for index n: sequences starting with n zeros then a nonzero value. -/
 def blockSet (n : ℕ) : Set (ℕ → ℕ) :=
   {x | (∀ k, k < n → x k = 0) ∧ x n ≠ 0}

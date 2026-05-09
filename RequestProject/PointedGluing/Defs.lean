@@ -111,6 +111,8 @@ gluing (other than `0^ω`), this is the block index `i`. -/
 noncomputable def firstNonzero (x : ℕ → ℕ) : ℕ :=
   if h : ∃ k, x k ≠ 0 then Nat.find h else 0
 
+
+
 /-- The pointed gluing of a sequence of functions `(f_i : A_i → B_i)_{i ∈ ℕ}` on the
 Baire space. Maps:
 - `(0)^i (1) x' ↦ (0)^i (1) f_i(x')` if `x' ∈ A_i`

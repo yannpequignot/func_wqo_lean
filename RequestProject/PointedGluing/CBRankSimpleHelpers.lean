@@ -26,10 +26,11 @@ lemma RaySet_cond_isOpen (y : ℕ → ℕ) (n : ℕ) :
     intro f hf; use Finset.Iic n; use fun k => { z | z = x k } ; aesop;
   · exact fun k hk => rfl
 
+
 /-
 The ray subtype `{a : A | f a ∈ RaySet B y n}` is open in `A` (for continuous `f`).
 -/
-lemma ray_subtype_isOpen {A B : Set (ℕ → ℕ)}
+lemma ray_subtype_isOpen (A: Set (ℕ → ℕ)) (B : Set (ℕ → ℕ))
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B) (hf : Continuous f)
     (y : ℕ → ℕ) (n : ℕ) :
     IsOpen ({a : A | f a ∈ RaySet B y n} : Set A) := by
@@ -37,11 +38,33 @@ lemma ray_subtype_isOpen {A B : Set (ℕ → ℕ)}
   convert RaySet_cond_isOpen y n |> IsOpen.preimage hf using 1;
   aesop
 
+lemma RaySet_subtype_eq_preimage (A : Set (ℕ → ℕ)) (y : ℕ → ℕ) (n : ℕ) :
+    (Subtype.val ⁻¹' RaySet Set.univ y n : Set A) =
+    Subtype.val ⁻¹' RaySet A y n := by
+  ext ⟨x, hx⟩
+  simp [RaySet]
+
+lemma ray_subtype_isOpen' (A : Set (ℕ → ℕ)) (y : ℕ → ℕ) (n : ℕ) :
+    IsOpen (Subtype.val ⁻¹' RaySet A y n : Set A) := by
+  -- Apply ray_subtype_isOpen to the inclusion map Subtype.val : A → ℕ → ℕ
+  have := ray_subtype_isOpen
+    A
+    Set.univ
+    (Subtype.val)
+    (fun a => Set.mem_univ a.val)
+    (continuous_subtype_val)
+    y n
+  -- `this` says IsOpen {a : A | a.val ∈ RaySet A y n}
+  -- which is definitionally Subtype.val ⁻¹' RaySet A y n
+  rw [← RaySet_subtype_eq_preimage]
+  exact this
+
+  -- apply RaySet_subtype_eq_preimage Set.univ y n
 /-
 Every element of B either equals y or belongs to some RaySet.
 -/
 lemma mem_ray_or_eq_y {B : Set (ℕ → ℕ)} {y x : ℕ → ℕ}
-    (hx : x ∈ B) :
+    (hx : x ∈ B):
     x = y ∨ ∃ n, x ∈ RaySet B y n := by
   by_cases hxy : x = y;
   · exact Or.inl hxy;
@@ -112,7 +135,7 @@ lemma CBLevel_all_rays_le_implies_const {A B : Set (ℕ → ℕ)}
     exact Set.eq_empty_of_forall_notMem fun x hx => by have := CBLevel_antitone ( fun x : { a : A | f a ∈ RaySet B y n } => f x.val ) h_ray_rank hx; aesop;
   contrapose! h_ray_empty;
   obtain ⟨ n, hn ⟩ := mem_ray_or_eq_y ( hfB x ) |> Or.resolve_left <| h_ray_empty;
-  exact ⟨ n, ⟨ ⟨ x, hn ⟩, CBLevel_open_restrict f _ ( ray_subtype_isOpen f hfB hf y n ) _ _ |>.2 hx ⟩ ⟩
+  exact ⟨ n, ⟨ ⟨ x, hn ⟩, CBLevel_open_restrict f _ ( ray_subtype_isOpen A B f hfB hf y n ) _ _ |>.2 hx ⟩ ⟩
 
 /-
 If f is constant on CBLevel f β, then CBLevel f (succ β) = ∅.
@@ -196,7 +219,7 @@ lemma regularity_contradiction {A B : Set (ℕ → ℕ)}
             have h_ray_empty : x.val ∈ CBLevel f β → x.val ∈ {a : A | f a ∈ RaySet B y n} → False := by
               have h_ray_empty : CBLevel (fun x : {a : A | f a ∈ RaySet B y n} => f x.val) β = ∅ := h_ray_empty
               intro hx hn;
-              apply CBLevel_open_restrict (fun x => f x) {a : A | f a ∈ RaySet B y n} (ray_subtype_isOpen f hfB hf y n) β ⟨x.val, hn⟩ |>.not.mp;
+              apply CBLevel_open_restrict (fun x => f x) {a : A | f a ∈ RaySet B y n} (ray_subtype_isOpen A B f hfB hf y n) β ⟨x.val, hn⟩ |>.not.mp;
               · exact fun h => h_ray_empty.subset h;
               · exact hx
             exact h_ray_empty hx hn;

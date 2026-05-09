@@ -1,3 +1,40 @@
+# Summary of changes for run b37ceb33-6ff8-4c6b-a63e-c1b2b713f1ae
+## Summary of Changes to MinFun.lean
+
+I worked on resolving the `sorry`s in `RequestProject/PointedGluing/MinFun.lean`. The file contained several issues that needed to be addressed before the main theorems could be attempted.
+
+### Issues Fixed (compilation errors and bugs)
+
+1. **Fixed pre-existing build error in `Decomposition.lean`** (line 185): Added missing `[TopologicalSpace Y]` instance to `cb_rank_of_clopen_union`, which was blocking the entire build chain.
+
+2. **Fixed type error in `minFun_zero_reduces`**: Changed `fun _ => x` to `fun _ => ⟨x, hx⟩` to correctly construct a subtype element for the reduction map σ.
+
+3. **Fixed parse error**: The standalone docstring `/-- **Proposition (Minfunctions). Minimum functions.** -/` before `lemma minFun_is_minimum_simple` was not attached to any declaration. Converted to a regular comment.
+
+4. **Fixed type error in `minFun_is_minimum_simple` statement**: The hypothesis `(∃ y ∈ Baire, (hy_simple : ...))` was incorrect because `Baire` is a type alias (`ℕ → ℕ`), not a set, so `y ∈ Baire` doesn't typecheck. Fixed to `(∃ y : ℕ → ℕ, ∀ x ∈ CBLevel f α, f x = y)`.
+
+5. **Added missing import**: Added `import RequestProject.PointedGluing.MinFunLowerBound` to make `baire_cylinder_mem_nhds`, `baire_subspace_cylinder_mem_nhds`, and `pgl_lower_bound_step` available.
+
+### Corrected equation direction in `pointedGluing_lower_bound'`
+
+The original `hloc` hypothesis had the equation `∀ z, f (σ z) = τ (g i z)`, which represents `f ∘ σ` being computed from `g_i` (i.e., a reduction in the wrong direction). The mathematical intent (matching `pgl_lower_bound_step` in `MinFunLowerBound.lean`) is `∀ z, (g i z : ℕ → ℕ) = τ (f (σ z))`, which says `g_i` reduces to `f` locally. The statement was corrected with a docstring explaining the change.
+
+### Remaining Sorries (3)
+
+The three remaining sorry'd theorems are deep research-level results:
+
+1. **`pointedGluing_lower_bound'`** (Proposition 3.11 - Pointed gluing as lower bound): Requires constructing recursive sequences of cylinder neighborhoods with controlled separation, defining clopen sets with pairwise disjoint images under f, and proving the continuous reduction. The proof outline is documented in comments.
+
+2. **`minFun_is_minimum_simple`**: Requires transfinite induction on ordinals, using the pointed gluing lower bound and CB-rank regularity results.
+
+3. **`minFun_is_minimum'`**: Requires transfinite induction combined with the decomposition lemma for scattered functions.
+
+These theorems involve sophisticated constructions combining transfinite induction, Baire space topology, and the Cantor-Bendixson analysis developed throughout the project. Multiple attempts were made with the theorem proving infrastructure, but the proofs are beyond the current reach of automated methods.
+
+### Build Status
+
+The full project builds successfully with `lake build` (8059 jobs, no errors). All changes are backward-compatible and don't introduce any new axioms.
+
 # Summary of changes for run 78e7edd3-3e77-4ca9-870f-eaa8e5f42a0a
 ## Refactoring Summary
 

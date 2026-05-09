@@ -1,5 +1,8 @@
 import RequestProject.PrelimMemo.Scattered.NonScattered
 import RequestProject.PrelimMemo.Gluing
+import RequestProject.PrelimMemo.Scattered.CBAnalysis
+--import RequestProject.PointedGluing.CBRankHelpers
+import RequestProject.PointedGluing.CBLevelOpenRestrict
 
 open scoped Topology
 open Set Function TopologicalSpace
@@ -13,7 +16,7 @@ set_option relaxedAutoImplicit false
 
 ## Main definitions
 
-* `SimpleFun` — a function is simple if it has CB-degree 1
+* `SimpleFun` — a function is simple if it constant on the last nonempty CB level
 
 ## Main results
 
@@ -178,23 +181,96 @@ end ZeroDimAndDisjointUnion
 Let $f$ be a scattered function and $(A_i)_{i\in I}$ be an open covering of $\dom(f)$ for some set $I$.
 Then $\CB(f)=\sup_{i\in I}\CB(f\restr{A_i})$.
 -/
-theorem cb_rank_of_clopen_union (D: Set Baire)
-    (f : D → Baire) (I : Type*) (A : I → Set D)
-    (h_cover : (⋃ i, A i) = D)
-    (h_clopen : ∀ i, IsClopen (A i)):
+theorem cb_rank_of_clopen_union {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    [Small.{0} X]
+    (f : X → Y) (hf : ScatteredFun f) (A : ℕ → Set X)
+    (h_cover : ∀ x, ∃ n, x ∈  A n)
+    (h_open : ∀ i, IsOpen (A i)) :
     CBRank f = ⨆ i, CBRank (fun (x : A i) => f x.val) := by
-  -- let α = ⨆ i, CBRank (fun (x : A i) => f x.val)
-  -- we prove CBRank f ≤ α and α ≤ CBRank f
-  -- to show CBRank f ≤ α, we show CBLevel f α = ∅
-  -- use isolatedLocus_open_restrict to get CBLevel (f|_{A i}) α = ∅ for all i
-  -- use CBLevel_clopen_union_empty to get CBLevel f α = ∅,
-  -- use CBLevel_eq_empty_at_rank to get CBRank f ≤ α
-  -- to show α ≤ CBRank f, let β < α  and show CBLevel f β ≠ ∅
-  -- then for some i we have CBLevel f β ⊇ CBLevel f β ∩ A i = CBLevel (f|_{A i}) β ≠ ∅
-  -- since CBLevel f β ≠ ∅, we have CBRank f > β
-  -- since β < α, we have CBRank f > β for all β < α
-  -- therefore CBRank f ≥ α
-  sorry
+  set α := ⨆ i, CBRank (fun (x : A i) => f x.val) with hα_def
+  apply le_antisymm
+  · -- Direction 1: CBRank f ≤ α
+    -- Rewrite CBRank f as sInf {β | CBLevel f β = ∅} using CBRank_eq_sInf_empty
+    rw [CBRank_eq_sInf_empty f hf]
+    -- It suffices to show α ∈ {β | CBLevel f β = ∅}
+    apply csInf_le'
+    simp only [Set.mem_setOf_eq]
+    -- Goal: ∀ i, CBLevel (fun x : A i => f x.val) α = ∅
+    have h_all_empty: ∀ i, CBLevel (fun x : A i => f x.val) α = ∅ := by
+      intro i
+      -- CBRank (f|_{Aᵢ}) ≤ α, so CBLevel (f|_{Aᵢ}) α = ∅
+      -- Rewrite CBRank (f|_{Aᵢ}) using CBRank_eq_sInf_empty
+      -- We need: α ≥ CBRank (f|_{Aᵢ}), and CBLevel (f|_{Aᵢ}) (CBRank (f|_{Aᵢ})) = ∅,
+      -- and antitone gives CBLevel (f|_{Aᵢ}) α = ∅.
+      obtain h_Ai_open : IsOpen (A i) := h_open i;
+      have h_CBf_empty: CBLevel f (CBRank f) = ∅ := by
+        exact CBLevel_eq_empty_at_rank f hf;
+      obtain h_iff := CBLevel_open_restrict f _ h_Ai_open (CBRank f);
+      have hfi_empty : CBLevel (fun x : A i => f x.val) (CBRank f) = ∅ := by
+        ext x
+        simp only [Set.mem_empty_iff_false, iff_false]
+        intro hx
+        -- exact absurd ((h_iff x).mp hx) (h_CBf_empty ▸ Set.not_mem_empty _)
+        -- hx : x ∈ CBLevel (fun x => f ↑x) (CBRank f)
+        -- h_iff x : x ∈ CBLevel (f ∘ Subtype.val) (CBRank f) ↔ ↑x ∈ CBLevel f (CBRank f)
+        -- (fun x => f ↑x) = f ∘ Subtype.val definitionally, so hx works with h_iff
+        have hxX : x.val ∈ CBLevel f (CBRank f) := (h_iff x).mp hx
+        rw [h_CBf_empty] at hxX
+        exact hxX
+      have hfi_scat : ScatteredFun (fun x : A i => f x.val) := scattered_restrict f hf (A i)
+      have hfi_CBLevel_eq_empty_at_rank : CBLevel (fun (x : A i) => f x.val) (CBRank (fun (x : A i) => f x.val)) = ∅ := CBLevel_eq_empty_at_rank (fun (x : A i) => f x.val) hfi_scat
+      have h_le : CBRank (fun (x : A i) => f x.val) ≤ α := by
+        rw [hα_def]
+        exact Ordinal.le_iSup (fun j => CBRank (fun x : A j => f x.val)) i
+      have hfi_α_empty : CBLevel (fun (x : A i) => f x.val) α = ∅ :=
+        Set.eq_empty_of_subset_empty
+          (hfi_CBLevel_eq_empty_at_rank ▸ CBLevel_antitone (fun (x : A i) => f x.val) h_le)
+      exact hfi_α_empty
+    apply CBLevel_open_union_empty f A h_open h_cover α h_all_empty
+
+  · -- Direction 2: α ≤ CBRank f
+    rw [hα_def]
+    apply Ordinal.iSup_le
+    intro i
+    -- Goal: CBRank (fun x : A i => f x.val) ≤ CBRank f
+    by_contra h
+    push_neg at h
+    -- h : CBRank f < CBRank (fun x : A i => f x.val)
+    -- CBLevel (f|_{Aᵢ}) (CBRank f) ≠ ∅  (since CBRank f < CBRank (f|_{Aᵢ}))
+    -- CBLevel (f|_{Aᵢ}) (CBRank f) = CBLevel f (CBRank f) ∩ A i = ∅ ∩ A i = ∅
+    -- Contradiction
+    have hfi_scat : ScatteredFun (fun x : A i => f x.val) := scattered_restrict f hf (A i)
+    -- CBLevel (f|_{Aᵢ}) (CBRank f) ≠ ∅ because CBRank f < CBRank (f|_{Aᵢ})
+    have hne : (CBLevel (fun x : A i => f x.val) (CBRank f)).Nonempty := by
+      by_contra hemp
+      rw [Set.not_nonempty_iff_eq_empty] at hemp
+      -- hemp : CBLevel (f|_{Aᵢ}) (CBRank f) = ∅
+      -- But CBRank (f|_{Aᵢ}) ≤ CBRank f (since CBRank f is in the stabilization set)
+      -- contradicting h : CBRank f < CBRank (f|_{Aᵢ})
+      have hle : CBRank (fun x : A i => f x.val) ≤ CBRank f := by
+        rw [CBRank_eq_sInf_empty _ hfi_scat]
+        apply csInf_le'
+        simp only [Set.mem_setOf_eq]
+        exact hemp
+      exact absurd hle (not_le.mpr h)
+    have h_CBf_empty: CBLevel f (CBRank f) = ∅ := by
+      exact CBLevel_eq_empty_at_rank f hf;
+    -- But CBLevel (f|_{Aᵢ}) (CBRank f) = ∅ from h_CBf_empty
+    have hempty : CBLevel (fun x : A i => f x.val) (CBRank f) = ∅ := by
+      have h_openi : IsOpen (A i) := h_open i
+      obtain h_iff := CBLevel_open_restrict f _ h_openi (CBRank f)
+      ext x
+      simp only [Set.mem_empty_iff_false, iff_false]
+      intro hx
+      have hxX : x.val ∈ CBLevel f (CBRank f) := (h_iff x).mp hx
+      rw [h_CBf_empty] at hxX
+      exact hxX
+    exact hne.ne_empty hempty
+    -- PROVIDED SOLUTION
+    -- Let $\beta<\alpha$, then $\beta<\CB(f\restr{A_i})$ for some ${i\in I}$ and
+    -- now \CB_\beta(f)\supseteq\CB_\beta(f)\cap A_i=\CB_\beta(f\restr{A_i})\neq\emptyset.
+    -- Since $\CB_{\CB(f)}(f)=\emptyset$, it follows that $\beta<\CB(f)$, hence $\alpha≤ \CB(f)$.
+    
 
 section DecompositionLemma
 

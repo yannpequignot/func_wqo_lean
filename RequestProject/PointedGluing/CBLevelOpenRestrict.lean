@@ -98,9 +98,9 @@ lemma CBLevel_open_restrict_empty_at_rank {X Y : Type*} [TopologicalSpace X] [To
 /-
 For a clopen disjoint union, the CB rank is at most the supremum.
 -/
-lemma CBLevel_clopen_union_empty {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+lemma CBLevel_open_union_empty {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
     [Small.{0} X]
-    (f : X → Y) (hf : ScatteredFun f)
+    (f : X → Y)
     (S : ℕ → Set X)
     (hS_open : ∀ n, IsOpen (S n))
     (hS_cover : ∀ x : X, ∃ n, x ∈ S n)
@@ -111,5 +111,28 @@ lemma CBLevel_clopen_union_empty {X Y : Type*} [TopologicalSpace X] [Topological
   obtain ⟨ n, hn ⟩ := hS_cover x;
   specialize hS_empty n;
   simp_all +decide [ CBLevel_open_restrict, Set.ext_iff ]
+
+-- lemma CBLevel_clopen_union_empty {X Y : Type*}
+--     [TopologicalSpace X] [TopologicalSpace Y]
+--     {f : X → Y} {I : Type*} {A : I → Set X} {α : Ordinal.{0}}
+--     (h_cover : (⋃ i, A i) = Set.univ)
+--     (h_clopen : ∀ i, IsClopen (A i))
+--     (h_empty : ∀ i, CBLevel (fun (x : A i) => f x.val) α = ∅) :
+--     CBLevel f α = ∅ := by
+--   ext x
+--   simp only [Set.mem_empty_iff_false, iff_false]
+--   intro hx
+--   have hx_mem : x ∈ ⋃ i, A i := h_cover ▸ Set.mem_univ x
+--   obtain ⟨i, hi⟩ := Set.mem_iUnion.mp hx_mem
+--   have hkey := local_cb_derivative (A i) (h_clopen i).isOpen α (f := f)
+--   have hx_img : x ∈ Subtype.val '' CBLevel (f ∘ (Subtype.val : A i → X)) α :=
+--     (Set.ext_iff.mp hkey x).mpr (Set.mem_inter hx hi)
+--   obtain ⟨xi, hxi_mem, _⟩ := hx_img
+--   -- hxi_mem : xi ∈ CBLevel (f ∘ Subtype.val) α
+--   -- h_empty i : CBLevel (fun x : A i => f x.val) α = ∅
+--   -- (fun x : A i => f x.val) and (f ∘ Subtype.val) are definitionally equal
+--   -- so we can rewrite hxi_mem using h_empty i directly
+--   have : xi ∈ (∅ : Set (A i)) := h_empty i ▸ hxi_mem
+--   exact this
 
 end

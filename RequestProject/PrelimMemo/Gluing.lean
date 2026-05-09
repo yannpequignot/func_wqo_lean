@@ -51,6 +51,7 @@ def IsRelativeClopenPartition {X : Type*} [TopologicalSpace X]
   (∀ i j, i ≠ j → Disjoint (A i) (A j)) ∧
   ∀ i, IsOpen ((Subtype.val : (⋃ j, A j) → X) ⁻¹' (A i))
 
+
 /-
 **Lemma 2.14 (lem:ContUnion).** If `X` is metrizable, `(A_i)_i` is a countable
 relative clopen partition, and each `f_i : A_i → Y` is continuous, then the combined
@@ -81,6 +82,112 @@ theorem continuous_of_relativeClopenPartition_seq
   · intro y hy; specialize ht i; aesop;
   · have := hA.2 i;
     exact IsOpen.inter ( ht i |>.1.preimage continuous_subtype_val ) this
+
+
+
+theorem RelativeClopenPartition_stable_by_refine {X : Type*} [TopologicalSpace X] [MetrizableSpace X]
+    {I : Type*} [Countable I]
+    {A : I → Set X} (hA : IsRelativeClopenPartition A)
+    {B : I → Set X} (hB : ∀ i, B i ⊆ A i) :
+    IsRelativeClopenPartition B := by
+  constructor
+  · -- 1. Disjointness
+    intro i j hij
+    exact (hA.1 i j hij).mono (hB i) (hB j)
+  · -- 2. Openness using the Index Function
+    intro i
+    let UA := ⋃ j, A j
+    let UB := ⋃ j, B j
+
+    -- Define the index function ψ : UA → I (I with discrete topology)
+    -- This function is continuous because it's constant on each piece of hA
+    let ψ : UA → I := fun x => Classical.choose (Set.mem_iUnion.mp x.2)
+    -- equip I with discrete topology
+    -- 1. Define the topology as discrete (bottom)
+    letI : TopologicalSpace I := ⊥
+    -- 2. Register that this topology satisfies the DiscreteTopology property
+    letI : DiscreteTopology I := ⟨rfl⟩
+    have hψ_cont : Continuous ψ := by
+      apply continuous_of_relativeClopenPartition_seq hA
+      intro j
+      -- On piece j, ψ is the constant function j
+      apply continuous_const.congr
+      intro ⟨x, hxUA⟩
+      dsimp [ψ]
+      -- Use disjointness of A to show the choose is j
+      generalize_proofs h_mem
+      have h_piece := Classical.choose_spec h_mem
+      by_contra hne
+      exact (hA.1 j _ hne).le_bot ⟨hxUA, h_piece⟩
+
+    -- Now consider the inclusion map ι : UB → UA
+    let ι : UB → UA := Set.inclusion (Set.iUnion_mono hB)
+    have hι_cont : Continuous ι := continuous_inclusion _
+
+    -- B i is the set of points in UB that ψ maps to i
+    -- Because I is discrete, {i} is open, so (ψ ∘ ι)⁻¹ {i} is open
+    have hBi_eq : (fun x : UB => ψ (ι x)) ⁻¹' {i} = (Set.inclusion (Set.subset_iUnion B i) '' Set.univ) := by
+      ext ⟨x, hxUB⟩
+      simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_image, Set.mem_univ]
+      constructor
+      · intro hψ
+        obtain ⟨j, hxjB⟩ := Set.mem_iUnion.mp hxUB
+        have h_index : ψ (ι ⟨x, hxUB⟩) = j := by
+          dsimp [ψ, ι]
+          generalize_proofs h_mem
+          set k := Classical.choose h_mem
+          have hk : x ∈ A k := Classical.choose_spec h_mem
+          have hj : x ∈ A j := hB j hxjB
+          have : k = j := by
+            by_contra hne
+            exact (hA.1 k j hne).le_bot ⟨hk, hj⟩
+          exact this
+        -- Since ψ(...) = i (from hψ) and ψ(...) = j (from h_index), we have i = j
+        have hij : i = j := hψ.symm.trans h_index
+        -- Now substitute j with i in our knowledge that x ∈ B j
+        rw [← hij] at hxjB
+        -- The goal is ∃ (z : B i), True ∧ inclusion ... z = ⟨x, hxUB⟩
+        use ⟨x, hxjB⟩
+      · intro hxBi
+        -- Unpack the existential: ∃ (z : B i), z.val = x
+        obtain ⟨⟨x_val, hx_in_Bi⟩, -, h_eq⟩ := hxBi
+        -- h_eq is: x_val = x (after coe simplification)
+        simp only [Subtype.mk_eq_mk] at h_eq
+
+        -- Use subst to replace all x_val with x
+        subst h_eq
+        -- Now hx_in_Bi is automatically transformed into: x ∈ B i
+
+        dsimp [ψ, ι]
+        generalize_proofs h_mem
+        set k := Classical.choose h_mem
+        have hk : x_val ∈ A k := Classical.choose_spec h_mem
+        -- hi is proved because x ∈ B i and B i ⊆ A i
+        have hi : x_val ∈ A i := hB i hx_in_Bi
+        have : k = i := by
+          by_contra hne
+          exact (hA.1 k i hne).le_bot ⟨hk, hi⟩
+        exact this
+    -- The goal is to show B i is open in UB.
+    -- In Lean, the relative topology means (Subtype.val ⁻¹' B i) is open.
+    -- But our hBi_eq is about (inclusion ... '' univ). These are the same!
+
+    have h_iso : Subtype.val ⁻¹' B i = (fun x : UB => ψ (ι x)) ⁻¹' {i} := by
+      rw [hBi_eq]
+      ext ⟨x, hxUB⟩
+      simp only [Set.mem_preimage, Set.mem_image, Set.mem_univ,
+                Subtype.mk_eq_mk]
+      constructor
+      · intro h
+        use ⟨x, h⟩
+      · rintro ⟨⟨x_val, h_mem⟩, -, h_eq⟩
+        subst h_eq
+        exact h_mem
+
+    rw [h_iso]
+    apply Continuous.isOpen_preimage
+    · exact hψ_cont.comp hι_cont
+    · exact isOpen_discrete {i}
 
 end ContinuityOfUnion
 

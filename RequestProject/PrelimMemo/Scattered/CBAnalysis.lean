@@ -263,6 +263,28 @@ theorem scattered_iff_empty_perfectKernel_general {X Y : Type*}
     (f : X → Y) : ScatteredFun f ↔ perfectKernelCB f = ∅ := by
   exact ⟨scattered_implies_empty_perfectKernel_small f, scattered_of_empty_perfectKernel f⟩
 
+theorem CBRank_eq_sInf_empty {X Y : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y] [Small.{0} X]
+    (f : X → Y) (hf : ScatteredFun f) :
+    CBRank f = sInf {α : Ordinal.{0} | CBLevel f α = ∅} := by
+  unfold CBRank
+  suffices h : {α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α)} =
+               {α : Ordinal.{0} | CBLevel f α = ∅} by
+    rw [h]
+  ext α
+  simp only [Set.mem_setOf_eq]
+  constructor
+  · intro heq
+    by_contra hne
+    -- hne : ¬ CBLevel f α = ∅
+    -- CBLevel_succ_ssubset_of_scattered needs (CBLevel f α).Nonempty
+    have hne' : (CBLevel f α).Nonempty := Set.nonempty_iff_ne_empty.mpr hne
+    exact (CBLevel_succ_ssubset_of_scattered f hf α hne').ne' heq
+  · intro hempty
+    have hsucc : CBLevel f (Order.succ α) = ∅ :=
+      Set.eq_empty_of_subset_empty (hempty ▸ CBLevel_antitone f (Order.le_succ α))
+    rw [hempty, hsucc]
+
 end ScatteredIffEmptyKernel
 
 section ReductionAndCB

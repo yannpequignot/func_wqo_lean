@@ -46,7 +46,19 @@ lemma baire_nbhd_isClopen (x : Baire) (n : ℕ) :
   -- Combine them explicitly (IsClopen is defined as IsClosed ∧ IsOpen)
   exact ⟨h_closed, h_open⟩
 
-  
+
+def nbhd' (A : Set Baire) (x : A) (n : ℕ) : Set A :=
+  {h : A | ∀ i ∈ Finset.range n, h.val i = x.val i}
+
+lemma baire_nbhd'_isClopen (A : Set Baire) (x : A) (n : ℕ) :
+    IsClopen (nbhd' A x n) := by
+  -- nbhd' A x n is the preimage of nbhd x.val n under Subtype.val
+  have h_eq : nbhd' A x n = Subtype.val ⁻¹' nbhd x.val n := by
+    ext h
+    simp [nbhd', nbhd]
+  rw [h_eq]
+  -- Preimage of a clopen set under a continuous map is clopen
+  exact (baire_nbhd_isClopen x.val n).preimage continuous_subtype_val
 
 /-
 In the Baire space ℕ → ℕ, the set `{f | f i = a}` is clopen for every `i a : ℕ`.
@@ -77,6 +89,58 @@ lemma nat_singleton_basis :
   · exact fun a u ha hu => ⟨ { a }, ⟨ a, rfl ⟩, by simp, by simpa ⟩
 
 /-
+Neighbourhoods given by initial segments form a neighbourhood basis in subspace of the Baire space.
+-/
+lemma nbhd_basis' (A : Set (ℕ → ℕ)) (x : A) : ∀ U : Set A, IsOpen U → x ∈ U →
+    ∃ n, nbhd' A x n ⊆ U := by
+  intro U hU hxU
+  -- U is open in the subspace topology on A, so U = Subtype.val ⁻¹' V
+  -- for some open V in ℕ → ℕ
+  rw [isOpen_induced_iff] at hU
+  obtain ⟨V, hV_open, hV_eq⟩ := hU
+  -- x.val ∈ V
+  have hxV : x.val ∈ V := by
+    have : x ∈ Subtype.val ⁻¹' V := hV_eq ▸ hxU
+    exact this
+  -- The product topology on ℕ → ℕ has a basis of cylinder sets.
+  -- V is open and contains x.val, so some cylinder nbhd x.val n ⊆ V.
+  -- This follows from the neighborhood filter having cylinders as a basis.
+  rw [isOpen_pi_iff] at hV_open
+  -- hV_open : ∀ y ∈ V, ∃ I : Finset ℕ, ∃ U : ℕ → Set ℕ,
+  --   (∀ i ∈ I, IsOpen (U i) ∧ y i ∈ U i) ∧ Set.pi I U ⊆ V
+  obtain ⟨I, F, hF, hpi⟩ := hV_open x.val hxV
+  -- I is a finite set; take n = I.sup id + 1 so that I ⊆ Finset.range n
+  -- Then nbhd x.val n ⊆ Set.pi I F ⊆ V
+  use I.sup id + 1
+  -- Show nbhd' A x n ⊆ U = Subtype.val ⁻¹' V
+  intro a ha
+  rw [← hV_eq]
+  -- Need: a.val ∈ V
+  apply hpi
+  -- Need: a.val ∈ Set.pi I F, i.e. ∀ i ∈ I, a.val i ∈ F i
+  intro i hi
+  -- a ∈ nbhd' A x n means a.val agrees with x.val on Finset.range n
+  -- and i ∈ I ⊆ Finset.range n since i ≤ I.sup id < n
+  have hi_lt : i < I.sup id + 1 :=
+    Nat.lt_succ_of_le (Finset.le_sup (f := id) hi)
+  have hi_range : i ∈ Finset.range (I.sup id + 1) :=
+    Finset.mem_range.mpr hi_lt
+  have hagree : a.val i = x.val i := ha i hi_range
+  rw [hagree]
+  exact (hF i hi).2
+
+lemma nbhd_basis (x : Baire) : ∀ U : Set Baire, IsOpen U → x ∈ U →
+    ∃ n, nbhd x n ⊆ U := by
+  intro U hU hxU
+  rw [isOpen_pi_iff] at hU
+  obtain ⟨I, F, hF, hpi⟩ := hU x hxU
+  refine ⟨I.sup id + 1, fun a ha => hpi (fun i hi => ?_)⟩
+  have hi_range : i ∈ Finset.range (I.sup id + 1) :=
+    Finset.mem_range.mpr (Nat.lt_succ_of_le (Finset.le_sup (f := id) hi))
+  rw [ha i hi_range]
+  exact (hF i hi).2
+  
+/--
 The Baire space has a topological basis consisting of clopen sets.
 -/
 lemma baire_has_clopen_basis :

@@ -176,7 +176,7 @@ lemma limit_sigma_continuous
   -- The set {z | z.val 1 = n₀} is clopen.
   have h_clopen : IsClopen {z : GluingSet (fun _ => MaxDom α) | z.val 1 = n₀} := by
     have h_clopen : IsClopen {x : ℕ → ℕ | x 1 = n₀} := by
-      exact?;
+      exact baire_coord_eq_clopen 1 n₀ --exact?;
     exact ⟨ h_clopen.1.preimage continuous_subtype_val, h_clopen.2.preimage continuous_subtype_val ⟩;
   refine' ContinuousOn.continuousAt _ ( h_clopen.isOpen.mem_nhds rfl );
   rw [ continuousOn_iff_continuous_restrict ];

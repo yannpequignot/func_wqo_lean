@@ -237,7 +237,7 @@ theorem pointedGluing_upper_bound
       -- f a ≠ y, so f a ∈ some ray j
       obtain ⟨j, hj⟩ := (mem_ray_or_eq_y (hfB a)).resolve_left ha
       -- O_j = {b | f b ∈ RaySet B y j} is open and contains a
-      have hOj : IsOpen {b : A | f b ∈ RaySet B y j} := ray_subtype_isOpen f hfB hf y j
+      have hOj : IsOpen {b : A | f b ∈ RaySet B y j} := ray_subtype_isOpen A B f hfB hf y j
       -- On O_j, σ b = toPointed j (σ_j j ⟨b, ...⟩)
       have hσ_eq_on_Oj : ∀ b (hb : b ∈ ({b : A | f b ∈ RaySet B y j})),
           σ b = toPointed j (σ_j j ⟨b, hb⟩) := by
@@ -590,4 +590,3 @@ lemma pointedGluing_scattered
         grind +suggestions;
       · exact ne_zeroStream_of_block _ _ hx'.1.1;
       · exact ne_zeroStream_of_block _ _ hx.1.1
-

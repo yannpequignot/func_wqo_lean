@@ -64,10 +64,10 @@ lemma gluingSet_CBLevel_empty
     (hF : ∀ i, CBLevel (fun (x : F i) => (x.val : ℕ → ℕ)) β = ∅) :
     CBLevel (fun (x : GluingSet F) => (x.val : ℕ → ℕ)) β = ∅ := by
   set S : ℕ → Set (GluingSet F) := fun n => {x | x.val 0 = n};
-  convert CBLevel_clopen_union_empty _ _ _ _ _ _ _;
+  convert CBLevel_open_union_empty _ _ _ _ _ _ ;
   exact Pi.topologicalSpace;
   exact small_subtype (ℕ → ℕ) (Membership.mem (GluingSet F));
-  convert hF_scat;
+  -- convert hF_scat;
   exact fun n => { x : GluingSet F | x.val 0 = n };
   · intro n;
     refine' ⟨ { x : ℕ → ℕ | x 0 = n }, _, _ ⟩;
