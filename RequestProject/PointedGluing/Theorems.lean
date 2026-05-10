@@ -234,7 +234,7 @@ theorem maxFun_is_maximum
   exact maxFun_is_maximum' α hα
 
 
-/-- **Proposition (Minfunctions). Minimum functions.**
+/-! **Proposition (Minfunctions). Minimum functions.**
 For all `α < ω₁`, there exists a function `k_{α+1}` that is minimum in `𝒞_{≥α+1}`:
 for all `f ∈ 𝒞` with `CB(f) ≥ α + 1`, we have `k_{α+1} ≤ f`.
 
@@ -243,16 +243,10 @@ The proof is by strong induction on `α`:
 - For `α = 0`, `k_1 ≡ id_1` reduces to any nonempty function.
 - For successor `α = β + 1`, use Pgluingaslowerbound2: find a ray of CB-rank `α`
   in any neighborhood of a CB_α-point, and apply the induction hypothesis.
-- For limit `α`, similarly find rays of growing CB-rank using regularity. -/
-theorem minFun_is_minimum
-    (α : Ordinal.{0}) (hα : α < omega1) :
-      -- minfun α is minimum: for all f with CB(f) ≥ α + 1, minf ≤ f
-      (∀ {A : Set (ℕ → ℕ)}
-      (f : A → ℕ → ℕ)
-      (hf : Continuous f),
-        ScatteredFun f → (CBLevel f (Order.succ α)).Nonempty →
-        ContinuouslyReduces (MinFun α) f) := by
-  sorry
+- For limit `α`, similarly find rays of growing CB-rank using regularity.
+
+stated and proved in MinFun.lean -/
+
 
 
 /-!

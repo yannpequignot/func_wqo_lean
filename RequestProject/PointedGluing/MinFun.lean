@@ -550,7 +550,7 @@ PROVIDED SOLUTION
   -- Apply cb_rank_of_clopen_union to get that the CB rank of f is the supremum of the CB ranks of f|An
   -- Let β such that β+1 ≤ CBRank f, then there exists An such that CBRank (f|An) ≥ β+1, so for $γCBRank (f|An) ≥ β+2, so (CBLevel (f|An) (β+1)).Nonempty
 -/
-theorem minFun_is_minimum'
+theorem minFun_is_minimum
     (α : Ordinal.{0}) (hα : α < omega1)
     (A : Set (ℕ → ℕ))
     (f : A → ℕ → ℕ)
