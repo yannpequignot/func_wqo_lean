@@ -539,17 +539,29 @@ lemma minFun_is_minimum_simple
           ih β hβ hβω A' f' hf' hscat' hne' hempty' hsimple')
         γ (Order.lt_succ_of_not_isMax (not_isMax γ)) U hU hxU
 
-/--
-PROVIDED SOLUTION
--- by induction on α using Ordinal.induction
-  -- base case: α = 0, MinFun 0 is the constant function on zerostream, which reduces to any f with nonempty domain
-  -- induction step: Assume the statement holds for all β < α. We want to show it holds for α.
-  -- Let f : A → ℕ → ℕ be continuous and scattered with (CB level f (succ α)).Nonempty. We want to show MinFun α reduces to f.
-  -- Apply decomposition_lemma_baire to f
-  -- Apply locally_implies_disjoint_union_baire to get a sequence of clopen sets An such that the restriction of f to each An is simple
-  -- Apply cb_rank_of_clopen_union to get that the CB rank of f is the supremum of the CB ranks of f|An
-  -- Let β such that β+1 ≤ CBRank f, then there exists An such that CBRank (f|An) ≥ β+1, so for $γCBRank (f|An) ≥ β+2, so (CBLevel (f|An) (β+1)).Nonempty
--/
+private lemma minFun_reduces_to_subtype_reduces
+    {α : Ordinal.{0}}
+    {A : Set (ℕ → ℕ)} {f : A → ℕ → ℕ} {V : Set (ℕ → ℕ)}
+    (h : ContinuouslyReduces (MinFun α)
+      (fun (z : {u : ℕ → ℕ | u ∈ A ∧ u ∈ V}) => f ⟨z.val, z.prop.1⟩)) :
+    ContinuouslyReduces (MinFun α) f := by
+  obtain ⟨ σ_V, hσ_V_cont, τ_V, hσ_V_range, hσ_V_τ_V ⟩ := h;
+  refine' ⟨ _, _ ⟩;
+  exact fun x => ⟨ σ_V x |>.1, σ_V x |>.2.1 ⟩;
+  refine' ⟨ _, τ_V, _, _ ⟩;
+  · fun_prop;
+  · grind +revert;
+  · exact hσ_V_τ_V
+
+private lemma isolated_point_exists_in_CBLevel
+    {A : Set (ℕ → ℕ)} {f : A → ℕ → ℕ}
+    (hscat : ScatteredFun f) (α : Ordinal.{0})
+    (hne : (CBLevel f α).Nonempty) :
+    ∃ x : A, x ∈ isolatedLocus f (CBLevel f α) := by
+  have := hscat ( CBLevel f α ) hne;
+  obtain ⟨ U, hU₁, hU₂, hU₃ ⟩ := this; obtain ⟨ x, hx₁, hx₂ ⟩ := hU₂; use x; simp_all +decide [ isolatedLocus ] ;
+  exact ⟨ U, hU₁, hx₁, fun a ha ha' ha'' => hU₃ _ _ ha' ha'' _ _ hx₁ hx₂ ▸ rfl ⟩
+
 theorem minFun_is_minimum
     (α : Ordinal.{0}) (hα : α < omega1)
     (A : Set (ℕ → ℕ))
@@ -558,4 +570,68 @@ theorem minFun_is_minimum
     (hscat : ScatteredFun f)
     (hne : (CBLevel f α).Nonempty) :  -- this implies CBRank f > α+1
         ContinuouslyReduces (MinFun α) f := by
-  sorry
+  -- Step 1: Find x in the isolated locus of CBLevel f α
+  obtain ⟨x, hx_iso⟩ := isolated_point_exists_in_CBLevel hscat α hne
+  have hx_level : x ∈ CBLevel f α := hx_iso.1
+  -- Step 2: Get open U with separation properties
+  obtain ⟨U, hU_open, hxU, hU_empty, hU_const⟩ :=
+    isolatedLocus_gives_simple_neighborhood α x hx_iso
+  -- Step 3: Get clopen V ⊆ U in the Baire space
+  obtain ⟨W, hW_open, hxW, hW_sub⟩ : ∃ W : Set (ℕ → ℕ), IsOpen W ∧ x.val ∈ W ∧
+      Subtype.val ⁻¹' W ⊆ U := by
+    rw [isOpen_induced_iff] at hU_open
+    obtain ⟨t, ht, htU⟩ := hU_open
+    refine ⟨t, ht, ?_, ?_⟩
+    · have : x ∈ Subtype.val ⁻¹' t := htU ▸ hxU; exact this
+    · intro a ha; exact htU ▸ ha
+  obtain ⟨V, hV_clopen, hxV, hV_sub_W⟩ :=
+    baire_exists_clopen_subset_of_open x.val W hW_open hxW
+  have hV_sub_U : Subtype.val ⁻¹' V ⊆ U := fun a ha => hW_sub (hV_sub_W ha)
+  -- Step 4: Establish properties of the restriction to V
+  have hV_empty : CBLevel f (Order.succ α) ∩ (Subtype.val ⁻¹' V : Set A) = ∅ :=
+    Set.eq_empty_of_forall_notMem fun y hy => hU_empty.subset ⟨hy.1, hV_sub_U hy.2⟩ |>.elim
+  -- Step 5: Set up A_V and f_V
+  set A_V : Set (ℕ → ℕ) := {z | z ∈ A ∧ z ∈ V}
+  set f_V : A_V → ℕ → ℕ := fun ⟨z, hz⟩ => f ⟨z, hz.1⟩
+  -- Step 6: Transfer CBLevel data to A_V
+  have hf_V_cont : Continuous f_V := hf.comp (by fun_prop)
+  have hf_V_scat : ScatteredFun f_V := by
+    intro S hS
+    set fwd : A_V → {a : A | a.val ∈ V} := fun a => ⟨⟨a.val, a.prop.1⟩, a.prop.2⟩
+    have hfwd_cont : Continuous fwd := by fun_prop
+    have h_scat_V : ScatteredFun (f ∘ (Subtype.val : {a : A | a.val ∈ V} → A)) :=
+      scattered_restrict f hscat _
+    obtain ⟨U', hU'_open, hU'_ne, hU'_const⟩ := h_scat_V (fwd '' S) (hS.image _)
+    refine ⟨fwd ⁻¹' U', hU'_open.preimage hfwd_cont, ?_, ?_⟩
+    · obtain ⟨_, hzU', ⟨w, hw, rfl⟩⟩ := hU'_ne
+      exact ⟨w, hzU', hw⟩
+    · intro a ha b hb
+      exact hU'_const (fwd a) ⟨ha.1, a, ha.2, rfl⟩ (fwd b) ⟨hb.1, b, hb.2, rfl⟩
+  have hne_V : (CBLevel f_V α).Nonempty :=
+    ⟨⟨x.val, x.prop, hxV⟩, (CBLevel_AW_iff f V α x.val x.prop hxV).mpr
+      ((CBLevel_open_restrict f _ (hV_clopen.isOpen.preimage continuous_subtype_val) α
+        ⟨x, hxV⟩).mpr hx_level)⟩
+  have hempty_V : CBLevel f_V (Order.succ α) = ∅ := by
+    ext ⟨z, hzA, hzV⟩
+    simp only [Set.mem_empty_iff_false, iff_false]
+    intro hmem
+    have h1 : (⟨⟨z, hzA⟩, hzV⟩ : {a : A | a.val ∈ V}) ∈
+        CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ V} → A)) (Order.succ α) :=
+      (CBLevel_AW_iff f V (Order.succ α) z hzA hzV).mp hmem
+    have h2 : (⟨z, hzA⟩ : A) ∈ CBLevel f (Order.succ α) :=
+      (CBLevel_open_restrict f _ (hV_clopen.isOpen.preimage continuous_subtype_val)
+        (Order.succ α) ⟨⟨z, hzA⟩, hzV⟩).mp h1
+    exact hV_empty.subset ⟨h2, hzV⟩ |>.elim
+  have hconst_V : ∃ y : ℕ → ℕ, ∀ z ∈ CBLevel f_V α, f_V z = y := by
+    refine ⟨f x, fun ⟨z, hzA, hzV⟩ hmem => ?_⟩
+    have hmem' : (⟨⟨z, hzA⟩, hzV⟩ : {a : A | a.val ∈ V}) ∈
+        CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ V} → A)) α :=
+      (CBLevel_AW_iff f V α z hzA hzV).mp hmem
+    have hmem'' : (⟨z, hzA⟩ : A) ∈ CBLevel f α :=
+      (CBLevel_open_restrict f _ (hV_clopen.isOpen.preimage continuous_subtype_val)
+        α ⟨⟨z, hzA⟩, hzV⟩).mp hmem'
+    exact hU_const ⟨z, hzA⟩ ⟨hV_sub_U hzV, hmem''⟩
+  -- Step 7: Apply minFun_is_minimum_simple
+  have h_red := minFun_is_minimum_simple α hα A_V f_V hf_V_cont hf_V_scat hne_V hempty_V hconst_V
+  -- Step 8: Compose with inclusion
+  exact minFun_reduces_to_subtype_reduces h_red

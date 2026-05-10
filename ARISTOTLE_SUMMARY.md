@@ -1,3 +1,26 @@
+# Summary of changes for run 9033399e-0d36-4ef3-b8fb-0a24a52e8da8
+Successfully resolved the `sorry` in `theorem minFun_is_minimum` in `RequestProject/PointedGluing/MinFun.lean`.
+
+**Proof strategy:**
+
+The theorem states that for any scattered continuous function `f : A → ℕ → ℕ` with `(CBLevel f α).Nonempty` and `α < ω₁`, the minimum function `MinFun α` continuously reduces to `f`.
+
+The proof works by reducing the general case to the already-proven simple case (`minFun_is_minimum_simple`):
+
+1. **Find an isolated point**: Since `CBLevel f α` is nonempty and `f` is scattered, the isolated locus of `f` on `CBLevel f α` is nonempty. Pick a point `x` in this isolated locus — this ensures `x ∈ CBLevel f α` but `x ∉ CBLevel f (succ α)`.
+
+2. **Get a clopen neighborhood**: Using `isolatedLocus_gives_simple_neighborhood` and `baire_exists_clopen_subset_of_open`, find a clopen set `V` in Baire space containing `x` such that `CBLevel f (succ α) ∩ V = ∅` and `f` is constant on `V ∩ CBLevel f α`.
+
+3. **Apply the simple case**: The restriction `f_V` to `A_V = A ∩ V` satisfies all hypotheses of `minFun_is_minimum_simple` at level `α`: nonemptiness of `CBLevel f_V α` (via `CBLevel_AW_iff` and `CBLevel_open_restrict`), emptiness of `CBLevel f_V (succ α)`, and constancy. This gives `MinFun α ≤ f_V`.
+
+4. **Compose with inclusion**: Since `A_V ⊆ A`, compose the reduction with the natural inclusion to get `MinFun α ≤ f`.
+
+Two helper lemmas were introduced and proved:
+- `minFun_reduces_to_subtype_reduces`: composing a reduction to a subtype restriction with the inclusion
+- `isolated_point_exists_in_CBLevel`: extracting an isolated point from a nonempty CB level of a scattered function
+
+The proof compiles without any `sorry` and uses only standard axioms (`propext`, `Classical.choice`, `Quot.sound`).
+
 # Summary of changes for run 8dfdd5d1-db5f-4c56-b366-51ed33733673
 ## Summary
 
