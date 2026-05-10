@@ -4,6 +4,8 @@ import RequestProject.PointedGluing.MinFunLowerBound
 import RequestProject.PointedGluing.Defs
 import RequestProject.PrelimMemo.GenRedProp
 import RequestProject.PointedGluing.LowerBoundLemma
+import RequestProject.PrelimMemo.Scattered.Decomposition
+import RequestProject.PointedGluing.MinFunLocalHelpers
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
@@ -241,6 +243,83 @@ theorem pointedGluing_lower_bound
     refine ⟨σ_n n, (hσc n).subtype_mk _, τseq n, ?_, fun z => hcomm n z⟩
     convert hτc n using 2
 
+private lemma pgl_val_to_minFun_succ' (γ : Ordinal.{0}) {A : Set (ℕ → ℕ)} (f : A → ℕ → ℕ) :
+    ContinuouslyReduces
+      (fun (z : PointedGluingSet (fun _ => MinDom γ)) => (z.val : ℕ → ℕ)) f →
+    ContinuouslyReduces (MinFun (Order.succ γ)) f := by
+  intro ⟨σ, hσ, τ, hτ, heq⟩
+  have h_eq : MinDom (Order.succ γ) = PointedGluingSet (fun _ => MinDom γ) := MinDom_succ γ
+  refine ⟨fun z => σ ⟨z.val, h_eq ▸ z.prop⟩, ?_, τ, ?_, fun z => heq ⟨z.val, h_eq ▸ z.prop⟩⟩
+  · exact hσ.comp (Continuous.subtype_mk continuous_subtype_val _)
+  · convert hτ using 1
+    ext y; constructor <;> rintro ⟨z, rfl⟩
+    · exact ⟨⟨z.val, h_eq ▸ z.prop⟩, rfl⟩
+    · exact ⟨⟨z.val, by rw [h_eq]; exact z.prop⟩, rfl⟩
+
+private lemma pgl_val_to_minFun_limit' (α : Ordinal.{0})
+    (hlim : Order.IsSuccLimit α) (hne : α ≠ 0)
+    {A : Set (ℕ → ℕ)} (f : A → ℕ → ℕ) :
+    ContinuouslyReduces
+      (fun (z : PointedGluingSet (fun n => MinDom (cofinalSeq α n))) => (z.val : ℕ → ℕ)) f →
+    ContinuouslyReduces (MinFun α) f := by
+  intro ⟨σ, hσ, τ, hτ, heq⟩
+  have h_eq : MinDom α = PointedGluingSet (fun n => MinDom (cofinalSeq α n)) :=
+    MinDom_limit α hlim hne
+  refine ⟨fun z => σ ⟨z.val, h_eq ▸ z.prop⟩, ?_, τ, ?_, fun z => heq ⟨z.val, h_eq ▸ z.prop⟩⟩
+  · exact hσ.comp (Continuous.subtype_mk continuous_subtype_val _)
+  · convert hτ using 1
+    ext y; constructor <;> rintro ⟨z, rfl⟩
+    · exact ⟨⟨z.val, h_eq ▸ z.prop⟩, rfl⟩
+    · exact ⟨⟨z.val, by rw [h_eq]; exact z.prop⟩, rfl⟩
+
+private lemma pgl_fun_id_eq_val' (C : ℕ → Set (ℕ → ℕ)) :
+    (fun (z : PointedGluingSet C) => PointedGluingFun C C (fun _ => id) z) =
+    (fun (z : PointedGluingSet C) => z.val) := by
+  funext z; exact PointedGluingFun_id C z
+
+private lemma minFun_local_condition'
+    {A : Set (ℕ → ℕ)} (f : A → ℕ → ℕ) (hf : Continuous f) (hscat : ScatteredFun f)
+    (α : Ordinal.{0}) (hα : α < omega1)
+    (y : ℕ → ℕ) (hy_simple : ∀ x ∈ CBLevel f α, f x = y)
+    (hlevel_ne : (CBLevel f α).Nonempty)
+    (hlevel_succ_empty : CBLevel f (Order.succ α) = ∅)
+    (x : A) (hx : x ∈ CBLevel f α)
+    (ih : ∀ (β : Ordinal.{0}), β < α → β < omega1 →
+      ∀ (A' : Set (ℕ → ℕ)) (f' : A' → ℕ → ℕ),
+      Continuous f' → ScatteredFun f' →
+      (CBLevel f' β).Nonempty → CBLevel f' (Order.succ β) = ∅ →
+      (∃ y' : ℕ → ℕ, ∀ x' ∈ CBLevel f' β, f' x' = y') →
+      ContinuouslyReduces (MinFun β) f')
+    (β : Ordinal.{0}) (hβ : β < α)
+    (i : ℕ) (U : Set A) (hU : IsOpen U) (hxU : x ∈ U) :
+    ∃ (σ : MinDom β → A) (τ : (ℕ → ℕ) → ℕ → ℕ),
+      Continuous σ ∧
+      (∀ z : MinDom β, (z : ℕ → ℕ) = τ (f (σ z))) ∧
+      ContinuousOn τ (Set.range (fun z => f (σ z))) ∧
+      (∀ z, σ z ∈ U) ∧
+      f x ∉ closure (Set.range (fun z => f (σ z))) := by
+  -- Step 1: Get open V in ℕ → ℕ with U = val⁻¹(V)
+  obtain ⟨V, hV_open, rfl⟩ : ∃ V : Set (ℕ → ℕ), IsOpen V ∧ U = Subtype.val ⁻¹' V := by
+    rw [isOpen_induced_iff] at hU; obtain ⟨t, ht, htU⟩ := hU; exact ⟨t, ht, htU.symm⟩
+  -- Step 2: Find point p with exit ordinal γ, in V, and f p N ≠ y N
+  obtain ⟨p, γ, N, hpV, hp_cb, hp_exit, hβγ, hγα, hpN⟩ :=
+    find_ray_point f hf hscat α hα y hy_simple hlevel_ne hlevel_succ_empty x hx β hβ V hV_open hxU
+  -- Step 3: Decompose at p
+  obtain ⟨W, hW_clopen, hpW, hW_V, hW_simple, hW_ray⟩ :=
+    decompose_at_point f hf hscat p γ N hp_cb hp_exit y hpN V hV_open hpV
+  -- Step 4: Apply ih at γ to f|_W (using A ∩ W as the flat domain)
+  set A_W : Set (ℕ → ℕ) := {z | z ∈ A ∧ z ∈ W}
+  set f_W : A_W → ℕ → ℕ := fun ⟨z, hz⟩ => f ⟨z, hz.1⟩
+  -- All remaining sorry work is captured in this single sorry
+  -- The proof involves:
+  -- 1. Converting SimpleFun between isomorphic domain types
+  -- 2. Showing δ < α (points in W have f N ≠ y N, so not in CBLevel f α)
+  -- 3. Showing β ≤ δ (p is in W ∩ CBLevel f β)
+  -- 4. Applying IH and MinFun_monotone
+  -- 5. Converting ContinuouslyReduces between isomorphic domain types
+  -- 6. IsClosed {z | z N ≠ y N}
+  sorry
+
 -- **Proposition (Minfunctions). Minimum functions.**
 
 -- Warning MinFun α has CB rank α+1!
@@ -270,7 +349,45 @@ lemma minFun_is_minimum_simple
     (hlevel_succ_empty : CBLevel f (Order.succ α) = ∅)
     (h_simple : ∃ y : ℕ → ℕ, ∀ x ∈ CBLevel f α, f x = y) :
       ContinuouslyReduces (MinFun α) f := by
-    sorry
+    revert A
+    induction α using Ordinal.induction with
+    | h α ih =>
+    intro A f hf hscat hlevel_ne hlevel_succ_empty h_simple
+    -- Base case: α = 0
+    by_cases hα0 : α = 0
+    · subst hα0
+      exact minFun_zero_reduces f ⟨(hlevel_ne.some).val, (hlevel_ne.some).property⟩
+    -- Extract data from hypotheses
+    obtain ⟨y, hy_simple⟩ := h_simple
+    have hlevel_ne' := hlevel_ne
+    obtain ⟨x, hx⟩ := hlevel_ne'
+    have hfx : f x = y := hy_simple x hx
+    -- Case split: successor or limit
+    by_cases hlim : Order.IsSuccLimit α
+    · -- Limit case: α is a limit ordinal
+      apply pgl_val_to_minFun_limit' α hlim hα0
+      rw [← pgl_fun_id_eq_val' (fun n => MinDom (cofinalSeq α n))]
+      apply @pointedGluing_lower_bound A Set.univ f hf
+        (fun n => MinDom (cofinalSeq α n)) (fun n => MinDom (cofinalSeq α n)) (fun _ => id) x
+      intro i U hU hxU
+      exact minFun_local_condition' f hf hscat α hα y hy_simple hlevel_ne hlevel_succ_empty x hx
+        (fun β hβ hβω A' f' hf' hscat' hne' hempty' hsimple' =>
+          ih β hβ hβω A' f' hf' hscat' hne' hempty' hsimple')
+        (cofinalSeq α i) (cofinalSeq_lt α hlim hα0 i) i U hU hxU
+    · -- Successor case: α = Order.succ γ
+      have : ¬ Order.IsSuccPrelimit α := by
+        intro hp; exact hlim ⟨not_isMin_iff_ne_bot.mpr hα0, hp⟩
+      rw [Order.not_isSuccPrelimit_iff] at this
+      obtain ⟨γ, _, rfl⟩ := this
+      apply pgl_val_to_minFun_succ' γ
+      rw [← pgl_fun_id_eq_val' (fun _ => MinDom γ)]
+      apply @pointedGluing_lower_bound A Set.univ f hf
+        (fun _ => MinDom γ) (fun _ => MinDom γ) (fun _ => id) x
+      intro i U hU hxU
+      exact minFun_local_condition' f hf hscat (Order.succ γ) hα y hy_simple hlevel_ne hlevel_succ_empty x hx
+        (fun β hβ hβω A' f' hf' hscat' hne' hempty' hsimple' =>
+          ih β hβ hβω A' f' hf' hscat' hne' hempty' hsimple')
+        γ (Order.lt_succ_of_not_isMax (not_isMax γ)) i U hU hxU
   -- induction α using Ordinal.induction with
   -- | h α ih =>
   -- -- Base case: α = 0

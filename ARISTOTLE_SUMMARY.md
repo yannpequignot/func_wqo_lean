@@ -1,3 +1,74 @@
+# Summary of changes for run 8dfdd5d1-db5f-4c56-b366-51ed33733673
+## Summary
+
+I made substantial progress on proving `minFun_is_minimum_simple` in `RequestProject/PointedGluing/MinFun.lean`.
+
+### What was accomplished
+
+**New helper file created:** `RequestProject/PointedGluing/MinFunLocalHelpers.lean` containing 7 fully-proved helper lemmas (no sorries):
+
+1. `exists_ray_cbrank_gt` — Given the supremum of ray CB ranks equals α and β < α, finds N with ray CB rank > β.
+2. `exit_ordinal_of_ray_point` — Shows a point in a ray of a simple function has exit ordinal < α.
+3. `simple_restrict_clopen` — Shows simplicity is preserved when restricting to a smaller clopen set.
+4. `compose_reduction_from_subtype` — Composes a reduction through a subtype to produce σ mapping into U with separation.
+5. `find_ray_point` — The core construction: given f simple at α with β < α, finds a point p with p.val ∈ V, exit ordinal γ with β ≤ γ < α, and f(p) N ≠ y N. This includes a fully proved `cb_transfer` lemma that transfers CB levels between isomorphic domain types.
+6. `decompose_at_point` — Given a point with exit ordinal γ, produces a clopen neighborhood W ⊆ V with f|_W simple and range separation.
+
+**Main proof structure (MinFun.lean):** The proof of `minFun_local_condition'` is structured with steps 1-3 fully proved:
+- Step 1: Extract open set V from the subspace topology
+- Step 2: Use `find_ray_point` to locate point p with the right CB properties
+- Step 3: Use `decompose_at_point` to get a clopen piece W with SimpleFun and range separation
+
+### What remains
+
+**One sorry in `minFun_local_condition'`** (line 321): This captures the final steps of the proof, which involve:
+1. Converting `SimpleFun` between isomorphic domain types ({a : ↑A | a.val ∈ W} vs ↑{z | z ∈ A ∧ z ∈ W})
+2. Showing δ < α and β ≤ δ (mathematically straightforward)
+3. Applying the induction hypothesis and MinFun_monotone
+4. Converting ContinuouslyReduces between the isomorphic domain types
+5. Showing IsClosed {z | z N ≠ y N}
+
+The difficulty is purely technical (Lean type coercions between subtypes of ℕ → ℕ and subtypes of subtypes), not mathematical. The mathematical argument is complete.
+
+**`minFun_is_minimum'`** (line 565) also remains as sorry — this is a separate, more general theorem that was already sorry'd before.
+
+### Files modified
+- `RequestProject/PointedGluing/MinFun.lean` — Added import, restructured proof of `minFun_local_condition'`
+- `RequestProject/PointedGluing/MinFunLocalHelpers.lean` — New file with 7 fully-proved helper lemmas
+
+# Summary of changes for run 15392725-625f-4e91-9e75-4db68a4b1271
+## Summary
+
+I made substantial progress on proving `minFun_is_minimum_simple` in `RequestProject/PointedGluing/MinFun.lean`. The theorem states that the minimum function `MinFun α` continuously reduces to any simple scattered function with CB level α nonempty and CB level (succ α) empty.
+
+### What was accomplished
+
+**Main proof structure (complete):** The proof of `minFun_is_minimum_simple` is fully structured using strong induction on ordinals, with three cases:
+
+1. **Base case (α = 0):** Uses the existing `minFun_zero_reduces` lemma.
+
+2. **Successor case (α = succ γ):** Converts `MinFun (succ γ)` to a pointed gluing via `MinDom_succ` and `PointedGluingFun_id`, then applies the existing `pointedGluing_lower_bound` theorem.
+
+3. **Limit case (α is a limit ordinal):** Similarly converts via `MinDom_limit` and applies `pointedGluing_lower_bound`.
+
+**Helper lemmas (proved):**
+- `pgl_val_to_minFun_succ'`: Converts reductions from the PointedGluingSet formulation to the MinFun formulation (successor case)
+- `pgl_val_to_minFun_limit'`: Same for the limit case  
+- `pgl_fun_id_eq_val'`: Shows `PointedGluingFun` with identity equals `val`
+
+### What remains
+
+One helper lemma `minFun_local_condition'` remains as `sorry`. This lemma encapsulates the core local condition for the pointed gluing lower bound: for each index and open neighborhood U of x, constructing the reduction data (σ, τ) from `MinDom β` to `A` with σ mapping into U and f(x) separated from the closure of the range. The proof sketch is documented in the code and involves:
+1. Restricting f to U and analyzing ray CB ranks
+2. Decomposing the ray into simple pieces using the decomposition lemma
+3. Finding a piece with sufficient CB rank
+4. Applying the induction hypothesis and composing reductions
+
+The difficulty is primarily technical rather than mathematical — it requires careful handling of Lean's subtype coercions when working with functions on subtypes of subtypes of the Baire space, while the CB analysis lemmas in the project are stated for `Set (ℕ → ℕ)` domains.
+
+### Files modified
+- `RequestProject/PointedGluing/MinFun.lean`: Added the proof structure, helper lemmas, and import of `Scattered.Decomposition`
+
 # Summary of changes for run d859e2d4-83fe-4855-b798-1ff8fe0e86be
 I resolved the `sorry`s in `RequestProject/PointedGluing/MinFun.lean` as follows:
 
