@@ -568,7 +568,7 @@ theorem minFun_is_minimum
     (f : A → ℕ → ℕ)
     (hf : Continuous f)
     (hscat : ScatteredFun f)
-    (hne : (CBLevel f α).Nonempty) :  -- this implies CBRank f > α+1
+    (hne : (CBLevel f α).Nonempty) :  -- this implies CBRank f ≥ α+1
         ContinuouslyReduces (MinFun α) f := by
   -- Step 1: Find x in the isolated locus of CBLevel f α
   obtain ⟨x, hx_iso⟩ := isolated_point_exists_in_CBLevel hscat α hne

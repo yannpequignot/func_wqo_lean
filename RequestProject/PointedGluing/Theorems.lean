@@ -158,7 +158,7 @@ theorem CBrank_regular_simple
 
 
 
-/-- **Proposition (Maxfunctions). Maximum functions.**
+/-! **Proposition (Maxfunctions). Maximum functions.**
 For all `α < ω₁`:
 1. There exists a function `ℓ_α` that is a maximum of `𝒞_{≤α}`:
    every scattered function with CB-rank `≤ α` reduces to `ℓ_α`.
@@ -209,30 +209,9 @@ By pointedGluing_rays_upper_bound we have $f\leq\pgl_{j\in\N}\ray{f}{y,j}$, but 
 we also have $\CB(\ray{f}{y,j})\leq\alpha$ for all $j\in\N$. As $\Maximalfct{\alpha}$ is a maximum
 in $\sC_{\alpha}$, we get $\ray{f}{y,j}\leq\Maximalfct{\alpha}$ for all $j\in \N$ and
 so $f\leq \pgl\Maximalfct{\alpha}$ by \cref{Pgluingasupperbound}.
+
+SEE maxFun_is_maximum' in MaxFunMaximum.lean for the formal statement and full proof.
 -/
-
-theorem maxFun_is_maximum
-    (α : Ordinal.{0}) (hα : α < omega1) :
-    -- MaxFun α is maximum: for all scattered f with CB(f) ≤ α, f ≤ MaxFun α
-    (∀ {A : Set (ℕ → ℕ)}
-    (f : A → ℕ → ℕ)
-    (_hf : Continuous f)
-    (_hscat : ScatteredFun f)
-    (_hcb : ∀ β : Ordinal.{0}, α ≤ β → CBLevel f β = ∅), -- CB f ≤ α
-      ContinuouslyReduces f (MaxFun α)) ∧
-    -- SuccMaxFun α is maximum for simple functions:
-    -- for all simple scattered f with CB(f) ≤ α+1, f ≤ SuccMaxFun α
-    (∀ {A : Set (ℕ → ℕ)}
-    (f : A → ℕ → ℕ)
-    (hf : Continuous f)
-    (β: Ordinal.{0}) (hβ : β ≤ α)
-    (hcb_ne : (CBLevel f β).Nonempty)
-    (hcb_empty : CBLevel f (Order.succ β) = ∅) -- CBRank f = β +1≤ α +1
-    (y: ℕ →ℕ )
-    (hy_simple : ∀ x ∈ CBLevel f β, f x = y),
-    ContinuouslyReduces f (SuccMaxFun α)) := by
-  exact maxFun_is_maximum' α hα
-
 
 /-! **Proposition (Minfunctions). Minimum functions.**
 For all `α < ω₁`, there exists a function `k_{α+1}` that is minimum in `𝒞_{≥α+1}`:
@@ -318,59 +297,89 @@ For all `f` and `g` in 𝒞: `2 · CB(f) < CB(g)` implies `f ≤ g`.
 
 
 This is the key inequality that governs continuous reducibility between scattered
-functions. -/
+functions.
+
+PROVIDED SOLUTION
+
+Proceed by induction on $\lambda<\omega_1$. Suppose that the theorem is proven for all $\alpha<\lambda$ with $\lambda$ limit or null.
+
+\smallskip
+
+We first prove the second item. As $f\leq\Maximalfct{\lambda+n}$ by \cref{Maxfunctions} and $\Minimalfct{\lambda+2n+1}\leq g$ by \cref{Minfunctions}, it is enough to prove that
+$\Maximalfct{\lambda+n}\leq \Minimalfct{\lambda+2n+1}$ for all $n\in\N$, and to do so we proceed by induction on $n\in\N$.
+For $n=0$, if $\lambda=0$ then $\Maximalfct{0}=\emptyset\leq\Minimalfct{1}$, so we can suppose that $\lambda\neq0$.
+Take $(\alpha_n)_n$ cofinal in $\lambda$ and $(\beta_n)_n$ an enumeration of $\lambda$ then, by induction hypothesis, for some injection $p:\N\rao\N$ we have
+$\Maximalfct{\alpha_n}\leq\Minimalfct{\beta_{p(n)}+1}$ so by \cref{Gluingasupperbound,GluinglowerthanPgluing} we get
+\(\Maximalfct{\lambda}\equiv\gl_n\Maximalfct{\alpha_n}\leq\gl_n\Minimalfct{\beta_n+1}\leq\pgl_n\Minimalfct{\beta_n+1}\equiv\Minimalfct{\lambda+1}.\)
+
+If now $\alpha=\lambda+(n+1)$ then using the induction hypothesis, \cref{Pgluingasupperbound,GluinglowerthanPgluing} we see that
+$\Maximalfct{\alpha}\equiv\omega\pgl\Maximalfct{\lambda+n}\leq\pgl\pgl\Minimalfct{\lambda+2n+1}\equiv\Minimalfct{\lambda+2n+3}= \Minimalfct{\lambda+2(n+1)+1}$.
+
+\smallskip
+
+To see the first item, take a function $g:A\to B$ of $\CB$-rank $\lambda$. By \cref{Maxfunctions} $f\leq\Maximalfct{\lambda}$ for any $f\in \sC_{\leq \alpha}$, so it is enough to show that if $\Maximalfct{\lambda}\leq g$.
+If $\lambda=0$ then $g$ is the empty function, so suppose that $\lambda$ is limit.
+
+We are going to find a sequence $(s_n)_{n\in\N}\subseteq\N^{<\N}$ of finite sequences pairwise incomparable for the prefix relation such that the sequence $(\CB(g\corestr{N_{s_n}}))_n$
+is either constant equal to $\lambda$ or strictly below $\lambda$ and cofinal in $\lambda$. Thanks to the induction hypothesis, an application of \cref{Gluingaslowerbound}
+to the (pairwise disjoint) clopen sets $(N_{s_n})_n$ allows then to conclude.
+
+Consider the tree $T=\set{s\in\N^{<\N}}[\CB(g\corestr{N_s})=\lambda]$, notice that $T\neq\emptyset$ because it contains at least the empty sequence.
+If $[T]$ is infinite then an application of \cref{InfiniteEmbedOmega} allows to find the desired sequence, so we can suppose that $[T]$ is finite.
+Let $F$ be the set of $\sqsubset$-minimal elements of $\N^{<\N}\setminus T$. Then $\set{\CB(g\corestr{N_s})}[ s\in F]$ is a subset of $\lambda$ and we claim that it is cofinal in $\lambda$, which allows us to find the desired sequence. Towards a contradiction assume that for some $\beta<\lambda$ we have $\CB(g\corestr{N_s})<\beta$ for all $s\in F$. Then, by \cref{CBbasics0}~\cref{CBbasicsfromJSL2},  $\CB_{\beta}(g)\cap g^{-1}(N_s)=\emptyset$ for all $s\in F$ and so $\CB_{\beta}(g)\subseteq g^{-1}([T])$. But as $[T]$ is finite, we have $\CB_{\beta+1}(g)=\empty$ and so $\CB(g)\leq \beta+1$, a contradiction.
+ -/
 theorem general_structure_theorem
-    {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    {X' Y' : Type*} [TopologicalSpace X'] [TopologicalSpace Y']
-    (f : X → Y) (g : X' → Y')
+    (A B : Set Baire)
+    (f : A → Baire) (g : B → Baire)
     (hf : ScatteredFun f) (hg : ScatteredFun g)
-    (α β : Ordinal.{0})
-    (hcb_f : ∀ γ, α < γ → CBLevel f γ = ∅)
-    (hcb_g : (CBLevel g β).Nonempty)
-    (hαβ : 2 * α < β) :
-    ContinuouslyReduces f g := by
+    (η : Ordinal.{0})
+    (hlam : Order.IsSuccLimit η ∨ η = 0):
+      ((CBRank g = η ∧  CBRank g ≤ CBRank f)
+      -> ContinuouslyReduces f g)
+      ∧
+      (∀ n : ℕ, (CBRank f = η + n ∧ CBRank g ≥ η + 2 * n + 1) -> ContinuouslyReduces f g) := by
   sorry
 
 
-/-- **Theorem (JSLgeneralstructure) — Item 1.**
-If `CB(f) ≤ CB(g) = λ` where `λ` is a limit ordinal or zero, then `f ≤ g`.
+-- /-- **Theorem (JSLgeneralstructure) — Item 1.**
+-- If `CB(f) ≤ CB(g) = λ` where `λ` is a limit ordinal or zero, then `f ≤ g`.
 
 
-The proof finds a sequence of pairwise incomparable finite sequences in the tree
-of elements with CB-rank `λ`, and applies Gluingaslowerbound. -/
-theorem general_structure_limit
-    {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    {X' Y' : Type*} [TopologicalSpace X'] [TopologicalSpace Y']
-    (f : X → Y) (g : X' → Y')
-    (hf : ScatteredFun f) (hg : ScatteredFun g)
-    (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam ∨ lam = 0)
-    (hcb_f : ∀ γ, lam < γ → CBLevel f γ = ∅)
-    (hcb_g : ∀ γ, lam < γ → CBLevel g γ = ∅)
-    (hcb_g_ne : (CBLevel g lam).Nonempty) :
-    ContinuouslyReduces f g := by
-  sorry
+-- The proof finds a sequence of pairwise incomparable finite sequences in the tree
+-- of elements with CB-rank `λ`, and applies Gluingaslowerbound. -/
+-- theorem general_structure
+--     {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+--     {X' Y' : Type*} [TopologicalSpace X'] [TopologicalSpace Y']
+--     (f : X → Y) (g : X' → Y')
+--     (hf : ScatteredFun f) (hg : ScatteredFun g)
+--     (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam ∨ lam = 0)
+--     (hcb_f : ∀ γ, lam < γ → CBLevel f γ = ∅)
+--     (hcb_g : ∀ γ, lam < γ → CBLevel g γ = ∅)
+--     (hcb_g_ne : (CBLevel g lam).Nonempty) :
+--     ContinuouslyReduces f g := by
+--   sorry
 
 
-/-- **Theorem (JSLgeneralstructure) — Item 2.**
-For all `n ∈ ℕ`, if `CB(f) = λ + n` and `λ + 2n + 1 ≤ CB(g)`, then `f ≤ g`,
-where `λ` is a limit ordinal or zero.
+-- /-- **Theorem (JSLgeneralstructure) — Item 2.**
+-- For all `n ∈ ℕ`, if `CB(f) = λ + n` and `λ + 2n + 1 ≤ CB(g)`, then `f ≤ g`,
+-- where `λ` is a limit ordinal or zero.
 
 
-The proof is by induction on `λ`. For the base case, use Maxfunctions and Minfunctions
-to get `f ≤ ℓ_{λ+n} ≤ k_{λ+2n+1} ≤ g`. For the inductive step, use
-`ℓ_α = ω · pgl ℓ_β` for successor `α = β + 1`. -/
-theorem general_structure_successor
-    {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    {X' Y' : Type*} [TopologicalSpace X'] [TopologicalSpace Y']
-    (f : X → Y) (g : X' → Y')
-    (hf : ScatteredFun f) (hg : ScatteredFun g)
-    (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam ∨ lam = 0)
-    (n : ℕ)
-    (hcb_f : ∀ γ, lam + ↑n < γ → CBLevel f γ = ∅)
-    (hcb_f_ne : (CBLevel f (lam + ↑n)).Nonempty)
-    (hcb_g_ne : (CBLevel g (lam + ↑(2 * n + 1))).Nonempty) :
-    ContinuouslyReduces f g := by
-  sorry
+-- The proof is by induction on `λ`. For the base case, use Maxfunctions and Minfunctions
+-- to get `f ≤ ℓ_{λ+n} ≤ k_{λ+2n+1} ≤ g`. For the inductive step, use
+-- `ℓ_α = ω · pgl ℓ_β` for successor `α = β + 1`. -/
+-- theorem general_structure_successor
+--     {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+--     {X' Y' : Type*} [TopologicalSpace X'] [TopologicalSpace Y']
+--     (f : X → Y) (g : X' → Y')
+--     (hf : ScatteredFun f) (hg : ScatteredFun g)
+--     (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam ∨ lam = 0)
+--     (n : ℕ)
+--     (hcb_f : ∀ γ, lam + ↑n < γ → CBLevel f γ = ∅)
+--     (hcb_f_ne : (CBLevel f (lam + ↑n)).Nonempty)
+--     (hcb_g_ne : (CBLevel g (lam + ↑(2 * n + 1))).Nonempty) :
+--     ContinuouslyReduces f g := by
+--   sorry
 
 
 /-- **Proposition (FGgivesBQO_2).**
