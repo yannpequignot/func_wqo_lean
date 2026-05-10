@@ -15,7 +15,9 @@ set_option autoImplicit false
 set_option relaxedAutoImplicit false
 
 /-!
-## Section 6: Pointed Gluing as a Lower Bound (Lemma 3.10, Proposition 3.11)
+## Section 6: Pointed Gluing as a Lower Bound (Proposition 3.11)
+Lemma and helpers for the main lower bound result are in
+`LowerBoundLemma.lean`. This file contains the main theorem and some auxiliary lemmas.
 -/
 
 /-
@@ -34,7 +36,7 @@ lemma minFun_zero_reduces {A : Set (ℕ → ℕ)}
       simp +decide [ PointedGluingSet ]
 
 theorem pointedGluing_lower_bound
-    {A B : Set (ℕ → ℕ)}
+    {A : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ)
     (hf : Continuous f)
     (C D : ℕ → Set (ℕ → ℕ))
@@ -277,6 +279,62 @@ private lemma pgl_fun_id_eq_val' (C : ℕ → Set (ℕ → ℕ)) :
     (fun (z : PointedGluingSet C) => z.val) := by
   funext z; exact PointedGluingFun_id C z
 
+private lemma CBLevel_AW_iff
+    {A : Set (ℕ → ℕ)} (f : A → ℕ → ℕ)
+    (W : Set (ℕ → ℕ))
+    (β' : Ordinal.{0}) (z : ℕ → ℕ) (hzA : z ∈ A) (hzW : z ∈ W) :
+    (⟨z, hzA, hzW⟩ : {u : ℕ → ℕ | u ∈ A ∧ u ∈ W}) ∈
+      CBLevel (fun ⟨u, hu⟩ => f ⟨u, hu.1⟩) β' ↔
+    (⟨⟨z, hzA⟩, hzW⟩ : {a : A | a.val ∈ W}) ∈
+      CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) β' := by
+  -- prove the universal statement by induction, then specialize
+  suffices h : ∀ (u : ℕ → ℕ) (huA : u ∈ A) (huW : u ∈ W),
+      (⟨u, huA, huW⟩ : {u : ℕ → ℕ | u ∈ A ∧ u ∈ W}) ∈
+        CBLevel (fun ⟨u, hu⟩ => f ⟨u, hu.1⟩) β' ↔
+      (⟨⟨u, huA⟩, huW⟩ : {a : A | a.val ∈ W}) ∈
+        CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) β' from
+    h z hzA hzW
+  induction' β' using Ordinal.induction with β' ihβ
+  induction' β' using Ordinal.limitRecOn with β' ih'
+  · intro u huA huW; simp [CBLevel_zero]
+  · intro u huA huW
+    simp only [CBLevel_succ', isolatedLocus, Set.mem_diff, Set.mem_setOf_eq]
+    constructor
+    · intro ⟨h1, h2⟩
+      refine ⟨(ihβ β' (Order.lt_succ β') u huA huW).mp h1, fun h3 => h2 ?_⟩
+      obtain ⟨_, U, hU_open, hU_mem, hU_const⟩ := h3
+      refine ⟨h1,
+              (fun a : {v : ℕ → ℕ | v ∈ A ∧ v ∈ W} =>
+                (⟨⟨a.val, a.prop.1⟩, a.prop.2⟩ : {a : A | a.val ∈ W})) ⁻¹' U,
+              hU_open.preimage (by fun_prop), hU_mem,
+              fun y hmem => ?_⟩
+      simp only [Set.mem_inter_iff, Set.mem_preimage] at hmem
+      have hy_cb' : (⟨⟨y.val, y.prop.1⟩, y.prop.2⟩ : {a : A | a.val ∈ W}) ∈
+          CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) β' :=
+        (ihβ β' (Order.lt_succ β') y.val y.prop.1 y.prop.2).mp hmem.2
+      simpa using hU_const ⟨⟨y.val, y.prop.1⟩, y.prop.2⟩ ⟨hmem.1, hy_cb'⟩
+    · intro ⟨h1, h2⟩
+      refine ⟨(ihβ β' (Order.lt_succ β') u huA huW).mpr h1, fun h3 => h2 ?_⟩
+      obtain ⟨_, U, hU_open, hU_mem, hU_const⟩ := h3
+      refine ⟨h1,
+              (fun a : {a : A | a.val ∈ W} =>
+                (⟨a.val.val, a.val.prop, a.prop⟩ : {v : ℕ → ℕ | v ∈ A ∧ v ∈ W})) ⁻¹' U,
+              hU_open.preimage (by fun_prop), hU_mem,
+              fun y hmem => ?_⟩
+      simp only [Set.mem_inter_iff, Set.mem_preimage] at hmem
+      have hy_cb' : (⟨y.val.val, y.val.prop, y.prop⟩ : {v : ℕ → ℕ | v ∈ A ∧ v ∈ W}) ∈
+          CBLevel (fun x : {v : ℕ → ℕ | v ∈ A ∧ v ∈ W} => f ⟨x.val, x.prop.1⟩) β' :=
+        (ihβ β' (Order.lt_succ β') y.val.val y.val.prop y.prop).mpr hmem.2
+      exact hU_const ⟨y.val.val, y.val.prop, y.prop⟩ ⟨hmem.1, hy_cb'⟩
+  · rename_i o hlim _
+    intro u huA huW
+    rw [CBLevel_limit (fun x : {v : ℕ → ℕ | v ∈ A ∧ v ∈ W} => f ⟨x.val, x.prop.1⟩) o hlim,
+        CBLevel_limit (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) o hlim]
+    simp only [Set.mem_iInter]
+    exact ⟨fun h i hi => (ihβ i hi u huA huW).mp (h i hi),
+           fun h i hi => (ihβ i hi u huA huW).mpr (h i hi)⟩
+
+
 private lemma minFun_local_condition'
     {A : Set (ℕ → ℕ)} (f : A → ℕ → ℕ) (hf : Continuous f) (hscat : ScatteredFun f)
     (α : Ordinal.{0}) (hα : α < omega1)
@@ -291,7 +349,7 @@ private lemma minFun_local_condition'
       (∃ y' : ℕ → ℕ, ∀ x' ∈ CBLevel f' β, f' x' = y') →
       ContinuouslyReduces (MinFun β) f')
     (β : Ordinal.{0}) (hβ : β < α)
-    (i : ℕ) (U : Set A) (hU : IsOpen U) (hxU : x ∈ U) :
+    (U : Set A) (hU : IsOpen U) (hxU : x ∈ U) :
     ∃ (σ : MinDom β → A) (τ : (ℕ → ℕ) → ℕ → ℕ),
       Continuous σ ∧
       (∀ z : MinDom β, (z : ℕ → ℕ) = τ (f (σ z))) ∧
@@ -307,18 +365,110 @@ private lemma minFun_local_condition'
   -- Step 3: Decompose at p
   obtain ⟨W, hW_clopen, hpW, hW_V, hW_simple, hW_ray⟩ :=
     decompose_at_point f hf hscat p γ N hp_cb hp_exit y hpN V hV_open hpV
-  -- Step 4: Apply ih at γ to f|_W (using A ∩ W as the flat domain)
+  -- Step 4: Set up restricted domain A_W and function f_W
   set A_W : Set (ℕ → ℕ) := {z | z ∈ A ∧ z ∈ W}
   set f_W : A_W → ℕ → ℕ := fun ⟨z, hz⟩ => f ⟨z, hz.1⟩
-  -- All remaining sorry work is captured in this single sorry
-  -- The proof involves:
-  -- 1. Converting SimpleFun between isomorphic domain types
-  -- 2. Showing δ < α (points in W have f N ≠ y N, so not in CBLevel f α)
-  -- 3. Showing β ≤ δ (p is in W ∩ CBLevel f β)
-  -- 4. Applying IH and MinFun_monotone
-  -- 5. Converting ContinuouslyReduces between isomorphic domain types
-  -- 6. IsClosed {z | z N ≠ y N}
-  sorry
+  -- Step 5: Unpack SimpleFun for {a:A|a.val∈W} and f∘Subtype.val
+  obtain ⟨hf_W_scat, δ, hδ_ne, hδ_succ, y_W, hy_W⟩ := hW_simple
+  have hf_W_cont : Continuous (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) :=
+    hf.comp continuous_subtype_val
+  -- Step 6: Transfer CB data from {a:A|a.val∈W} to A_W using CBLevel_AW_iff
+  have hδ_ne_W : (CBLevel f_W δ).Nonempty := by
+    obtain ⟨⟨⟨z, hzA⟩, hzW⟩, hmem⟩ := hδ_ne
+    exact ⟨⟨z, hzA, hzW⟩, (CBLevel_AW_iff f W δ z hzA hzW).mpr hmem⟩
+  have hδ_succ_W : CBLevel f_W (Order.succ δ) = ∅ := by
+    ext ⟨z, hzA, hzW⟩
+    simp only [Set.mem_empty_iff_false, iff_false]
+    exact fun hmem => hδ_succ.subset
+      ((CBLevel_AW_iff f W (Order.succ δ) z hzA hzW).mp hmem) |>.elim
+  have hy_W_W : ∃ y' : ℕ → ℕ, ∀ x' ∈ CBLevel f_W δ, f_W x' = y' :=
+    ⟨y_W, fun ⟨z, hzA, hzW⟩ hmem =>
+      hy_W ⟨⟨z, hzA⟩, hzW⟩ ((CBLevel_AW_iff f W δ z hzA hzW).mp hmem)⟩
+  -- Step 7: f_W is scattered (from hf_W_scat after converting)
+  have hf_W_scat' : ScatteredFun f_W := by
+    intro S hS
+    set fwd : A_W → {a : A | a.val ∈ W} :=
+      fun a => ⟨⟨a.val, a.prop.1⟩, a.prop.2⟩
+    obtain ⟨U', hU'_open, hU'_ne, hU'_const⟩ :=
+      hf_W_scat (fwd '' S) (hS.image _)
+    refine ⟨fwd ⁻¹' U', hU'_open.preimage (by fun_prop), ?_, ?_⟩
+    · obtain ⟨_, hzU', ⟨w, hw, rfl⟩⟩ := hU'_ne
+      exact ⟨w, by exact hzU', hw⟩
+    · intro a ha b hb
+      exact hU'_const (fwd a) ⟨ha.1, a, ha.2, rfl⟩ (fwd b) ⟨hb.1, b, hb.2, rfl⟩
+  -- Step A: δ < α
+  have hδα : δ < α := by
+    by_contra h
+    push_neg at h
+    obtain ⟨⟨⟨z, hzA⟩, hzW⟩, hcb⟩ := hδ_ne
+    have hcb_α : (⟨⟨z, hzA⟩, hzW⟩ : {a : A | a.val ∈ W}) ∈
+        CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) α :=
+      CBLevel_antitone _ h hcb
+    have h_local : Subtype.val ''
+        CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) α =
+        CBLevel f α ∩ Subtype.val ⁻¹' W :=
+      local_cb_derivative (Subtype.val ⁻¹' W)
+        (hW_clopen.isOpen.preimage continuous_subtype_val) α
+    have hz_f_α : (⟨z, hzA⟩ : A) ∈ CBLevel f α :=
+      (h_local.subset ⟨_, hcb_α, rfl⟩).1
+    exact hW_ray ⟨z, hzA⟩ hzW (congr_fun (hy_simple ⟨z, hzA⟩ hz_f_α) N)
+  -- Step B: δ < omega1
+  have hδω : δ < omega1 := hδα.trans hα
+  -- Step C: β ≤ δ
+  have hβδ : β ≤ δ := by
+    by_contra h
+    push_neg at h
+    have hemp : CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) β = ∅ :=
+      Set.eq_empty_of_subset_empty
+        (hδ_succ ▸ CBLevel_antitone _ (Order.succ_le_of_lt h))
+    have hp_f_β : p ∈ CBLevel f β := CBLevel_antitone f hβγ hp_cb
+    have h_local : Subtype.val ''
+        CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) β =
+        CBLevel f β ∩ Subtype.val ⁻¹' W :=
+      local_cb_derivative (Subtype.val ⁻¹' W)
+        (hW_clopen.isOpen.preimage continuous_subtype_val) β
+    obtain ⟨q, hq, _⟩ := h_local.symm.subset ⟨hp_f_β, hpW⟩
+    exact hemp.subset hq |>.elim
+  -- Step D: apply ih at δ to (A_W, f_W)
+  have hred_δ : ContinuouslyReduces (MinFun δ) f_W :=
+    ih δ hδα hδω A_W f_W
+      (by exact hf.comp (by fun_prop))
+      hf_W_scat' hδ_ne_W hδ_succ_W hy_W_W
+  -- Step E: chain with MinFun_monotone
+  have hred_β : ContinuouslyReduces (MinFun β) f_W :=
+    (MinFun_monotone β δ (hβ.trans hα) hδω hβδ).trans hred_δ
+  -- Step F: convert to {a:A|a.val∈W} for compose_reduction_from_subtype
+  have hred_S : ContinuouslyReduces (MinFun β)
+      (f ∘ (Subtype.val : {a : A | a.val ∈ W} → A)) := by
+    obtain ⟨σ₀, hσ₀, τ₀, hτ₀, hτ₀eq⟩ := hred_β
+    have hσ_cont : Continuous (fun z => (⟨⟨(σ₀ z).val, (σ₀ z).prop.1⟩, (σ₀ z).prop.2⟩ :
+        {a : A | a.val ∈ W})) := by
+      apply Continuous.subtype_mk
+      apply Continuous.subtype_mk
+      exact continuous_subtype_val.comp hσ₀
+    refine ⟨fun z => ⟨⟨(σ₀ z).val, (σ₀ z).prop.1⟩, (σ₀ z).prop.2⟩,
+            hσ_cont, τ₀, ?_, hτ₀eq⟩
+    apply hτ₀.mono
+    rintro _ ⟨z, rfl⟩
+    exact ⟨z, rfl⟩
+  -- Step G: closed separating set
+  have hC_closed : IsClosed ({z : ℕ → ℕ | z N ≠ y N}) := by
+    have : {z : ℕ → ℕ | z N ≠ y N} = (fun z : ℕ → ℕ => z N) ⁻¹' {y N}ᶜ := by
+      ext z; simp
+    rw [this]
+    exact (isClosed_compl_iff.mpr (isOpen_discrete _)).preimage (continuous_apply N)
+  -- Step H: apply compose_reduction_from_subtype
+  exact compose_reduction_from_subtype f β
+    {a : A | a.val ∈ W}
+    hred_S
+    (Subtype.val ⁻¹' V)
+    (fun (a : A) (ha : a.val ∈ W) => hW_V ha)
+    {z | z N ≠ y N}
+    hC_closed
+    (fun ⟨a, (ha : a.val ∈ W)⟩ => hW_ray a ha)
+    x
+    (by simp only [Set.mem_setOf_eq, not_not]; exact congr_fun (hy_simple x hx) N)
+
 
 -- **Proposition (Minfunctions). Minimum functions.**
 
@@ -367,13 +517,13 @@ lemma minFun_is_minimum_simple
     · -- Limit case: α is a limit ordinal
       apply pgl_val_to_minFun_limit' α hlim hα0
       rw [← pgl_fun_id_eq_val' (fun n => MinDom (cofinalSeq α n))]
-      apply @pointedGluing_lower_bound A Set.univ f hf
+      apply @pointedGluing_lower_bound A f hf
         (fun n => MinDom (cofinalSeq α n)) (fun n => MinDom (cofinalSeq α n)) (fun _ => id) x
       intro i U hU hxU
       exact minFun_local_condition' f hf hscat α hα y hy_simple hlevel_ne hlevel_succ_empty x hx
         (fun β hβ hβω A' f' hf' hscat' hne' hempty' hsimple' =>
           ih β hβ hβω A' f' hf' hscat' hne' hempty' hsimple')
-        (cofinalSeq α i) (cofinalSeq_lt α hlim hα0 i) i U hU hxU
+        (cofinalSeq α i) (cofinalSeq_lt α hlim hα0 i) U hU hxU
     · -- Successor case: α = Order.succ γ
       have : ¬ Order.IsSuccPrelimit α := by
         intro hp; exact hlim ⟨not_isMin_iff_ne_bot.mpr hα0, hp⟩
@@ -381,167 +531,13 @@ lemma minFun_is_minimum_simple
       obtain ⟨γ, _, rfl⟩ := this
       apply pgl_val_to_minFun_succ' γ
       rw [← pgl_fun_id_eq_val' (fun _ => MinDom γ)]
-      apply @pointedGluing_lower_bound A Set.univ f hf
+      apply @pointedGluing_lower_bound A f hf
         (fun _ => MinDom γ) (fun _ => MinDom γ) (fun _ => id) x
       intro i U hU hxU
       exact minFun_local_condition' f hf hscat (Order.succ γ) hα y hy_simple hlevel_ne hlevel_succ_empty x hx
         (fun β hβ hβω A' f' hf' hscat' hne' hempty' hsimple' =>
           ih β hβ hβω A' f' hf' hscat' hne' hempty' hsimple')
-        γ (Order.lt_succ_of_not_isMax (not_isMax γ)) i U hU hxU
-  -- induction α using Ordinal.induction with
-  -- | h α ih =>
-  -- -- Base case: α = 0
-  -- -- MinFun 0 = ptgl ∅ ≡ id_{(0)^∞} reduces to any nonempty function
-  -- -- ----------------------------------------------------------------
-  -- by_cases hα0 : α = 0
-  -- · subst hα0
-  --   have hne : A.Nonempty := by
-  --     obtain ⟨x, hx⟩ := hlevel_ne
-  --     sorry
-  --   exact minFun_zero_reduces f hne
-  -- -- ----------------------------------------------------------------
-  -- -- Inductive step: α > 0
-  -- -- ----------------------------------------------------------------
-  -- -- Pick x ∈ CBLevel f α as the base point for pointedGluing_lower_bound
-  -- obtain ⟨x, hx⟩ := hlevel_ne
-  -- -- MinFun α is a pointed gluing, so apply the lower bound criterion
-  -- -- The index type for the pointed gluing depends on whether α is successor or limit:
-  -- --   α = β+1: MinFun (β+1) = ptgl (MinFun β), index type = ℕ (constant sequence)
-  -- --   α limit: MinFun α = ptgl_n (MinFun αₙ), for (αₙ) cofinal in α
-  -- apply pointedGluing_lower_bound f hf C D g x
-  -- -- Goal: for each n : ℕ and open U ∋ x, find (σ, τ) reducing the n-th component
-  -- -- of MinFun α to f, with im σ ⊆ U and f x ∉ closure(range(f ∘ σ))
-  -- intro i U hU hxU
-  -- -- ----------------------------------------------------------------
-  -- -- f|_U is simple with CB rank α+1
-  -- -- ----------------------------------------------------------------
-  -- -- CBLevel (f|_U) α = CBLevel f α ∩ U ∋ x (by local_cb_derivative)
-  -- have hfU_level : (CBLevel (f ∘ (Subtype.val : U → ℕ → ℕ)) α).Nonempty := by
-  --   have hlocal := local_cb_derivative U hU α (f := f)
-  --   -- hlocal : Subtype.val '' CBLevel (f ∘ val) α = CBLevel f α ∩ U
-  --   refine ⟨⟨x, hxU⟩, ?_⟩
-  --   -- Need: ⟨x, hxU⟩ ∈ CBLevel (f ∘ val) α
-  --   -- i.e. x ∈ Subtype.val '' CBLevel (f ∘ val) α (then use hlocal)
-  --   have hxmem : x ∈ CBLevel f α ∩ U := ⟨hx, hxU⟩
-  --   rw [← hlocal] at hxmem
-  --   obtain ⟨z, hz, hzval⟩ := hxmem
-  --   -- z : U with z.val = x and hz : z ∈ CBLevel (f ∘ val) α
-  --   convert hz using 1
-  --   exact Subtype.val_injective hzval
-  -- -- CBLevel (f|_U) (succ α) = CBLevel f (succ α) ∩ U = ∅ (by local_cb_derivative)
-  -- have hfU_succ_empty : CBLevel (f ∘ (Subtype.val : U → ℕ → ℕ)) (Order.succ α) = ∅ := by
-  --   have hlocal := local_cb_derivative U hU (Order.succ α) (f := f)
-  --   ext z
-  --   simp only [Set.mem_empty_iff_false, iff_false]
-  --   intro hz
-  --   have : z.val ∈ CBLevel f (Order.succ α) ∩ U := by
-  --     rw [← hlocal]
-  --     exact ⟨z, hz, rfl⟩
-  --   rw [hlevel_succ_empty, Set.empty_inter] at this
-  --   exact this
-  -- -- f|_U is simple with the same distinguished point y
-  -- have hfU_simple : ∃ y' : ℕ → ℕ, ∀ z ∈ CBLevel (f ∘ (Subtype.val : U → ℕ → ℕ)) α,
-  --     (f ∘ Subtype.val) z = y' := by
-  --   refine ⟨y, fun z hz => ?_⟩
-  --   -- z ∈ CBLevel (f ∘ val) α means z.val ∈ CBLevel f α (by local_cb_derivative)
-  --   have hlocal := local_cb_derivative U hU α (f := f)
-  --   have : z.val ∈ CBLevel f α ∩ U := by
-  --     rw [← hlocal]; exact ⟨z, hz, rfl⟩
-  --   exact hy z.val this.1
-  -- -- ----------------------------------------------------------------
-  -- -- The rays of f|_U at y have regular CB-ranks with supremum α
-  -- -- by Prop 3.10 (CBrankofPgluingofregularsequence2simple)
-  -- -- ----------------------------------------------------------------
-  -- -- ray f y n = f co-restricted to {z ∈ B | y↾n ⊑ z ∧ y↾(n+1) ⋢ z}
-  -- have h_regular : IsRegularSequence (fun n => CBRank (rayFun f y n)) ∧
-  --     sSup (Set.range (fun n => CBRank (rayFun f y n))) = α := by
-  --   exact CBrankofPgluingofregularsequence2simple f hf_scat α hlevel_ne
-  --     hlevel_succ_empty ⟨y, hy⟩
-  --   -- (hypothetical name; replace with actual Lean lemma name)
-  -- obtain ⟨hreg, hsup⟩ := h_regular
-  -- -- ----------------------------------------------------------------
-  -- -- Case split: α is successor or limit
-  -- -- ----------------------------------------------------------------
-  -- rcases Ordinal.zero_or_succ_or_limit α with rfl | ⟨β, rfl⟩ | hlim
-  -- · exact absurd rfl hα0
-  -- · -- *** Successor case: α = β + 1 ***
-  --   -- MinFun (β+1) = ptgl (MinFun β)
-  --   -- The rays have CB-ranks with sup = β+1, and the sequence is regular,
-  --   -- so since β+1 is a successor, ∃ n with CB(ray f y n) = β+1.
-  --   -- Wait: sup = α = β+1 but each αₙ ≤ β (since rays have CB-rank < α+1 = β+2),
-  --   -- so actually sup = β, not β+1. Careful: CBRank f = α+1 = β+2,
-  --   -- and ray CB-ranks have sup = α = β+1. So rays can have CB-rank β+1.
-  --   -- Regular + sup = β+1 (successor) means ∃ n, CB(ray n) = β+1.
-  --   have ⟨n, hn⟩ : ∃ n, CBRank (rayFun f y n) = Order.succ β := by
-  --     -- regularity + sup = succ β means the sequence reaches succ β
-  --     exact hreg.exists_eq_of_succ_sup hsup
-  --     -- (hypothetical; replace with actual lemma)
-  --   -- Apply IH at β: MinFun β ≤ ray f y n
-  --   -- ray f y n has CB rank β+1, is simple (rays of a simple function are simple),
-  --   -- and CBLevel (ray f y n) β is nonempty
-  --   have hray_scat : ScatteredFun (rayFun f y n) :=
-  --     ray_scattered f hf_scat y n
-  --   have hray_level : (CBLevel (rayFun f y n) β).Nonempty := by
-  --     -- CB(ray f y n) = β+1 means CBLevel (ray f y n) β ≠ ∅
-  --     rw [← hn] at *
-  --     exact CBLevel_nonempty_of_rank_gt (rayFun f y n) hray_scat (Order.lt_succ β)
-  --   have hray_succ_empty : CBLevel (rayFun f y n) (Order.succ β) = ∅ :=
-  --     CBLevel_eq_empty_at_rank (rayFun f y n) hray_scat
-  --   have hray_simple : ∃ y' : ℕ → ℕ, ∀ z ∈ CBLevel (rayFun f y n) β,
-  --       (rayFun f y n) z = y' :=
-  --     ray_simple f hf_scat y n hy
-  --   have h_ih : ContinuouslyReduces (MinFun β) (rayFun f y n) :=
-  --     ih β (Order.lt_succ β) (by linarith [hα]) hray_scat hray_level
-  --       hray_succ_empty hray_simple
-  --   -- Now produce (σ, τ) from h_ih satisfying the pointedGluing_lower_bound conditions
-  --   obtain ⟨σ, τ, hσ_cont, hcomm, hτ_cont⟩ := h_ih
-  --   -- The domain of rayFun f y n ⊆ U (since we applied rays to f|_U)
-  --   -- and f x ∉ closure(range(f ∘ σ)) since range ⊆ ray B y n and y = f x ∉ ray B y n
-  --   exact ⟨σ, τ, hσ_cont, hcomm, hτ_cont,
-  --     fun z => ray_domain_subset_U f y n U hU hxU z,
-  --       -- σ z ∈ U because ray f y n has domain ⊆ U
-  --     by
-  --       -- f x = y ∉ closure(range(f ∘ σ)) because range(f ∘ σ) ⊆ ray B y n
-  --       -- and y is not in the closure of ray B y n (it's clopen, not containing y)
-  --       apply ray_disjoint_from_base f y n
-  --       -- y ∉ closure(ray B y n) since ray B y n is clopen and y ∉ ray B y n
-  --       ⟩
-  -- · -- *** Limit case: α is a limit ordinal ***
-  --   -- MinFun α = ptgl_n (MinFun αₙ) for (αₙ) cofinal in α
-  --   -- The i-th component of MinFun α corresponds to MinFun (cofinal_seq α i)
-  --   -- For the given i, find n with CB(ray f y n) > cofinal_seq α i
-  --   -- then apply IH
-  --   have hcofinal_lt : cofinalSeq α i < α := by
-  --     exact cofinalSeq_lt α hlim i
-  --   obtain ⟨n, hn⟩ : ∃ n, cofinalSeq α i < CBRank (rayFun f y n) := by
-  --     -- regularity + sup = α means (αₙ) is cofinal in α
-  --     exact hreg.cofinal_of_sup_eq hsup (cofinalSeq α i) hcofinal_lt
-  --   -- Apply IH at cofinalSeq α i:
-  --   -- ray f y n has CB rank > cofinalSeq α i, so (CBLevel (ray f y n) (cofinalSeq α i)).Nonempty
-  --   have hray_scat : ScatteredFun (rayFun f y n) :=
-  --     ray_scattered f hf_scat y n
-  --   have hray_level : (CBLevel (rayFun f y n) (cofinalSeq α i)).Nonempty := by
-  --     exact CBLevel_nonempty_of_rank_gt (rayFun f y n) hray_scat hn
-  --   -- Let β' = CBRank (ray f y n) - 1 so that CB(ray f y n) = β'+1
-  --   -- and cofinalSeq α i < β'+1 = CB(ray f y n)
-  --   -- The ray is simple:
-  --   have hray_simple : ∃ y' : ℕ → ℕ, ∀ z ∈ CBLevel (rayFun f y n) (CBRank (rayFun f y n) - 1),
-  --       (rayFun f y n) z = y' :=
-  --     ray_simple_at_rank f hf_scat y n
-  --   have h_ih : ContinuouslyReduces (MinFun (cofinalSeq α i)) (rayFun f y n) :=
-  --     ih (cofinalSeq α i) hcofinal_lt (by linarith [hα]) hray_scat hray_level
-  --       (by
-  --         -- CBLevel (ray f y n) (succ (cofinalSeq α i)) ⊆ CBLevel (ray f y n) (CBRank (ray f y n)) = ∅
-  --         apply Set.eq_empty_of_subset_empty
-  --         calc CBLevel (rayFun f y n) (Order.succ (cofinalSeq α i))
-  --             ⊆ CBLevel (rayFun f y n) (CBRank (rayFun f y n)) :=
-  --               CBLevel_antitone _ (Order.succ_le_of_lt hn)
-  --           _ = ∅ := CBLevel_eq_empty_at_rank _ hray_scat)
-  --       hray_simple
-  --   obtain ⟨σ, τ, hσ_cont, hcomm, hτ_cont⟩ := h_ih
-  --   exact ⟨σ, τ, hσ_cont, hcomm, hτ_cont,
-  --     fun z => ray_domain_subset_U f y n U hU hxU z,
-  --     by apply ray_disjoint_from_base f y n⟩
+        γ (Order.lt_succ_of_not_isMax (not_isMax γ)) U hU hxU
 
 /--
 PROVIDED SOLUTION
