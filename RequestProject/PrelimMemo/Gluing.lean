@@ -1,5 +1,5 @@
 import RequestProject.PrelimMemo.Basic
-
+import RequestProject.Bqo.TwoBQO
 open scoped Topology
 open Set Function TopologicalSpace
 
@@ -598,12 +598,36 @@ A set of functions is finitely generated if there exists a finite set of generat
 such that every function in the set is equivalent to a finite gluing of generators.
 -/
 
-/-- **Proposition 2.23 (SecondstepforBQOthm).** Continuous reducibility is a BQO on
+/-! **Proposition 2.23 (SecondstepforBQOthm).** Continuous reducibility is a BQO on
 any finitely generated set of functions.
 
-The proof uses a co-homomorphism to `ℕ^{k+1}` (which is BQO as a finite product of
-well-orders). The formal statement would require the full BQO framework. -/
-theorem bqo_finitely_generated_statement : True := by trivial
+The proof uses a co-homomorphism (TwoBQO.comap and TwoBQO.mono) to `ℕ^{k+1}` which is 2-BQO by TwoBQO.prodN
+see TwoBQO.lean
+`s(i)` copies of the `i`-th set, concatenated into an ℕ-indexed family
+
+def CopiesFamily (n: ℕ) (A : Fin n → Set Baire) (s : Fin n → ℕ) : ℕ → Set Baire :=
+  fun k => A (k % n)  -- or some interleaving
+
+/-- The gluing of s(i) copies of f_i -/
+def FiniteGluing (A B : Fin n → Set Baire)
+    (f : ∀ i : Fin n, A i → B i)
+    (s : Fin n → ℕ) :
+    GluingSet (CopiesFamily A s) → Baire :=
+  GluingFunVal (CopiesFamily A s) (CopiesFamily B s) (fun k => f (k % n))
+
+theorem bqo_finitely_generated (n : ℕ)
+    (A : Fin n → Set (ℕ → ℕ))
+    (f : ∀ i : Fin n, A i → (ℕ → ℕ)) :
+    TwoBQO (fun s t : Fin n → ℕ =>
+      ContinuouslyReduces
+        (GluingFunVal (fun _ : Fin n => A) (fun _ : Fin n => B)
+          (fun i _ => f i)  -- s(i) copies of f_i
+          )
+        (GluingFunVal (fun _ : Fin n => A) (fun _ : Fin n => B)
+          (fun i _ => f i)
+          )) := by
+  sorry
+-/
 
 end FiniteGeneration
 

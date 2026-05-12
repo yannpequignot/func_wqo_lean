@@ -1,5 +1,6 @@
 
 import Mathlib
+import RequestProject.PrelimMemo.Basic
 import RequestProject.Bqo.Ramsey
 open Set
 
@@ -125,9 +126,6 @@ theorem TwoBQO.of_wellFoundedLT {α : Type*} [LinearOrder α] [WellFoundedLT α]
 The ordinal ω₁ is 2-BQO because it is a well-order.
 -/
 
-/-- `ω₁` as a countable ordinal. -/
-noncomputable def omega1 : Ordinal.{0} := (Cardinal.aleph 1).ord
-
 /-- **ω₁ is 2-BQO** with respect to `≤`. -/
 theorem Ordinal.omega1_le_isTwoBQO :
     TwoBQO (α := Set.Iio omega1) (· ≤ ·) :=
@@ -155,7 +153,13 @@ theorem IsTwoBQO.subtype {α : Type*} {r : α → α → Prop}
     TwoBQO (fun a b : Subtype p => r a.val b.val) :=
   h.comap Subtype.val
 
-
+theorem TwoBQO.mono {α : Type*} {r s : α → α → Prop}
+    (h : TwoBQO r)
+    (hincl : ∀ a b, r a b → s a b) :
+    TwoBQO s := by
+  rw [isTwoBQO_iff] at h ⊢
+  intro ⟨f, hbad⟩
+  exact h ⟨f, fun m n l hmn hnl hrel => hbad m n l hmn hnl (hincl _ _ hrel)⟩
 
 /-!
 ### 6.2  Finite products (Dickson's lemma for 2-BQO)
@@ -218,11 +222,39 @@ theorem TwoBQO.prod {α β : Type*} {r : α → α → Prop} {s : β → β → 
 
 /-- **Iterated finite product.** For a Fintype index `ι`, the product
 `∀ i, α i` with pointwise quasi-order is 2-BQO when each component is. -/
-theorem TwoBQO.pi {ι : Type*} [Fintype ι] {α : ι → Type*}
-    {r : (i : ι) → α i → α i → Prop}
-    (h : ∀ i, TwoBQO (r i)) :
+theorem TwoBQO.pi : ∀ (n : ℕ) (α : Fin n → Type*)
+    (r : ∀ i : Fin n, α i → α i → Prop)
+    (h : ∀ i, TwoBQO (r i)),
     TwoBQO (fun f g : ∀ i, α i => ∀ i, r i (f i) (g i)) := by
-  sorry
+  intro n
+  induction n with
+  | zero =>
+    intro α r h f
+    exact ⟨0, 1, 2, by norm_num, by norm_num, fun i => i.elim0⟩  | succ n ih =>
+    intro α r h
+    have hpi := ih (fun i => α (Fin.castSucc i))
+                   (fun i => r (Fin.castSucc i))
+                   (fun i => h (Fin.castSucc i))
+    have hprod := (h (Fin.last n)).prod hpi
+    have key : TwoBQO (fun f g : ∀ i : Fin (n+1), α i =>
+        r (Fin.last n) (f (Fin.last n)) (g (Fin.last n)) ∧
+        ∀ i : Fin n, r (Fin.castSucc i) (f (Fin.castSucc i)) (g (Fin.castSucc i))) :=
+      hprod.comap (fun (f : ∀ i : Fin (n+1), α i) => (f (Fin.last n), fun i => f (Fin.castSucc i)))
+    convert key using 2
+    ext f
+    constructor
+    · intro hall
+      exact ⟨hall (Fin.last n), fun i => hall (Fin.castSucc i)⟩
+    · intro ⟨hlast, hcast⟩ i
+      exact Fin.lastCases hlast hcast i
+
+theorem TwoBQO.prodN : ∀ (n : ℕ),
+    TwoBQO (fun f g : Fin n → ℕ => ∀ i, f i ≤ g i) := by
+  intro n
+  exact TwoBQO.pi n (fun _ => ℕ) (fun _ => (· ≤ ·)) (fun _ => TwoBQO.of_wellFoundedLT)
+
+
+
 /-!
 ### 6.3  Sum along a 2-BQO (the main closure theorem)
 
@@ -276,7 +308,7 @@ theorem TwoBQO.lexSigma
     TwoBQO (LexSumRel s t) := by
   intro f
   let f₁ : PairSeq α := fun m n h => (f m n h).1
-  obtain ⟨e, he, hperf | hbad⟩ := perfect_or_bad (· ≤ ·) f₁
+  obtain ⟨e, he, hperf | hbad⟩ := perfect_or_bad (α := α) (· ≤ ·) f₁
   · -- PERFECT CASE: f₁ along e is non-decreasing.
     -- Sub-case on whether the index is ever strictly increasing.
     by_cases hconst : ∀ m n l : ℕ, (hmn : m < n) → (hnl : n < l) →
