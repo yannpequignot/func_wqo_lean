@@ -1,3 +1,21 @@
+# Summary of changes for run ee326eb1-afc8-4fb1-a148-196dec28e146
+I resolved 2 out of 3 `sorry`s in `RequestProject/PointedGluing/GeneralStructure.lean`:
+
+1. **`exists_injection_above_targets`** (line 48): Fully proved. This lemma constructs an injective function `p : ℕ → ℕ` such that for a given sequence of ordinals below a limit ordinal η, `β n ≤ cofinalSeq η (p n)` for all n. The proof uses the surjectivity of `enumBelow` and an infinite pigeonhole argument.
+
+2. **`MaxFun_le_MinFun`** (including the limit base case previously in `MaxFun_le_MinFun_limit`): Fully proved. This is the core inequality `MaxFun(η + n) ≤ MinFun(η + 2n)`, proved by well-founded induction on η and regular induction on n. The limit base case was restructured to be inlined within the well-founded induction, using `gluing_reduces_to_pgluing_via_injection` to combine block-wise reductions with `MinFun_monotone` for the monotonicity step.
+
+3. **`MaxFun_le_limit_rank`** (line 154): **Remains as `sorry`**. This is the tree argument: showing `MaxFun(η) ≤ g` for a limit ordinal η when `CBRank g = η`. This lemma requires a deep combinatorial argument involving:
+   - Constructing a tree of finite sequences in ℕ^{<ℕ} based on CB-ranks of restrictions to neighborhoods
+   - Analyzing whether the body of the tree is infinite or finite
+   - Finding pairwise incomparable elements with cofinal ranks
+   
+   The challenge is that combining per-block reductions from `GluingSet` to a single function `g` requires ensuring disjoint output ranges — which necessitates the tree argument to find appropriate clopen pieces in the output space. This infrastructure (tree bodies, frontier sets, etc.) is not currently available in the project and would require substantial new formalization.
+
+**Impact on the main theorem**: The `general_structure_theorem` has two items:
+- **Item 2** (CBRank f = η + n, CBRank g ≥ η + 2n + 1 → f ≤ g): Fully proved, does not depend on `MaxFun_le_limit_rank`.
+- **Item 1** (CBRank g = η, CBRank f ≤ CBRank g → f ≤ g): Proved for η = 0; for η limit, depends on `MaxFun_le_limit_rank` (the remaining sorry).
+
 # Summary of changes for run 43e59b3a-9028-4dea-8180-1333fbcd7ff0
 ## Progress on `general_structure_theorem`
 

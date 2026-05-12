@@ -45,43 +45,105 @@ private lemma exists_injection_above_targets (η : Ordinal.{0}) (hη : η < omeg
     (hlim : Order.IsSuccLimit η)
     (β : ℕ → Ordinal.{0}) (hβ : ∀ n, β n < η) :
     ∃ p : ℕ → ℕ, Function.Injective p ∧ ∀ n, β n ≤ cofinalSeq η (p n) := by
-  sorry
+  have := @enumBelow_surj η hη (by
+  rintro rfl; specialize hβ 0; simp_all +decide ;)
+  generalize_proofs at *;
+  rw [ show cofinalSeq η = fun n => enumBelow η n from ?_ ];
+  · have h_infinite : ∀ n, Set.Infinite {m : ℕ | β n ≤ enumBelow η m} := by
+      intro n
+      have h_infinite : Set.Infinite {m | β n ≤ m ∧ m < η} := by
+        have h_infinite : ∀ m : Ordinal.{0}, β n ≤ m ∧ m < η → ∃ m' : Ordinal.{0}, β n ≤ m' ∧ m' < η ∧ m < m' := by
+          exact fun m hm => ⟨ Order.succ m, hm.1.trans ( Order.le_succ _ ), hlim.succ_lt hm.2, Order.lt_succ m ⟩;
+        contrapose! h_infinite;
+        exact ⟨ Finset.max' ( h_infinite.toFinset ) ⟨ β n, h_infinite.mem_toFinset.mpr ⟨ le_rfl, hβ n ⟩ ⟩, h_infinite.mem_toFinset.mp ( Finset.max'_mem _ _ ), fun m' hm₁ hm₂ => Finset.le_max' _ _ ( h_infinite.mem_toFinset.mpr ⟨ hm₁, hm₂ ⟩ ) ⟩;
+      intro h_finite;
+      exact h_infinite <| Set.Finite.subset ( h_finite.image fun m => enumBelow η m ) fun x hx => by cases' this ⟨ x, hx.2 ⟩ with m hm; aesop;
+    use fun n => Nat.recOn n ( Nat.find <| Set.Infinite.nonempty <| h_infinite 0 ) fun n ih => Nat.find <| Set.Infinite.exists_gt ( h_infinite ( n + 1 ) ) ih;
+    refine' ⟨ _, _ ⟩;
+    · refine' strictMono_nat_of_lt_succ _ |> StrictMono.injective;
+      exact fun n => Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.2;
+    · intro n; induction n <;> simp_all +decide [ Nat.find_spec ( h_infinite _ |> Set.Infinite.nonempty ) ] ;
+      · exact Nat.find_spec ( h_infinite 0 |> Set.Infinite.nonempty );
+      · exact Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.1;
+  · unfold cofinalSeq; aesop;
 
-/-- Base case: MaxFun(η) ≤ MinFun(η) for limit η.
-Take $(\alpha_n)_n$ cofinal in $\lambda$ and $(\beta_n)_n$ an enumeration of $\lambda$ then,
-by induction hypothesis, for some injection $p:\N\rao\N$ we have
-$\Maximalfct{\alpha_n}\leq\Minimalfct{\beta_{p(n)}+1}$
-so by \cref{Gluingasupperbound,GluinglowerthanPgluing} we get
-\(\Maximalfct{\lambda}\equiv\gl_n\Maximalfct{\alpha_n}\leq\gl_n\Minimalfct{\beta_n+1}\leq\pgl_n\Minimalfct{\beta_n+1}\equiv\Minimalfct{\lambda+1}.\)
- -/
-private lemma MaxFun_le_MinFun_limit (η : Ordinal.{0}) (hη : η < omega1)
-    (hlim : Order.IsSuccLimit η) :
-    ContinuouslyReduces (MaxFun η) (MinFun η) := by
-  sorry
-
-/-- Core inequality: MaxFun(η + n) ≤ MinFun(η + 2n).
-    Proved by induction on n, with the successor step using MaxFun_le_MinFun_succ. -/
-private lemma MaxFun_le_MinFun (η : Ordinal.{0}) (hη : η < omega1)
-    (hlam : Order.IsSuccLimit η ∨ η = 0) (n : ℕ) :
+/-- Core inequality: MaxFun(η + n) ≤ MinFun(η + 2n), by well-founded induction on η
+    and regular induction on n. -/
+private lemma MaxFun_le_MinFun : ∀ (η : Ordinal.{0}), η < omega1 →
+    (Order.IsSuccLimit η ∨ η = 0) → ∀ (n : ℕ),
     ContinuouslyReduces (MaxFun (η + ↑n)) (MinFun (η + 2 * ↑n)) := by
-  induction n with
-  | zero =>
-    have : η + ↑(0 : ℕ) = η := by norm_num
-    have : η + 2 * ↑(0 : ℕ) = η := by norm_num
-    rw [‹η + ↑(0 : ℕ) = η›, ‹η + 2 * ↑(0 : ℕ) = η›]
-    rcases hlam with hlim | h0
-    · exact MaxFun_le_MinFun_limit η hη hlim
-    · subst h0; exact MaxFun_le_MinFun_zero
-  | succ n ih =>
-    -- η + (n+1) = Order.succ (η + n) and η + 2*(n+1) = Order.succ (Order.succ (η + 2n))
-    have h1 : η + ↑(n + 1) = Order.succ (η + ↑n) := by
-      rw [Nat.cast_succ, ← Ordinal.add_one_eq_succ, add_assoc]
-    have h2 : η + 2 * ↑(n + 1) = Order.succ (Order.succ (η + 2 * ↑n)) := by
-      simp only [Nat.cast_succ]
-      rw [← Ordinal.add_one_eq_succ, ← Ordinal.add_one_eq_succ]
-      rw [mul_add, mul_one, add_assoc, add_assoc]; norm_num
-    rw [h1, h2]
-    exact MaxFun_le_MinFun_succ (η + ↑n) (η + 2 * ↑n) ih
+  intro η hη hlam
+  -- Well-founded induction on η
+  induction η using Ordinal.induction with
+  | h η ih_η =>
+    intro n
+    induction n with
+    | zero =>
+      have : η + ↑(0 : ℕ) = η := by norm_num
+      have : η + 2 * ↑(0 : ℕ) = η := by norm_num
+      rw [‹η + ↑(0 : ℕ) = η›, ‹η + 2 * ↑(0 : ℕ) = η›]
+      rcases hlam with hlim | h0
+      · -- η is limit: use the limit argument
+        -- For each k, decompose enumBelow η k = α'_k + m_k
+        have hne : η ≠ 0 := hlim.ne_bot
+        have h_decomp : ∀ k, ∃ (α' : Ordinal.{0}) (m : ℕ),
+            (Order.IsSuccLimit α' ∨ α' = 0) ∧
+            enumBelow η k = α' + ↑m ∧
+            α' + 2 * ↑m < η := by
+          intro k
+          obtain ⟨α', m, hα', hm⟩ := ordinal_limit_nat_decomposition (enumBelow η k)
+          refine ⟨α', m, hα', hm, ?_⟩
+          have h_enum_lt : enumBelow η k < η := enumBelow_lt η hne k
+          have hα'_lt : α' < η := by
+            calc α' ≤ α' + ↑m := le_self_add
+              _ = enumBelow η k := hm.symm
+              _ < η := h_enum_lt
+          have : α' + 2 * ↑m = α' + ↑(2 * m) := by push_cast; ring
+          rw [this]
+          exact limit_add_nat_lt η hlim hne α' hα'_lt (2 * m)
+        choose α' m hα' hm hα'm using h_decomp
+        -- Each MaxFun(enumBelow η k) ≤ MinFun(α'_k + 2*m_k) using the IH on smaller ordinals
+        have h_red : ∀ k, ContinuouslyReduces (MaxFun (enumBelow η k))
+            (MinFun (α' k + 2 * ↑(m k))) := by
+          intro k
+          rw [hm k]
+          have hα'_lt_η : α' k < η := by
+            calc α' k ≤ α' k + ↑(m k) := le_self_add
+              _ = enumBelow η k := (hm k).symm
+              _ < η := enumBelow_lt η hne k
+          exact ih_η (α' k) hα'_lt_η (lt_trans hα'_lt_η hη) (hα' k) (m k)
+        -- Get injection p with α'_k + 2*m_k ≤ cofinalSeq η (p k)
+        obtain ⟨p, hp_inj, hp_bound⟩ := exists_injection_above_targets η hη hlim
+          (fun k => α' k + 2 * ↑(m k)) (fun k => hα'm k)
+        -- Each MaxFun(enumBelow η k) ≤ MinFun(cofinalSeq η (p k)) by monotonicity
+        have h_red' : ∀ k, ContinuouslyReduces
+            (Subtype.val : MaxDom (enumBelow η k) → ℕ → ℕ)
+            (Subtype.val : MinDom (cofinalSeq η (p k)) → ℕ → ℕ) := by
+          intro k
+          exact (h_red k).trans (MinFun_monotone _ _ (by exact lt_trans (hα'm k) hη)
+            (by exact lt_of_lt_of_le (cofinalSeq_lt η hlim hne (p k)) hη.le) (hp_bound k))
+        -- Apply gluing_reduces_to_pgluing_via_injection
+        have h_gl := gluing_reduces_to_pgluing_via_injection
+          (fun k => MaxDom (enumBelow η k))
+          (fun k => MinDom (cofinalSeq η k))
+          p hp_inj h_red'
+        -- Now rewrite MaxFun η and MinFun η using the limit unfoldings
+        show ContinuouslyReduces (MaxFun η) (MinFun η)
+        unfold MaxFun MinFun
+        rw [MaxDom_limit η hlim hne, MinDom_limit η hlim hne]
+        exact h_gl
+      · -- η = 0
+        subst h0; exact MaxFun_le_MinFun_zero
+    | succ n ih =>
+      -- η + (n+1) = Order.succ (η + n) and η + 2*(n+1) = Order.succ (Order.succ (η + 2n))
+      have h1 : η + ↑(n + 1) = Order.succ (η + ↑n) := by
+        rw [Nat.cast_succ, ← Ordinal.add_one_eq_succ, add_assoc]
+      have h2 : η + 2 * ↑(n + 1) = Order.succ (Order.succ (η + 2 * ↑n)) := by
+        simp only [Nat.cast_succ]
+        rw [← Ordinal.add_one_eq_succ, ← Ordinal.add_one_eq_succ]
+        rw [mul_add, mul_one, add_assoc, add_assoc]; norm_num
+      rw [h1, h2]
+      exact MaxFun_le_MinFun_succ (η + ↑n) (η + 2 * ↑n) ih
 
 /-- Tree argument: MaxFun(η) ≤ g for limit η with CBRank g = η.
 PROVIDED SOLUTION
