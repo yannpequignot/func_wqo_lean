@@ -543,4 +543,43 @@ theorem ContinuouslyReduces.cb_monotone {X X' Y Y' : Type*}
   · exact hy';
   · refine' ⟨ σ ⁻¹' U, hUo.preimage hσ, hyU, fun z hz => _ ⟩ ; aesop;
 
+/-
+For a scattered function, if CBRank f = r, then CBLevel f r = ∅.
+-/
+lemma CBLevel_eq_empty_at_rank {X Y : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y] [Small.{0} X]
+    (f : X → Y) (hf : ScatteredFun f) :
+    CBLevel f (CBRank f) = ∅ := by
+  -- Let r = CBRank f.
+  set r := CBRank f with hr;
+  by_cases hS : {α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α)}.Nonempty;
+  · -- Since S is nonempty, we have r = csInf S ∈ S.
+    have hr_mem : r ∈ {α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α)} := by
+      exact csInf_mem hS;
+    contrapose! hr_mem;
+    have := CBLevel_succ_ssubset_of_scattered f hf r hr_mem;
+    exact fun h => this.ne h.symm;
+  · have h_inj : ∃ g : Ordinal.{0} → X, Function.Injective g := by
+      apply CBLevel_strictAnti_of_ne;
+      exact fun α => fun h => hS ⟨ α, h ⟩;
+    exact False.elim ( not_injective_of_ordinal h_inj.choose h_inj.choose_spec )
+
+theorem ContinuouslyReduces.rank_monotone {X X' Y Y' : Type*}
+    [TopologicalSpace X] [TopologicalSpace X']
+    [TopologicalSpace Y] [TopologicalSpace Y']
+    [Small.{0} X] [Small.{0} X']
+    {f : X → Y} {g : X' → Y'}
+    (hf : ScatteredFun f) (hg : ScatteredFun g)
+    (hred : ContinuouslyReduces f g) :
+    CBRank f ≤ CBRank g := by
+  obtain ⟨σ, hσ, τ, hτ, heq⟩ := hred
+  rw [CBRank_eq_sInf_empty _ hf, CBRank_eq_sInf_empty _ hg]
+  apply csInf_le_csInf ⟨0, fun α _ => zero_le α⟩
+  exact ⟨CBRank g, CBLevel_eq_empty_at_rank g hg⟩
+  intro α hα
+  simp only [Set.mem_setOf_eq] at hα ⊢
+  have hmono := ContinuouslyReduces.cb_monotone hσ heq α
+  exact Set.image_eq_empty.mp (Set.subset_empty_iff.mp (hmono.trans hα.subset))
+
+
 end ReductionAndCB

@@ -22,26 +22,6 @@ lemma CBLevel_limit {X Y : Type*} [TopologicalSpace X]
     CBLevel f lam = ⋂ (γ : Ordinal.{0}) (_ : γ < lam), CBLevel f γ := by
   unfold CBLevel; aesop;
 
-/-
-For a scattered function, if CBRank f = r, then CBLevel f r = ∅.
--/
-lemma CBLevel_eq_empty_at_rank {X Y : Type*}
-    [TopologicalSpace X] [TopologicalSpace Y] [Small.{0} X]
-    (f : X → Y) (hf : ScatteredFun f) :
-    CBLevel f (CBRank f) = ∅ := by
-  -- Let r = CBRank f.
-  set r := CBRank f with hr;
-  by_cases hS : {α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α)}.Nonempty;
-  · -- Since S is nonempty, we have r = csInf S ∈ S.
-    have hr_mem : r ∈ {α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α)} := by
-      exact csInf_mem hS;
-    contrapose! hr_mem;
-    have := CBLevel_succ_ssubset_of_scattered f hf r hr_mem;
-    exact fun h => this.ne h.symm;
-  · have h_inj : ∃ g : Ordinal.{0} → X, Function.Injective g := by
-      apply CBLevel_strictAnti_of_ne;
-      exact fun α => fun h => hS ⟨ α, h ⟩;
-    exact False.elim ( not_injective_of_ordinal h_inj.choose h_inj.choose_spec )
 
 
 /-- The block set for index n: sequences starting with n zeros then a nonzero value. -/
