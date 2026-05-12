@@ -292,53 +292,32 @@ theorem classification_compact_domains
   sorry
 
 
-/-- **Theorem (JSLgeneralstructure). General Structure Theorem — Main consequence.**
+/- **Theorem (JSLgeneralstructure). General Structure Theorem — Main consequence.**
 For all `f` and `g` in 𝒞: `2 · CB(f) < CB(g)` implies `f ≤ g`.
 
+The original statement had two issues:
+1. The first conjunct had `CBRank g ≤ CBRank f` but should be `CBRank f ≤ CBRank g`
+   (the manuscript says CB(f) ≤ CB(g) = λ, not CB(f) ≥ CB(g) = λ).
+   Counterexample: A = {0^ω}, B = ∅, f = Subtype.val, g = empty function.
+   Then CBRank g = 0 ≤ CBRank f, but f cannot reduce to g (no map from nonempty to empty).
+2. Missing `Continuous f`, `Continuous g`, and `η < omega1` hypotheses, required
+   by maxFun_is_maximum' and minFun_is_minimum.
 
-This is the key inequality that governs continuous reducibility between scattered
-functions.
-
-PROVIDED SOLUTION
-
-Proceed by induction on $\lambda<\omega_1$. Suppose that the theorem is proven for all $\alpha<\lambda$ with $\lambda$ limit or null.
-
-\smallskip
-
-We first prove the second item. As $f\leq\Maximalfct{\lambda+n}$ by \cref{Maxfunctions} and $\Minimalfct{\lambda+2n+1}\leq g$ by \cref{Minfunctions}, it is enough to prove that
-$\Maximalfct{\lambda+n}\leq \Minimalfct{\lambda+2n+1}$ for all $n\in\N$, and to do so we proceed by induction on $n\in\N$.
-For $n=0$, if $\lambda=0$ then $\Maximalfct{0}=\emptyset\leq\Minimalfct{1}$, so we can suppose that $\lambda\neq0$.
-Take $(\alpha_n)_n$ cofinal in $\lambda$ and $(\beta_n)_n$ an enumeration of $\lambda$ then, by induction hypothesis, for some injection $p:\N\rao\N$ we have
-$\Maximalfct{\alpha_n}\leq\Minimalfct{\beta_{p(n)}+1}$ so by \cref{Gluingasupperbound,GluinglowerthanPgluing} we get
-\(\Maximalfct{\lambda}\equiv\gl_n\Maximalfct{\alpha_n}\leq\gl_n\Minimalfct{\beta_n+1}\leq\pgl_n\Minimalfct{\beta_n+1}\equiv\Minimalfct{\lambda+1}.\)
-
-If now $\alpha=\lambda+(n+1)$ then using the induction hypothesis, \cref{Pgluingasupperbound,GluinglowerthanPgluing} we see that
-$\Maximalfct{\alpha}\equiv\omega\pgl\Maximalfct{\lambda+n}\leq\pgl\pgl\Minimalfct{\lambda+2n+1}\equiv\Minimalfct{\lambda+2n+3}= \Minimalfct{\lambda+2(n+1)+1}$.
-
-\smallskip
-
-To see the first item, take a function $g:A\to B$ of $\CB$-rank $\lambda$. By \cref{Maxfunctions} $f\leq\Maximalfct{\lambda}$ for any $f\in \sC_{\leq \alpha}$, so it is enough to show that if $\Maximalfct{\lambda}\leq g$.
-If $\lambda=0$ then $g$ is the empty function, so suppose that $\lambda$ is limit.
-
-We are going to find a sequence $(s_n)_{n\in\N}\subseteq\N^{<\N}$ of finite sequences pairwise incomparable for the prefix relation such that the sequence $(\CB(g\corestr{N_{s_n}}))_n$
-is either constant equal to $\lambda$ or strictly below $\lambda$ and cofinal in $\lambda$. Thanks to the induction hypothesis, an application of \cref{Gluingaslowerbound}
-to the (pairwise disjoint) clopen sets $(N_{s_n})_n$ allows then to conclude.
-
-Consider the tree $T=\set{s\in\N^{<\N}}[\CB(g\corestr{N_s})=\lambda]$, notice that $T\neq\emptyset$ because it contains at least the empty sequence.
-If $[T]$ is infinite then an application of \cref{InfiniteEmbedOmega} allows to find the desired sequence, so we can suppose that $[T]$ is finite.
-Let $F$ be the set of $\sqsubset$-minimal elements of $\N^{<\N}\setminus T$. Then $\set{\CB(g\corestr{N_s})}[ s\in F]$ is a subset of $\lambda$ and we claim that it is cofinal in $\lambda$, which allows us to find the desired sequence. Towards a contradiction assume that for some $\beta<\lambda$ we have $\CB(g\corestr{N_s})<\beta$ for all $s\in F$. Then, by \cref{CBbasics0}~\cref{CBbasicsfromJSL2},  $\CB_{\beta}(g)\cap g^{-1}(N_s)=\emptyset$ for all $s\in F$ and so $\CB_{\beta}(g)\subseteq g^{-1}([T])$. But as $[T]$ is finite, we have $\CB_{\beta+1}(g)=\empty$ and so $\CB(g)\leq \beta+1$, a contradiction.
- -/
-theorem general_structure_theorem
-    (A B : Set Baire)
-    (f : A → Baire) (g : B → Baire)
-    (hf : ScatteredFun f) (hg : ScatteredFun g)
-    (η : Ordinal.{0})
-    (hlam : Order.IsSuccLimit η ∨ η = 0):
-      ((CBRank g = η ∧  CBRank g ≤ CBRank f)
-      -> ContinuouslyReduces f g)
-      ∧
-      (∀ n : ℕ, (CBRank f = η + n ∧ CBRank g ≥ η + 2 * n + 1) -> ContinuouslyReduces f g) := by
-  sorry
+The corrected and proved version is `general_structure_theorem` in
+`PointedGluing/GeneralStructure.lean`, which imports MinFun.lean
+(needed for `minFun_is_minimum`, which cannot be imported here
+due to a circular dependency). -/
+-- theorem general_structure_theorem_ORIGINAL
+--     (A B : Set Baire)
+--     (f : A → Baire) (g : B → Baire)
+--     (hf : ScatteredFun f) (hg : ScatteredFun g)
+--     (η : Ordinal.{0})
+--     (hlam : Order.IsSuccLimit η ∨ η = 0):
+--       ((CBRank g = η ∧  CBRank g ≤ CBRank f)
+--       -> ContinuouslyReduces f g)
+--       ∧
+--       (∀ n : ℕ, (CBRank f = η + n ∧ CBRank g ≥ η + 2 * n + 1) -> ContinuouslyReduces f g) := by
+--   sorry
 
 
 -- /-- **Theorem (JSLgeneralstructure) — Item 1.**
