@@ -47,7 +47,13 @@ private lemma exists_injection_above_targets (η : Ordinal.{0}) (hη : η < omeg
     ∃ p : ℕ → ℕ, Function.Injective p ∧ ∀ n, β n ≤ cofinalSeq η (p n) := by
   sorry
 
-/-- Base case: MaxFun(η) ≤ MinFun(η) for limit η. -/
+/-- Base case: MaxFun(η) ≤ MinFun(η) for limit η.
+Take $(\alpha_n)_n$ cofinal in $\lambda$ and $(\beta_n)_n$ an enumeration of $\lambda$ then,
+by induction hypothesis, for some injection $p:\N\rao\N$ we have
+$\Maximalfct{\alpha_n}\leq\Minimalfct{\beta_{p(n)}+1}$
+so by \cref{Gluingasupperbound,GluinglowerthanPgluing} we get
+\(\Maximalfct{\lambda}\equiv\gl_n\Maximalfct{\alpha_n}\leq\gl_n\Minimalfct{\beta_n+1}\leq\pgl_n\Minimalfct{\beta_n+1}\equiv\Minimalfct{\lambda+1}.\)
+ -/
 private lemma MaxFun_le_MinFun_limit (η : Ordinal.{0}) (hη : η < omega1)
     (hlim : Order.IsSuccLimit η) :
     ContinuouslyReduces (MaxFun η) (MinFun η) := by
@@ -77,7 +83,32 @@ private lemma MaxFun_le_MinFun (η : Ordinal.{0}) (hη : η < omega1)
     rw [h1, h2]
     exact MaxFun_le_MinFun_succ (η + ↑n) (η + 2 * ↑n) ih
 
-/-- Tree argument: MaxFun(η) ≤ g for limit η with CBRank g = η. -/
+/-- Tree argument: MaxFun(η) ≤ g for limit η with CBRank g = η.
+PROVIDED SOLUTION
+We are going to find a sequence '(s_n)_{n\in\N}' in $\N^{<\N}$ of finite sequences
+pairwise incomparable for the prefix relation such that the sequence $(\CB(g\corestr{N_{s_n}}))_n$
+is either constant equal to $\lambda$ or strictly below $\lambda$ and cofinal in $\lambda$.
+Thanks to the induction hypothesis, an application of \cref{Gluingaslowerbound}
+to the (pairwise disjoint) clopen sets $(N_{s_n})_n$ allows then to conclude.
+
+We may want to define N_s = nbhd_fin s by adapting nbhd x n for a finite sequence s: Fin n → ℕ
+with nbhd_fin s = {h : ∀ i ∈ Fin n s i = h i}. These form a basis of clopen sets
+Notice that if t extends s (or s is an initial segment or prefix of t) for finite squences s: Fin n → ℕ and t: Fin m → ℕ, i.e. n≤ m and ∀ i ∈ Fin n s i = t i,
+then \CB(g\corestr{N_t})=\lambda implies \CB(g\corestr{N_s})=\lambda.
+Here g\corestr{N_t} is the restriction to the primage of nbhd_fin t by g
+So $T=\set{s\in\N^{<\N}}[\CB(g\corestr{N_s})=\lambda]$ is non-empty and closed by initial segment,
+notice that $T\neq\emptyset$ because it contains at least the empty sequence as nbhd ∅ is \N → ℕ and CB g =λ.
+[T] is the body of the tree, the set {x:ℕ → ℕ : ∀ n the restriction x to n is in T}
+If $[T]$ is infinite then an application of \cref{InfiniteEmbedOmega} allows to find the desired sequence,
+so we can suppose that $[T]$ is finite.
+Let $F$ be the set of $\sqsubset$-minimal elements of $\N^{<\N}\setminus T$.
+Then ${\CB(g\corestr{N_s}): s\in F}$ is a subset of $\lambda$
+and we claim that it is cofinal in $\lambda$, which allows us to find the desired sequence.
+Towards a contradiction assume that for some $\beta<\lambda$ we have $\CB(g\corestr{N_s})<\beta$ for all $s\in F$.
+Then, by \cref{CBbasics0}~\cref{CBbasicsfromJSL2},  $\CB_{\beta}(g)\cap g^{-1}(N_s)=\emptyset$ for all $s\in F$
+and so $\CB_{\beta}(g)\subseteq g^{-1}([T])$.
+But as $[T]$ is finite, we have $\CB_{\beta+1}(g)=\empty$ and so $\CB(g)\leq \beta+1$, a contradiction.
+ -/
 private lemma MaxFun_le_limit_rank (η : Ordinal.{0}) (_hη : η < omega1)
     (_hlam : Order.IsSuccLimit η)
     (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (_hgc : Continuous g) (_hg : ScatteredFun g)
