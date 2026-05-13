@@ -1,5 +1,5 @@
-import RequestProject.PointedGluing.MaxFunLimitRank
 import Mathlib
+import RequestProject.PointedGluing.MaxFunLimitRank
 
 open scoped Topology
 open Set Function TopologicalSpace Classical

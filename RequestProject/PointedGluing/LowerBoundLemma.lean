@@ -3,7 +3,7 @@ import RequestProject.PointedGluing.MinFunHelpers
 import RequestProject.PointedGluing.MinFunLowerBound
 import RequestProject.PointedGluing.Defs
 import RequestProject.PointedGluing.CBRankSimpleHelpers
-import RequestProject.PrelimMemo.GenRedProp
+import RequestProject.BaireSpace.GenRedProp
 
 open scoped Topology
 open Set Function TopologicalSpace Classical

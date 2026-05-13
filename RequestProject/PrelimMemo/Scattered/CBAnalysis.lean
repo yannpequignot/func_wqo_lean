@@ -1,4 +1,4 @@
-import RequestProject.PrelimMemo.GenRedProp
+import RequestProject.BaireSpace.GenRedProp
 
 open scoped Topology
 open Set Function TopologicalSpace

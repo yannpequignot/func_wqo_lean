@@ -2,7 +2,7 @@ import RequestProject.PointedGluing.Theorems
 import RequestProject.PointedGluing.MinFunHelpers
 import RequestProject.PointedGluing.MinFunLowerBound
 import RequestProject.PointedGluing.Defs
-import RequestProject.PrelimMemo.GenRedProp
+import RequestProject.BaireSpace.GenRedProp
 import RequestProject.PointedGluing.LowerBoundLemma
 import RequestProject.PrelimMemo.Scattered.Decomposition
 import RequestProject.PointedGluing.MaxMinhelpers

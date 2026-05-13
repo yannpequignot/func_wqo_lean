@@ -1,5 +1,5 @@
 import RequestProject.IntroMemo
-
+import RequestProject.BaireSpace.Basics
 open scoped Topology
 open Set Function TopologicalSpace
 
@@ -218,10 +218,7 @@ end HomeomorphicFunctions
 
 section Notations
 
-/-- The constant zero sequence `0^ω ∈ ℕ → ℕ`. -/
-def zeroStream : ℕ → ℕ := fun _ => 0
 
-abbrev Baire := ℕ → ℕ
 
 
 /-- `ω₁` as a countable ordinal. -/

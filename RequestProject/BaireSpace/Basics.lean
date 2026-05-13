@@ -1,22 +1,19 @@
-import RequestProject.PrelimMemo.Basic
-
+import Mathlib
 open scoped Topology
 open Set Function TopologicalSpace
 
 set_option maxHeartbeats 4000000
+set_option autoImplicit false
+set_option relaxedAutoImplicit false
 
-/-!
-# Baire open reduction (relative version)
 
-We prove that for any subspace `A` of the Baire space `ℕ → ℕ`,
-any countable family of open sets `U n` in `A` can be "reduced" to
-a pairwise-disjoint family of open sets `V n` with `V n ⊆ U n`
-and `⋃ V n = ⋃ U n`.
+/-- The constant zero sequence `0^ω ∈ ℕ → ℕ`. -/
+def zeroStream : ℕ → ℕ := fun _ => 0
 
-The proof goes through a clopen decomposition in the zero-dimensional Baire space.
--/
+abbrev Baire := ℕ → ℕ
 
 section ClopenBasis
+
 
 def nbhd (x : Baire) (n : ℕ) : Set Baire :=
   {h : Baire | ∀ i ∈ Finset.range n, h i = x i}
@@ -139,7 +136,7 @@ lemma nbhd_basis (x : Baire) : ∀ U : Set Baire, IsOpen U → x ∈ U →
     Finset.mem_range.mpr (Nat.lt_succ_of_le (Finset.le_sup (f := id) hi))
   rw [ha i hi_range]
   exact (hF i hi).2
-  
+
 /--
 The Baire space has a topological basis consisting of clopen sets.
 -/
@@ -215,66 +212,145 @@ lemma disjointed_clopen {X : Type*} [TopologicalSpace X]
 
 end DisjointedClopen
 
-section MainTheorem
+/-- **Helper (clopen basis).** In a metrizable, separable, totally disconnected space,
+every open set containing a point has a clopen subset containing that point.
+This is a consequence of de Groot's theorem (metrizable + TD → ultra-metrizable)
+and the fact that balls in an ultrametric space are clopen.
+we only use this result in the specific case of subspace of the Baire space.
+This specific result is proved below
+ -/
+lemma exists_clopen_subset_of_open {X : Type*}
+    [TopologicalSpace X] [SeparableSpace X] [MetrizableSpace X]
+    [TotallyDisconnectedSpace X]
+    (x : X) (U : Set X) (hU : IsOpen U) (hx : x ∈ U) :
+    ∃ V : Set X, IsClopen V ∧ x ∈ V ∧ V ⊆ U := by
+  sorry
 
 /-
-The generalized reduction property for open sets relative to an arbitrary subspace A.
+In the Baire space, every open set containing a point has a clopen subset
+containing that point. Follows from `baire_has_clopen_basis`.
 -/
-theorem baire_open_reduction_rel
-    (A : Set Baire)
-    (U : ℕ → Set A)
-    (hU_open : ∀ n, IsOpen (U n)) :
-    ∃ V : ℕ → Set A,
-      (∀ n, IsOpen (V n)) ∧
-      (∀ n, V n ⊆ U n) ∧
-      (∀ i j, i ≠ j → Disjoint (V i) (V j)) ∧
-      (⋃ n, V n = ⋃ n, U n) := by
-  -- STEP 1: Decompose each U n into clopen sets
-  have h_clopen_decomp : ∃ C : ℕ → ℕ → Set A,
-      (∀ n k, IsClopen (C n k)) ∧ (∀ n, U n = ⋃ k, C n k) := by
-    have h := fun n => subspace_open_eq_countable_union_clopen A (hU_open n)
-    choose C hC using h
-    exact ⟨C, fun n k => (hC n).1 k, fun n => (hC n).2⟩
-  obtain ⟨C, hC_clopen, hC_union⟩ := h_clopen_decomp
-  -- STEP 2: Flatten the double sequence
-  let C_flat : ℕ → Set A := fun m => C (Nat.unpair m).1 (Nat.unpair m).2
-  -- STEP 3: Disjointify
-  let D : ℕ → Set A := disjointed C_flat
-  -- STEP 4: Reassemble
-  let V : ℕ → Set A := fun n => ⋃ (m : ℕ) (_ : (Nat.unpair m).1 = n), D m
-  use V
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · -- V n is open (union of clopen sets)
-    intro n
-    apply isOpen_iUnion; intro m
-    apply isOpen_iUnion; intro _
-    exact (disjointed_clopen C_flat (fun m => hC_clopen _ _) m).2
-  · -- V n ⊆ U n
-    intro n x hx
-    simp only [V, Set.mem_iUnion] at hx
-    obtain ⟨m, hm, hxD⟩ := hx
-    have hxC : x ∈ C_flat m := disjointed_subset _ _ hxD
-    rw [hC_union n]
-    simp only [C_flat] at hxC
-    rw [hm] at hxC
-    exact Set.mem_iUnion.mpr ⟨(Nat.unpair m).2, hxC⟩
-  · -- V i and V j are disjoint
-    intro i j hij
-    simp only [V, Set.disjoint_iff]
-    intro x ⟨hi, hj⟩
-    simp only [Set.mem_iUnion] at hi hj
-    obtain ⟨mi, hmi, hxDi⟩ := hi
-    obtain ⟨mj, hmj, hxDj⟩ := hj
-    have h_mi_ne_mj : mi ≠ mj := by
-      intro h_eq; rw [h_eq] at hmi; exact hij (hmi ▸ hmj)
-    exact Set.disjoint_iff.mp
-      (disjoint_disjointed C_flat h_mi_ne_mj) ⟨hxDi, hxDj⟩
-  · -- ⋃ V n = ⋃ U n
-    have h_union_D : ⋃ m, D m = ⋃ n, U n := by
-      rw [ iUnion_disjointed ];
-      ext x; simp [C_flat, hC_union];
-      exact ⟨ fun ⟨ m, hm ⟩ => ⟨ _, _, hm ⟩, fun ⟨ n, k, hk ⟩ => ⟨ Nat.pair n k, by simpa using hk ⟩ ⟩;
-    convert h_union_D using 1;
-    ext x; simp [V]
+lemma baire_exists_clopen_subset_of_open
+    (x : Baire) (U : Set Baire) (hU : IsOpen U) (hx : x ∈ U) :
+    ∃ V : Set Baire, IsClopen V ∧ x ∈ V ∧ V ⊆ U := by
+  obtain ⟨B, hB_basis, _, hB_clopen⟩ := baire_has_clopen_basis
+  have hU_nhds : U ∈ nhds x := hU.mem_nhds hx
+  rw [hB_basis.mem_nhds_iff] at hU_nhds
+  obtain ⟨V, hV_in_B, hx_in_V, hV_sub_U⟩ := hU_nhds
+  exact ⟨V, hB_clopen V hV_in_B, hx_in_V, hV_sub_U⟩
 
-end MainTheorem
+/-
+In a subspace of the Baire space, every open set containing a point has a
+clopen subset containing that point.
+-/
+lemma baire_subspace_exists_clopen_subset_of_open
+    (A : Set Baire) (x : A) (U : Set A) (hU : IsOpen U) (hx : x ∈ U) :
+    ∃ V : Set A, IsClopen V ∧ x ∈ V ∧ V ⊆ U := by
+  rcases hU with ⟨V, hV, rfl⟩;
+  obtain ⟨W, hW⟩ : ∃ W : Set Baire, IsClopen W ∧ x.val ∈ W ∧ W ⊆ V := by
+    exact baire_exists_clopen_subset_of_open x.val V hV hx;
+  refine' ⟨ Subtype.val ⁻¹' W, _, _, _ ⟩;
+  · exact hW.1.preimage continuous_subtype_val;
+  · aesop;
+  · exact Set.preimage_mono hW.2.2
+
+
+
+-- ============================================================
+-- §1  Basic clopen neighborhoods indexed by finite sequences
+-- ============================================================
+
+/--
+It is often useful to index basic neighborhoods by finite sequences.
+`BaNbhd s` is the basic clopen neighborhood determined by the finite sequence
+`s : Fin n → ℕ`: the set of all `h : ℕ → ℕ` whose first `n` values agree with `s`.
+This is the analogue of `nbhd x n = {h | ∀ i < n, h i = x i}` but parametrized
+by an *abstract* finite sequence rather than a point in Baire space.
+Of course `nbhd x n` = `BaNbhd x|n` where `x|n`
+is the finite sequence obtained by restricting `x: ℕ → ℕ ` to `Fin n`  -/
+def BaNbhd {n : ℕ} (s : Fin n → ℕ) : Set (ℕ → ℕ) :=
+  {h : ℕ → ℕ | ∀ i : Fin n, h i = s i}
+
+/-- `BaNbhd` of the empty sequence is the whole Baire space. -/
+lemma BaNbhd_empty : BaNbhd (Fin.elim0 : Fin 0 → ℕ) = Set.univ := by
+  simp [BaNbhd]
+
+lemma BaNbhd.as_inter {n : ℕ} (s : Fin n → ℕ)
+  : BaNbhd s = ⋂ i : Fin n, {h : ℕ → ℕ | h i = s i} := by
+    ext h; simp [BaNbhd, Set.mem_iInter]
+
+/-- `BaNbhd s` is open. -/
+lemma BaNbhd_isOpen {n : ℕ} (s : Fin n → ℕ) : IsOpen (BaNbhd s) := by
+  -- BaNbhd s = ⋂ i : Fin n, {h | h i = s i}
+  -- Each {h | h i = s i} = (fun h => h i) ⁻¹' {s i} is open (discrete codomain).
+  have h_open : IsOpen (⋂ i : Fin n, {h : Baire | h i = s i}) := by
+    apply isOpen_iInter_of_finite
+    intro i
+    have h_preimage : {h : Baire | h i = s i} = (fun h => h (i : ℕ)) ⁻¹' {s i} := rfl
+    rw [h_preimage]
+    exact (isOpen_discrete {s i}).preimage (continuous_apply (i : ℕ))
+  rw[BaNbhd.as_inter]
+  exact h_open
+
+/-- `BaNbhd s` is closed (it is also the intersection of finitely many closed sets). -/
+lemma BaNbhd_isClosed {n : ℕ} (s : Fin n → ℕ) : IsClosed (BaNbhd s) := by
+
+  have h_closed : IsClosed (⋂ i : Fin n, {h : Baire | h i = s i}) := by
+    apply isClosed_iInter
+    intro i
+    exact isClosed_eq (continuous_apply (i : ℕ)) continuous_const
+  rw [BaNbhd.as_inter]
+  exact h_closed
+
+/-- `BaNbhd s` is clopen. -/
+lemma BaNbhd_isClopen {n : ℕ} (s : Fin n → ℕ) : IsClopen (BaNbhd s) :=
+  ⟨BaNbhd_isClosed s, BaNbhd_isOpen s⟩
+
+/-- `BaNbhd s` is nonempty: the sequence `s` extended by zeros belongs to it. -/
+lemma BaNbhd_nonempty {n : ℕ} (s : Fin n → ℕ) : (BaNbhd s).Nonempty := by
+  use fun k => if h : k < n then s ⟨k, h⟩ else 0
+  simp [BaNbhd]
+
+-- ── Prefix order on finite sequences ────────────────────────
+
+/-- `s` is a prefix of `t` (or `t` extends `s`): `n ≤ m` and the first `n` values
+of `t` agree with `s`. -/
+def IsPrefix {n m : ℕ} (s : Fin n → ℕ) (t : Fin m → ℕ) : Prop :=
+  ∃ h : n ≤ m, ∀ i : Fin n, s i = t ⟨i, i.isLt.trans_le h⟩
+
+/-- If `s` is a prefix of `t` then `BaNbhd t ⊆ BaNbhd s`. -/
+lemma BaNbhd_antitone {n m : ℕ} (s : Fin n → ℕ) (t : Fin m → ℕ)
+    (hpre : IsPrefix s t) : BaNbhd t ⊆ BaNbhd s := by
+  intro h hh
+  simp only [BaNbhd, Set.mem_setOf_eq] at *
+  intro i
+  rw [hpre.2 i, ← hh ⟨i, i.isLt.trans_le hpre.1⟩]
+
+-- ── Extension of finite sequences ────────────────────────────
+
+/-- Extend a finite sequence `s : Fin n → ℕ` by appending the value `k`. -/
+def extendSeq {n : ℕ} (s : Fin n → ℕ) (k : ℕ) : Fin (n + 1) → ℕ :=
+  Fin.snoc s k
+/-- The extension `extendSeq s k` extends `s`. -/
+lemma extendSeq_isPrefix {n : ℕ} (s : Fin n → ℕ) (k : ℕ) :
+    IsPrefix s (extendSeq s k) :=
+  ⟨Nat.le_succ n, fun i => by
+    simp only [extendSeq, Fin.snoc]
+    split_ifs with h
+    · congr 1;
+    · exact absurd i.isLt (by omega)⟩
+
+/-- `BaNbhd`s for different extensions are pairwise disjoint. -/
+lemma BaNbhd_extend_disjoint {n : ℕ} (s : Fin n → ℕ) (j k : ℕ) (hjk : j ≠ k) :
+    Disjoint (BaNbhd (extendSeq s j)) (BaNbhd (extendSeq s k)) := by
+  simp only [Set.disjoint_left, BaNbhd, Set.mem_setOf_eq, extendSeq]
+  intro h hj hk
+  have hj' : h n = j := by
+    have := hj ⟨n, Nat.lt_succ_self n⟩
+    simp [Fin.snoc, Fin.last] at this
+    exact this
+  have hk' : h n = k := by
+    have := hk ⟨n, Nat.lt_succ_self n⟩
+    simp [Fin.snoc, Fin.last] at this
+    exact this
+  exact hjk (by omega)

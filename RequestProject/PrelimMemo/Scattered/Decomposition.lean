@@ -1,8 +1,8 @@
 import RequestProject.PrelimMemo.Scattered.NonScattered
 import RequestProject.PrelimMemo.Gluing
 import RequestProject.PrelimMemo.Scattered.CBAnalysis
---import RequestProject.PointedGluing.CBRankHelpers
 import RequestProject.PointedGluing.CBLevelOpenRestrict
+import RequestProject.BaireSpace.Basics
 
 open scoped Topology
 open Set Function TopologicalSpace
@@ -270,7 +270,7 @@ theorem cb_rank_of_clopen_union {X Y : Type*} [TopologicalSpace X] [TopologicalS
     -- Let $\beta<\alpha$, then $\beta<\CB(f\restr{A_i})$ for some ${i\in I}$ and
     -- now \CB_\beta(f)\supseteq\CB_\beta(f)\cap A_i=\CB_\beta(f\restr{A_i})\neq\emptyset.
     -- Since $\CB_{\CB(f)}(f)=\emptyset$, it follows that $\beta<\CB(f)$, hence $\alpha≤ \CB(f)$.
-    
+
 
 section DecompositionLemma
 
@@ -290,45 +290,6 @@ The proof requires several ingredients:
 3. **Local simplicity**: Using the CB rank of each point and the clopen basis,
    we find a clopen neighborhood on which the function is simple.
 -/
-
-/-- **Helper (clopen basis).** In a metrizable, separable, totally disconnected space,
-every open set containing a point has a clopen subset containing that point.
-This is a consequence of de Groot's theorem (metrizable + TD → ultra-metrizable)
-and the fact that balls in an ultrametric space are clopen. -/
-lemma exists_clopen_subset_of_open {X : Type*}
-    [TopologicalSpace X] [SeparableSpace X] [MetrizableSpace X]
-    [TotallyDisconnectedSpace X]
-    (x : X) (U : Set X) (hU : IsOpen U) (hx : x ∈ U) :
-    ∃ V : Set X, IsClopen V ∧ x ∈ V ∧ V ⊆ U := by
-  sorry
-
-/-
-In the Baire space, every open set containing a point has a clopen subset
-containing that point. Follows from `baire_has_clopen_basis`.
--/
-lemma baire_exists_clopen_subset_of_open
-    (x : Baire) (U : Set Baire) (hU : IsOpen U) (hx : x ∈ U) :
-    ∃ V : Set Baire, IsClopen V ∧ x ∈ V ∧ V ⊆ U := by
-  obtain ⟨B, hB_basis, _, hB_clopen⟩ := baire_has_clopen_basis
-  have hU_nhds : U ∈ nhds x := hU.mem_nhds hx
-  rw [hB_basis.mem_nhds_iff] at hU_nhds
-  obtain ⟨V, hV_in_B, hx_in_V, hV_sub_U⟩ := hU_nhds
-  exact ⟨V, hB_clopen V hV_in_B, hx_in_V, hV_sub_U⟩
-
-/-
-In a subspace of the Baire space, every open set containing a point has a
-clopen subset containing that point.
--/
-lemma baire_subspace_exists_clopen_subset_of_open
-    (A : Set Baire) (x : A) (U : Set A) (hU : IsOpen U) (hx : x ∈ U) :
-    ∃ V : Set A, IsClopen V ∧ x ∈ V ∧ V ⊆ U := by
-  rcases hU with ⟨V, hV, rfl⟩;
-  obtain ⟨W, hW⟩ : ∃ W : Set Baire, IsClopen W ∧ x.val ∈ W ∧ W ⊆ V := by
-    exact baire_exists_clopen_subset_of_open x.val V hV hx;
-  refine' ⟨ Subtype.val ⁻¹' W, _, _, _ ⟩;
-  · exact hW.1.preimage continuous_subtype_val;
-  · aesop;
-  · exact Set.preimage_mono hW.2.2
 
 /-- **Helper.** A constant function on a nonempty subtype is simple. -/
 lemma simpleFun_const {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
