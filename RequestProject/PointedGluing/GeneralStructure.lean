@@ -1,4 +1,5 @@
-import RequestProject.PointedGluing.GeneralStructureHelpers
+import RequestProject.PointedGluing.MaxFunLimitRank
+import Mathlib
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
@@ -15,6 +16,82 @@ noncomputable section
 This file proves the General Structure Theorem for continuous reducibility
 between scattered functions on the Baire space.
 -/
+
+-- ============================================================
+-- Helper definitions and lemmas for MaxFun_le_limit_rank
+-- ============================================================
+
+/-- Restricted domain: {x ∈ B | (g x) 0 = k} as a Set (ℕ → ℕ). -/
+def gRestrDom (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (k : ℕ) : Set (ℕ → ℕ) :=
+  {x : ℕ → ℕ | ∃ (h : x ∈ B), (g ⟨x, h⟩) 0 = k}
+
+/-- Restricted function on gRestrDom. -/
+def gRestrFun (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (k : ℕ) :
+    gRestrDom B g k → ℕ → ℕ :=
+  fun ⟨x, hx⟩ => g ⟨x, hx.choose⟩
+
+private lemma gRestrDom_sub (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (k : ℕ) :
+    gRestrDom B g k ⊆ B :=
+  fun _ ⟨h, _⟩ => h
+
+private lemma gRestrFun_continuous (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ)
+    (hgc : Continuous g) (k : ℕ) :
+    Continuous (gRestrFun B g k) :=
+  hgc.comp (Continuous.subtype_mk continuous_subtype_val _)
+
+private lemma gRestrFun_scattered (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ)
+    (hg : ScatteredFun g) (k : ℕ) :
+    ScatteredFun (gRestrFun B g k) := by
+  have : ContinuouslyReduces (gRestrFun B g k) g :=
+    ⟨fun x => ⟨x.val, (gRestrDom_sub B g k) x.prop⟩,
+     Continuous.subtype_mk continuous_subtype_val _,
+     id, continuousOn_id, fun x => rfl⟩
+  exact this.scattered hg
+
+private lemma gRestrFun_first_coord (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (k : ℕ)
+    (x : gRestrDom B g k) : (gRestrFun B g k x) 0 = k := by
+  simp [gRestrFun]; exact x.prop.choose_spec
+
+/-
+If CBLevel of each restriction is empty, then CBLevel of g is empty.
+-/
+private lemma gRestrFun_CBLevel_union_empty (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ)
+    (hgc : Continuous g) (β : Ordinal.{0})
+    (h : ∀ k : ℕ, CBLevel (gRestrFun B g k) β = ∅) :
+    CBLevel g β = ∅ := by
+  convert CBLevel_open_union_empty g ( fun k => { b : B | ( g b ) 0 = k } ) ( fun k => ?_ ) ( fun x => ?_ ) β ?_;
+  · exact hgc.comp continuous_id' |> Continuous.comp ( continuous_apply 0 ) |> Continuous.isOpen_preimage |> fun h => h { k } <| by simp +decide ;
+  · exact ⟨ _, rfl ⟩;
+  · intro k
+    have h_homeo : ∃ (e : {b : B | (g b) 0 = k} ≃ₜ gRestrDom B g k), (gRestrFun B g k) ∘ e = (g ∘ Subtype.val : {b : B | (g b) 0 = k} → ℕ → ℕ) := by
+      refine' ⟨ _, _ ⟩;
+      refine' ⟨ _, _, _ ⟩;
+      refine' ⟨ fun x => ⟨ x.val, ⟨ x.1.2, x.2 ⟩ ⟩, fun x => ⟨ ⟨ x.val, x.2.choose ⟩, x.2.choose_spec ⟩, _, _ ⟩ <;> simp +decide [ funext_iff ];
+      all_goals norm_num [ funext_iff, LeftInverse, RightInverse ];
+      · fun_prop (disch := solve_by_elim);
+      · fun_prop (disch := solve_by_elim);
+      · exact?;
+    obtain ⟨ e, he ⟩ := h_homeo;
+    have := CBLevel_homeomorph e ( gRestrFun B g k ) β; aesop;
+
+/-
+For each γ < η = CBRank g, some k has CBRank(gRestrFun k) > γ.
+-/
+private lemma gRestrFun_CBRank_cofinal (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ)
+    (hgc : Continuous g) (hg : ScatteredFun g)
+    (η : Ordinal.{0}) (hrank : CBRank g = η)
+    (γ : Ordinal.{0}) (hγ : γ < η) :
+    ∃ k : ℕ, γ < CBRank (gRestrFun B g k) := by
+  contrapose! hγ;
+  -- By assumption, CBLevel(gRestrFun B g k) γ = ∅ for all k.
+  have h_empty : ∀ k : ℕ, CBLevel (gRestrFun B g k) γ = ∅ := by
+    intro k;
+    apply Set.eq_empty_of_forall_notMem;
+    intro x hx;
+    have := CBLevel_eq_empty_at_rank ( gRestrFun B g k ) ( gRestrFun_scattered B g hg k );
+    exact this.subset ( CBLevel_antitone _ ( hγ k ) hx );
+  exact hrank ▸ CBRank_le_of_CBLevel_empty g γ ( gRestrFun_CBLevel_union_empty B g hgc γ h_empty )
+
 
 private lemma omega1_add_nat (η : Ordinal.{0}) (hη : η < omega1) (n : ℕ) :
     η + ↑n < omega1 := by
@@ -171,12 +248,54 @@ Then, by \cref{CBbasics0}~\cref{CBbasicsfromJSL2},  $\CB_{\beta}(g)\cap g^{-1}(N
 and so $\CB_{\beta}(g)\subseteq g^{-1}([T])$.
 But as $[T]$ is finite, we have $\CB_{\beta+1}(g)=\empty$ and so $\CB(g)\leq \beta+1$, a contradiction.
  -/
-private lemma MaxFun_le_limit_rank (η : Ordinal.{0}) (_hη : η < omega1)
-    (_hlam : Order.IsSuccLimit η)
-    (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (_hgc : Continuous g) (_hg : ScatteredFun g)
-    (_hrank : CBRank g = η) :
+private lemma MaxFun_le_limit_rank (η : Ordinal.{0}) (hη : η < omega1)
+    (hlam : Order.IsSuccLimit η)
+    (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (hgc : Continuous g) (hg : ScatteredFun g)
+    (hrank : CBRank g = η) :
     ContinuouslyReduces (MaxFun η) g := by
-  sorry
+  have hne : η ≠ 0 := hlam.ne_bot
+  have h_decomp : ∀ n, ∃ (α' : Ordinal.{0}) (m : ℕ),
+      (Order.IsSuccLimit α' ∨ α' = 0) ∧
+      enumBelow η n = α' + ↑m ∧
+      α' + 2 * ↑m < η := by
+    intro n
+    obtain ⟨α', m, hα', hm⟩ := ordinal_limit_nat_decomposition (enumBelow η n)
+    refine ⟨α', m, hα', hm, ?_⟩
+    have hα'_lt : α' < η := by
+      calc α' ≤ α' + ↑m := le_self_add
+        _ = enumBelow η n := hm.symm
+        _ < η := enumBelow_lt η hne n
+    have h_cast : (2 : Ordinal.{0}) * ↑m = ↑(2 * m) := by push_cast; ring
+    rw [h_cast]
+    exact limit_add_nat_lt η hlam hne α' hα'_lt (2 * m)
+  choose α' m hα' hm hδ using h_decomp
+  obtain ⟨C, p, hp_inj, hC_clopen, hC_disj, hC_bound⟩ :=
+    exists_disjoint_clopen_with_cofinal_ranks η hη hlam B g hgc hg hrank
+      (fun n => α' n + 2 * ↑(m n)) (fun n => hδ n)
+  have hred : ∀ n, ContinuouslyReduces
+      (Subtype.val : MaxDom (enumBelow η n) → ℕ → ℕ)
+      (gClopenFun B g (C (p n))) := by
+    intro n
+    have hα'_lt_ω1 : α' n < omega1 := by
+      calc α' n ≤ α' n + ↑(m n) := le_self_add
+        _ = enumBelow η n := (hm n).symm
+        _ < η := enumBelow_lt η hne n
+        _ < omega1 := hη
+    have hmax_min := MaxFun_le_MinFun (α' n) hα'_lt_ω1 (hα' n) (m n)
+    rw [hm n]
+    have h_scat := gClopenFun_scattered B g hg (C (p n))
+    have h_cont := gClopenFun_continuous B g hgc (C (p n))
+    have h_cast : (2 : Ordinal.{0}) * ↑(m n) = ↑(2 * m n) := by push_cast; ring
+    have hmin_g : ContinuouslyReduces (MinFun (α' n + 2 * ↑(m n)))
+        (gClopenFun B g (C (p n))) :=
+      minFun_is_minimum (α' n + 2 * ↑(m n))
+        (by rw [h_cast]; exact lt_trans (by rw [← h_cast]; exact hδ n) hη)
+        (gClopenDom B g (C (p n)))
+        (gClopenFun B g (C (p n)))
+        h_cont h_scat
+        (CBLevel_nonempty_below_rank _ h_scat _ (hC_bound n))
+    exact hmax_min.trans hmin_g
+  exact gluing_via_codomain_partition η hη hlam B g hgc C hC_clopen hC_disj p hp_inj hred
 
 /-- **Theorem (JSLgeneralstructure). General Structure Theorem.** -/
 theorem general_structure_theorem
@@ -211,13 +330,10 @@ theorem general_structure_theorem
   · -- Item 2
     intro n ⟨hf_rank, hg_ge⟩
     have hηn_lt : η + ↑n < omega1 := omega1_add_nat η hη n
-    -- f ≤ MaxFun(η + n)
     have hf_max : ContinuouslyReduces f (MaxFun (η + ↑n)) :=
       (maxFun_is_maximum' (η + ↑n) hηn_lt).1 f hfc hf
         (fun β hβ => cblevel_empty_of_le f hf β (hf_rank ▸ hβ))
-    -- MaxFun(η + n) ≤ MinFun(η + 2n)
     have hmax_min := MaxFun_le_MinFun η hη hlam n
-    -- MinFun(η + 2n) ≤ g
     have h_cast : (↑(2 * n) : Ordinal.{0}) = 2 * ↑n := by push_cast; ring
     have h2n_lt : η + ↑(2 * n) < omega1 := omega1_add_nat η hη (2 * n)
     have h2n_lt_rank : η + ↑(2 * n) < CBRank g := by
@@ -225,7 +341,6 @@ theorem general_structure_theorem
     have hmin_g : ContinuouslyReduces (MinFun (η + ↑(2 * n))) g :=
       minFun_is_minimum (η + ↑(2 * n)) h2n_lt B g hgc hg
         (CBLevel_nonempty_below_rank g hg (η + ↑(2 * n)) h2n_lt_rank)
-    -- Rewrite to match types
     have hmax_min' : ContinuouslyReduces (MaxFun (η + ↑n)) (MinFun (η + ↑(2 * n))) := by
       rwa [h_cast]
     exact (hf_max.trans hmax_min').trans hmin_g
