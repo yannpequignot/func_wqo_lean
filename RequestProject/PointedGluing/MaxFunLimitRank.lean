@@ -1,6 +1,7 @@
 import Mathlib
 import RequestProject.PointedGluing.GeneralStructureHelpers
 import RequestProject.BaireSpace.Basics
+import RequestProject.PointedGluing.MaxFunLimitRankHelpers
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
@@ -49,6 +50,123 @@ private lemma extract_B_map
   · exact fun x => (σ₀ x).prop.choose_spec
   · exact hτ₀_eq
 
+/-- Each piece of the gluing reduces to g, via transitivity with gClopenFun → g. -/
+private lemma piece_reduces_to_g
+    (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ)
+    (C : Set (ℕ → ℕ)) {A : Set (ℕ → ℕ)}
+    (hred : ContinuouslyReduces (Subtype.val : A → ℕ → ℕ) (gClopenFun B g C)) :
+    ContinuouslyReduces (Subtype.val : A → ℕ → ℕ) g := by
+  exact hred.trans ⟨fun x => ⟨x.val, x.prop.choose⟩,
+    Continuous.subtype_mk continuous_subtype_val _,
+    id, continuousOn_id, fun x => rfl⟩
+
+/-- Membership: unprepend x.val ∈ A (x.val 0) for x ∈ GluingSet A. -/
+private lemma gluingSet_unprepend_mem (A : ℕ → Set (ℕ → ℕ)) (x : GluingSet A) :
+    unprepend x.val ∈ A (x.val 0) := by
+  obtain ⟨i, hi, hmem⟩ := GluingSet_inverse_short A x
+  exact hi ▸ hmem
+
+/-
+The block-wise σ on a GluingSet is continuous.
+-/
+private lemma gluingSet_blockwise_sigma_cont
+    {B : Set (ℕ → ℕ)} (A : ℕ → Set (ℕ → ℕ))
+    (σ_n : ∀ n, A n → B) (hσ_cont : ∀ n, Continuous (σ_n n)) :
+    Continuous (fun x : GluingSet A => σ_n (x.val 0) ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩) := by
+  refine' continuous_iff_continuousAt.mpr _;
+  intro x
+  have h_block : IsOpen {y : GluingSet A | y.val 0 = x.val 0} := by
+    convert isClopen_preimage_zero ( x.val 0 ) |> IsClopen.isOpen |> IsOpen.preimage ( continuous_subtype_val ) using 1;
+  have h_cont_on_block : ContinuousOn (fun x : GluingSet A => σ_n (x.val 0) ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩) {y : GluingSet A | y.val 0 = x.val 0} := by
+    have h_cont_unprepend : Continuous (fun x : GluingSet A => unprepend x.val) := by
+      exact continuous_unprepend.comp continuous_subtype_val
+    have h_cont_on_block : ContinuousOn (fun x : {y : GluingSet A | y.val 0 = x.val 0} => σ_n (x.val.val 0) ⟨unprepend x.val.val, gluingSet_unprepend_mem A x.val⟩) Set.univ := by
+      refine' Continuous.continuousOn _;
+      convert hσ_cont ( x.val 0 ) |> Continuous.comp <| show Continuous fun y : { y : GluingSet A | y.val 0 = x.val 0 } => ⟨ unprepend y.val.val, by
+                                                          convert gluingSet_unprepend_mem A y.val using 1;
+                                                          exact y.2.symm ▸ rfl ⟩ from ?_ using 1
+      generalize_proofs at *;
+      · grind;
+      · exact Continuous.subtype_mk ( h_cont_unprepend.comp <| continuous_subtype_val ) _;
+    rw [ continuousOn_iff_continuous_restrict ] at *;
+    convert h_cont_on_block.comp ( show Continuous fun y : { y : GluingSet A // y.val 0 = x.val 0 } => ⟨ ⟨ y.val, by aesop ⟩, by aesop ⟩ from ?_ ) using 1;
+    fun_prop;
+  exact h_cont_on_block.continuousAt ( h_block.mem_nhds <| by aesop )
+
+/-- If each block of a GluingSet reduces to g with images in disjoint clopens C(p n),
+    then the entire GluingSet reduces to g. -/
+private lemma gluingSet_blockwise_reduces
+    {B : Set (ℕ → ℕ)} (g : B → ℕ → ℕ) (hgc : Continuous g)
+    (A : ℕ → Set (ℕ → ℕ))
+    (C : ℕ → Set (ℕ → ℕ))
+    (hC_clopen : ∀ n, IsClopen (C n))
+    (hC_disj : ∀ i j, i ≠ j → Disjoint (C i) (C j))
+    (p : ℕ → ℕ) (hp : Function.Injective p)
+    (σ_n : ∀ n, A n → B) (τ_n : ∀ n, (ℕ → ℕ) → (ℕ → ℕ))
+    (hσ_cont : ∀ n, Continuous (σ_n n))
+    (hτ_cont : ∀ n, ContinuousOn (τ_n n) (Set.range (g ∘ σ_n n)))
+    (hg_mem : ∀ n (x : A n), g (σ_n n x) ∈ C (p n))
+    (heq : ∀ n (x : A n), x.val = τ_n n (g (σ_n n x))) :
+    ContinuouslyReduces (Subtype.val : GluingSet A → ℕ → ℕ) g := by
+  set σ : GluingSet A → B := fun x => σ_n (x.val 0) ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩
+  set τ : (ℕ → ℕ) → (ℕ → ℕ) := fun y =>
+    if h : ∃ n, y ∈ C (p n) then prepend h.choose (τ_n h.choose y) else 0
+  -- Helper: unique block determination by disjointness
+  have huniq : ∀ z, ∀ i j, z ∈ C (p i) → z ∈ C (p j) → i = j := by
+    intro z i j hi hj
+    by_contra h
+    exact Set.disjoint_left.mp (hC_disj _ _ (hp.ne h)) hi hj
+  refine ⟨σ, gluingSet_blockwise_sigma_cont A σ_n hσ_cont, τ, ?_, ?_⟩
+  -- ContinuousOn τ on range(g ∘ σ)
+  · -- Use continuousOn_piecewise_clopen
+    have hcover : ∀ z ∈ Set.range (g ∘ σ), ∃ i, z ∈ C (p i) := by
+      rintro z ⟨x, rfl⟩
+      exact ⟨x.val 0, hg_mem (x.val 0) ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩⟩
+    apply continuousOn_piecewise_clopen (S_i := fun n => C (p n))
+        (τ_i := fun n y => prepend n (τ_n n y))
+    -- cover
+    · exact hcover
+    -- clopen
+    · intro n; exact hC_clopen (p n)
+    -- agree
+    · intro z _ i hi j hj; rw [huniq z i j hi hj]
+    -- cont on each piece
+    · intro n
+      have hsubset : Set.range (g ∘ σ) ∩ C (p n) ⊆ Set.range (g ∘ σ_n n) := by
+        rintro z ⟨⟨x, rfl⟩, hz_C⟩
+        have hblock : x.val 0 = n :=
+          huniq _ (x.val 0) n (hg_mem (x.val 0) ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩) hz_C
+        exact ⟨⟨unprepend x.val, hblock ▸ gluingSet_unprepend_mem A x⟩,
+              by simp only [comp_def]; exact congrArg g (by subst hblock; rfl)⟩
+      exact (continuous_prepend n).continuousOn.comp
+        ((hτ_cont n).mono hsubset) (fun _ _ => Set.mem_univ _)
+    -- cover (duplicate)
+    · exact hcover
+    -- τ def
+    · intro z hz n hn
+      simp only [τ]
+      have hexists : ∃ m, z ∈ C (p m) := ⟨n, hn⟩
+      rw [dif_pos hexists]
+      have hchoose : hexists.choose = n := huniq z _ n hexists.choose_spec hn
+      rw [hchoose]
+  -- equation: τ(g(σ(x))) = x.val
+  · intro x
+    -- σ x = σ_n (x.val 0) ⟨unprepend x.val, ...⟩
+    -- g(σ x) ∈ C(p(x.val 0))
+    set n₀ := x.val 0
+    set a₀ : A n₀ := ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩
+    have hval : g (σ_n n₀ a₀) ∈ C (p n₀) := hg_mem n₀ a₀
+    -- τ picks block n₀ since g(σ x) ∈ C(p n₀)
+    have hτ_eq : τ (g (σ x)) = prepend n₀ (τ_n n₀ (g (σ_n n₀ a₀))) := by
+      show τ (g (σ_n n₀ a₀)) = _
+      simp only [τ]
+      rw [dif_pos (⟨n₀, hval⟩ : ∃ n, g (σ_n n₀ a₀) ∈ C (p n))]
+      have hch : (⟨n₀, hval⟩ : ∃ n, g (σ_n n₀ a₀) ∈ C (p n)).choose = n₀ :=
+        huniq _ _ _ (⟨n₀, hval⟩ : ∃ n, g (σ_n n₀ a₀) ∈ C (p n)).choose_spec hval
+      simp only [hch]
+    rw [hτ_eq, ← heq n₀ a₀]
+    exact (prepend_unprepend x.val).symm
+
 lemma gluing_via_codomain_partition
     (η : Ordinal.{0}) (hη : η < omega1) (hlim : Order.IsSuccLimit η)
     (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (hgc : Continuous g)
@@ -60,7 +178,16 @@ lemma gluing_via_codomain_partition
         (Subtype.val : MaxDom (enumBelow η n) → ℕ → ℕ)
         (gClopenFun B g (C (p n)))) :
     ContinuouslyReduces (MaxFun η) g := by
-  sorry
+  -- Step 1: Extract block reductions via extract_B_map
+  have hred' := fun n => extract_B_map B g (C (p n)) (hred n)
+  choose σ_n τ_n hσ_cont hτ_cont hg_mem heq using hred'
+  -- Step 2: MaxDom η = GluingSet(fun n => MaxDom(enumBelow η n))
+  have hMaxDom : MaxDom η = GluingSet (fun n => MaxDom (enumBelow η n)) :=
+    MaxDom_limit η hlim (Order.IsSuccLimit.ne_bot hlim)
+  -- Step 3: Apply gluingSet_blockwise_reduces
+  show ContinuouslyReduces (Subtype.val : MaxDom η → ℕ → ℕ) g
+  rw [hMaxDom]
+  exact gluingSet_blockwise_reduces g hgc _ C hC_clopen hC_disj p hp σ_n τ_n hσ_cont hτ_cont hg_mem heq
 
 end
 
@@ -183,9 +310,51 @@ lemma BaNbhd_incomparable_disjoint {n m : ℕ} (s : Fin n → ℕ) (t : Fin m �
   · obtain ⟨i, hi⟩ := hts hnm
     exact hi ((ht i).symm.trans (hs ⟨i, i.isLt.trans_le hnm⟩))
 
+lemma CBLevel_comp_homeomorph {X Y Z : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    [TopologicalSpace Z]
+    (f : X → Z) (φ : Y ≃ₜ X) (α : Ordinal.{0}) :
+    CBLevel (f ∘ φ) α = φ ⁻¹' (CBLevel f α) := by
+      induction' α using Ordinal.limitRecOn with α ih;
+      · simp +decide [ CBLevel_zero ];
+      · -- By definition of isolatedLocus, we have that the isolated locus of a composition is the preimage of the isolated locus of the original function.
+        have h_isolatedLocus : isolatedLocus (f ∘ φ) (φ ⁻¹' (CBLevel f α)) = φ ⁻¹' isolatedLocus f (CBLevel f α) := by
+          ext y;
+          constructor <;> rintro ⟨ h₁, U, hU, hy, hU' ⟩;
+          · refine' ⟨ h₁, φ '' U, _, _, _ ⟩ <;> simp_all +decide [ Set.image_subset_iff ];
+          · refine' ⟨ _, φ ⁻¹' U, hU.preimage φ.continuous, _, _ ⟩ <;> aesop;
+        simp_all +decide [ CBLevel_succ' ];
+      · exact CBLevel_homeomorph φ f _
+
+lemma CBRank_comp_homeomorph {X Y Z : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    [TopologicalSpace Z]
+    (f : X → Z) (φ : Y ≃ₜ X) :
+    CBRank (f ∘ φ) = CBRank f := by
+      unfold CBRank;
+      congr! 3;
+      rw [ CBLevel_comp_homeomorph, CBLevel_comp_homeomorph ];
+      constructor <;> intro h <;> ext x <;> simp_all +decide [ Set.ext_iff ];
+      simpa using h ( φ.symm x )
+
+/-- The natural map from `{b : B | g b ∈ C}` to `gClopenDom B g C`. -/
+def gClopenDomEquiv (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (C : Set (ℕ → ℕ)) :
+    {b : B | g b ∈ C} ≃ₜ gClopenDom B g C where
+  toFun := fun ⟨⟨x, hB⟩, hC⟩ => ⟨x, ⟨hB, hC⟩⟩
+  invFun := fun ⟨x, hx⟩ => ⟨⟨x, hx.choose⟩, hx.choose_spec⟩
+  left_inv := fun ⟨⟨x, hB⟩, hC⟩ => by simp
+  right_inv := fun ⟨x, hx⟩ => by simp
+  continuous_toFun := Continuous.subtype_mk continuous_subtype_val.subtype_val _
+  continuous_invFun := Continuous.subtype_mk (Continuous.subtype_mk continuous_subtype_val _) _
+
+lemma gClopenFun_eq_comp (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (C : Set (ℕ → ℕ)) :
+    gClopenFun B g C = (fun x : {b : B | g b ∈ C} => g x.val) ∘ (gClopenDomEquiv B g C).symm := by
+  ext ⟨x, hx⟩
+  simp [gClopenFun, gClopenDomEquiv]
+
 lemma gClopenFun_CBRank_eq : ∀ (C : Set (ℕ → ℕ)), IsClopen C →
     CBRank (gClopenFun B g C) = CBRank (fun x : {b : B | g b ∈ C} => g x.val) := by
-    sorry
+  intro C _
+  rw [gClopenFun_eq_comp]
+  exact CBRank_comp_homeomorph _ _
 
 lemma exists_disjoint_clopen_with_cofinal_ranks
     (η : Ordinal.{0}) (hη : η < omega1) (hlim : Order.IsSuccLimit η)
@@ -212,125 +381,24 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
             (∀ i j, i ≠ j → ¬IsPrefix (seq i).2 (seq j).2 ∧
                             ¬IsPrefix (seq j).2 (seq i).2) ∧
             ∀ i, T_prop (seq i).1 (seq i).2 := by
+        -- Use the antichain construction from the helpers file
         let f : ℕ ↪ bodyT := hbody.natEmbedding bodyT
-        have hf_diverge : ∀ i j : ℕ, i ≠ j → ∃ k : ℕ, (f i).val k ≠ (f j).val k := by
-          intro i j hij
-          by_contra hall
-          push_neg at hall
-          exact hij (f.injective (Subtype.val_injective (funext hall)))
-        let sep : ∀ i j : ℕ, i ≠ j → ℕ := fun i j hij =>
-          Nat.find (hf_diverge i j hij)
-        -- sep is symmetric: first divergence point of (i,j) equals that of (j,i)
-        have hsep_sym : ∀ i j : ℕ, (hij : i ≠ j) → sep i j hij = sep j i hij.symm := by
-          intro i j hij
-          have hsep_sym : ∀ i j : ℕ, (hij : i ≠ j) → sep i j hij = sep j i hij.symm := by
-            intro i j hij
-            apply le_antisymm
-            · apply Nat.find_min'
-              exact (Nat.find_spec (hf_diverge j i hij.symm)).symm
-            · apply Nat.find_min'
-              exact (Nat.find_spec (hf_diverge i j hij)).symm
-          sorry
-        -- N i separates f i from all f j with j < i
-        let N : ℕ → ℕ := fun i =>
-          1 + (Finset.range i).sup (fun j =>
-            if h : j < i then sep i j (by omega) else 0)
-        have hN_sep : ∀ i j : ℕ, (hij : i < j) → sep j i (Nat.ne_of_gt hij) < N j := by
-          intro i j hij
-          simp only [N]
-          have hmem : i ∈ Finset.range j := Finset.mem_range.mpr hij
-          have hle : sep j i (Nat.ne_of_gt hij) ≤ (Finset.range j).sup
-              (fun k => if h : k < j then sep j k (by omega) else 0) :=
-            sorry
-          omega
-        refine ⟨fun i => ⟨N i, fun k => (f i).val k⟩, ?_, ?_⟩
-        · intro i j hij
-          -- Key lemma: for k < N i with i < j, if sep i j ≥ N i then by
-          -- Nat.find_min all positions < N i agree, contradicting hagree later.
-          -- We unify both sub-cases using hsep_sym.
-          have hkey : ∀ i j : ℕ, i < j →
-              (∀ k : Fin (N i), (f i).val k = (f j).val k) → False := by
-            intro i j hij hagree
-            -- sep j i < N j, but we need disagreement witnessed below N i.
-            -- Use: sep i j (= sep j i by symmetry) < N i? Not necessarily.
-            -- Instead: by Nat.find_min, ∀ k < sep i j, f i k = f j k.
-            -- If sep i j ≥ N i then hagree gives agreement on all of [0, N i),
-            -- which is consistent with minimality. But hagree also gives
-            -- f i k = f j k for ALL k : Fin (N i), and
-            -- Nat.find_spec gives f i (sep i j) ≠ f j (sep i j).
-            -- So we need sep i j < N i to use hagree at that position.
-            -- Use hN_sep with hsep_sym: sep i j = sep j i < N j.
-            -- But we need < N i, not < N j.
-            -- New strategy: use that sep j i < N j (from hN_sep i j hij),
-            -- and rewrite using hsep_sym to get sep i j < N j.
-            -- Then: if N i ≤ N j (from IsPrefix hle), sep i j < N i follows
-            -- only if sep i j < N i. Instead argue:
-            -- Nat.find_min says ∀ k < sep i j, (f i).val k = (f j).val k.
-            -- So (f j).val agrees with (f i).val on [0, sep i j).
-            -- If sep i j < N i: hagree at ⟨sep i j, _⟩ gives f i (sep i j) = f j (sep i j),
-            --   contradicting Nat.find_spec.
-            -- If sep i j ≥ N i: then the truncation of f i at N i is a prefix of f j
-            --   (they agree on [0, N i) ⊆ [0, sep i j) by minimality),
-            --   so hagree is vacuously consistent — but we assumed hagree already!
-            --   In this sub-case we need a different contradiction.
-            --   Use: sep j i < N j (hN_sep), and sep j i = sep i j ≥ N i.
-            --   So N i ≤ sep i j < N j... still no direct contradiction from hagree alone.
-            -- Correct argument: use Nat.find_min at positions < N i.
-            -- For all k < N i, by hagree, f i k = f j k.
-            -- In particular for k < sep i j (which is ≤ or > N i):
-            --   if sep i j ≤ N i: contradiction via find_spec at sep i j < N i.
-            --   if sep i j > N i: all k < N i < sep i j, so by find_min f i k = f j k
-            --     for k < sep i j ⊇ k < N i. Hagree already says this. No contradiction yet.
-            -- We need to use that hagree gives MORE than minimality in the second sub-case.
-            -- Actually in the second sub-case hagree says f i k = f j k for k < N i,
-            -- which is WEAKER than what find_min already gives (∀ k < sep i j ≥ N i).
-            -- So hagree adds no new info and we cannot get a contradiction from hagree alone.
-            -- CONCLUSION: the bound sep i j < N i is NECESSARY and we must ensure it.
-            -- Fix: redefine N i to also include sep i j for j > i, using a two-sided sup.
-            -- But that requires knowing all future j, which is impossible by recursion.
-            -- ACTUAL FIX: observe that we only need ¬IsPrefix (seq i) (seq j) when i < j.
-            -- For this direction, use sep j i < N j (hN_sep i j hij) and that
-            -- IF hle : N i ≤ N j (from IsPrefix), then hagree : ∀ k : Fin (N i), ...
-            -- gives agreement on [0,N i). Then the truncation ⟨N i, f i↾N i⟩ is a prefix
-            -- of ⟨N j, f j↾N j⟩ iff they agree on [0,N i). So the IsPrefix hypothesis
-            -- directly says they agree on [0,N i). Now use:
-            -- sep j i < N j (hN_sep), sep j i = sep i j (hsep_sym).
-            -- Case sep i j < N i: hagree at sep i j gives f i(sep i j) = f j(sep i j),
-            --   contradicting find_spec.
-            -- Case sep i j ≥ N i: by find_min, ∀ k < sep i j, f i k = f j k.
-            --   In particular ∀ k < N i, f i k = f j k (since N i ≤ sep i j).
-            --   This is EXACTLY what hagree says — no contradiction!
-            --   So in this case the truncation truly IS a prefix and we cannot refute it.
-            -- This means: with N defined only using j < i, we CANNOT prove
-            --   ¬IsPrefix (seq i) (seq j) when i < j and sep i j ≥ N i.
-            -- REAL FIX: define N symmetrically.
-            -- Let N i = 1 + sup_{j ≠ i, j < i} max(sep i j, sep j i).
-            -- Since sep i j = sep j i this is just 1 + sup_{j<i} sep i j, same as before.
-            -- The issue is sep j i for j > i is not bounded.
-            -- CORRECT DEFINITION: enumerate ALL pairs and use a pairing function,
-            -- or simply: define N globally after choosing the sequence.
-            -- SIMPLEST CORRECT APPROACH:
-            -- Given f : ℕ ↪ bodyT, define seq by DIAGONAL:
-            -- seq i = truncation of f i at length (sep_max i + 1) where
-            -- sep_max i = max_{j < i} sep i j AND max_{j < i} sep j i.
-            -- But sep j i for j < i is sep at (j, i) which we can compute.
-            -- N i = 1 + sup_{j < i} max (sep i j (by omega)) (sep j i (by omega))
-            -- Then for j < i:
-            --   sep i j < N i (it's in the sup)  ✓
-            --   sep j i < N i (it's also in the sup)  ✓
-            -- This fixes both directions!
-            sorry
-          constructor
-          · intro ⟨hle, hagree⟩
-            rcases Nat.lt_or_ge i j with hij' | hij'
-            · exact hkey i j hij' hagree
-            · exact by sorry
-          · intro ⟨hle, hagree⟩
-            rcases Nat.lt_or_ge i j with hij' | hij'
-            · exact by sorry
-            · exact hkey j i (by omega) hagree
-        · intro i
-          exact (f i).prop (N i)
+        have hf_inj : Injective (fun i => (f i).val) :=
+          fun i j h => f.injective (Subtype.val_injective h)
+        obtain ⟨seq, hseq_ac, hseq_trunc⟩ :=
+          infinite_baire_antichain_prefixes (fun i => (f i).val) hf_inj
+        refine ⟨seq, hseq_ac, fun i => ?_⟩
+        obtain ⟨m, hm⟩ := hseq_trunc i
+        -- seq(i) is a truncation of f(m).val, which is in bodyT
+        -- so T_prop holds for this truncation
+        have hfm_body := (f m).prop
+        simp only [bodyT, Set.mem_setOf_eq] at hfm_body
+        show T_prop (seq i).1 (seq i).2
+        simp only [T_prop]
+        have : (fun j : Fin (seq i).1 => (f m).val ↑j) = (seq i).2 := by
+          ext j; exact (hm j).symm
+        rw [← this]
+        exact hfm_body (seq i).1
       refine ⟨fun n => BaNbhd (seq n).2, id, Function.injective_id,
               fun n => BaNbhd_isClopen _, ?_, ?_⟩
       · intro i j hij
@@ -340,8 +408,7 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
         show δ n < CBRank (gClopenFun B g (BaNbhd (seq n).2))
         have hrank_eq : CBRank (gClopenFun B g (BaNbhd (seq n).2)) =
               CBRank (fun x : {b : B | g b ∈ BaNbhd (seq n).2} => g x.val) :=
-         -- gClopenFun_CBRank_eq B g (BaNbhd (seq n).2) (BaNbhd_isClopen _)
-         sorry
+          gClopenFun_CBRank_eq (BaNbhd (seq n).2) (BaNbhd_isClopen _)
         rw [hrank_eq]
         have hT := hseq_T n
         simp only [T_prop] at hT
@@ -359,6 +426,9 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
     have hCofinal : ∀ β : Ordinal.{0}, β < η →
         ∃ (n : ℕ) (s : Fin n → ℕ), ¬T_prop n s ∧
           β < CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val) := by
+      -- For any β < η, we find a BaNbhd node s with β < rank(g|BaNbhd s) < η.
+      -- This uses the fact that the ranks of the level-1 BaNbhd partitions
+      -- cannot all be ≤ β (otherwise CBRank g ≤ β < η, contradiction).
       sorry
     -- For each n : ℕ, apply hCofinal to δ n to get a sequence of
     -- not-in-T nodes with rank > δ n.
@@ -391,6 +461,8 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
     · intro n
       -- hseq_cofinal n : δ n < CBRank(g|BaNbhd (seq n).2)
       -- Need to identify gClopenFun with the restriction — then exact hseq_cofinal n.
-      sorry
+      simp only [id]
+      rw [gClopenFun_CBRank_eq (BaNbhd (seq n).2) (BaNbhd_isClopen _)]
+      exact hseq_cofinal n
 
 end TreeArgument

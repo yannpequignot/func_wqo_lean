@@ -1,3 +1,105 @@
+# Summary of changes for run 9f88ed80-bcca-4f48-a408-a59296901b11
+## Progress on resolving sorries in `MaxFunLimitRank.lean`
+
+### What was accomplished
+
+**Starting state**: 5 sorries in `exists_disjoint_clopen_with_cofinal_ranks`, split across:
+- Case A (bodyT infinite): 3 sorries in a **buggy** antichain construction (the N-definition was mathematically incorrect — it only bounded separation for j < i, not j > i)
+- Case B (bodyT finite): 2 sorries for cofinality argument and sequence construction
+
+**Case A — Fixed (modulo 1 helper sorry)**:
+- Identified and diagnosed the bug in the original N-based antichain construction
+- Created a new helper file `RequestProject/PointedGluing/MaxFunLimitRankHelpers.lean` with a decomposed approach to the antichain construction
+- Proved 5 helper lemmas fully:
+  - `nat_range_infinite_or_fiber_infinite` — pigeonhole principle for ℕ → ℕ
+  - `injective_subseq_of_infinite_range` — injective subsequence extraction
+  - `const_subseq_of_infinite_fiber` — constant subsequence extraction  
+  - `branching_level_antichain` — antichain from a branching level (Case 1)
+  - `orphan_antichain` — antichain from orphan extraction (Case 2)
+- Restructured Case A in `MaxFunLimitRank.lean` to use `infinite_baire_antichain_prefixes` from the helper file, with clean proof that T_prop holds for each antichain element
+- **1 sorry remains**: `infinite_baire_antichain_prefixes` — the main combinatorial lemma stating that an injective function ℕ → Baire space yields an infinite antichain of finite truncations. The proof structure (case split into branching vs orphan extraction) is set up with all sub-lemmas proved; the remaining difficulty is the iterative chain construction (building nested subsequences by induction and extracting orphans).
+
+**Case B — Unchanged (2 sorries remain)**:
+- `hCofinal` (line 432): The cofinality argument requiring CB level analysis
+- Sequence construction (line 454): Building pairwise incomparable nodes with cofinal ranks from hCofinal
+
+### Current state
+- **3 genuine sorries** remain (down from 5 buggy ones), all in `exists_disjoint_clopen_with_cofinal_ranks`
+- Line 460 contains `-- or sorry` which is just a **comment**, not an actual sorry
+- Both files build successfully
+- The `gluing_via_codomain_partition` theorem (proved in the previous session) remains fully proved
+
+### Files modified/created
+- `RequestProject/PointedGluing/MaxFunLimitRank.lean` — Added import of helper file; rewrote Case A with correct construction
+- `RequestProject/PointedGluing/MaxFunLimitRankHelpers.lean` — **New file** with 5 proved helper lemmas and 1 remaining sorry for the main antichain construction
+
+# Summary of changes for run 9bfaf296-d7ba-49cb-8d25-27be8855c46f
+## Progress on `MaxFunLimitRank.lean`
+
+### Sorries Resolved This Session
+
+1. **`gluing_via_codomain_partition`** — **Fully proved** (was the first of two top-level sorry'd theorems). This is the key lemma for the limit ordinal case: it shows that if each block of the MaxDom gluing reduces to `gClopenFun B g (C (p n))` via disjoint codomain clopens, then `MaxFun η` reduces to `g`. The proof was decomposed into:
+   - **`gluingSet_unprepend_mem`** — proved that `unprepend x.val ∈ A (x.val 0)` for `x ∈ GluingSet A`
+   - **`gluingSet_blockwise_sigma_cont`** — proved that the block-wise σ map on a GluingSet is continuous (using clopen block partition and ContinuousAt analysis)
+   - **`gluingSet_blockwise_reduces`** — proved the core combining lemma: if each block of a GluingSet reduces to `g` with images in disjoint clopens `C(p n)`, then the entire GluingSet reduces to `g`. Uses `extract_B_map` for decomposition, `continuousOn_piecewise_clopen` for τ continuity, and disjointness for unique block recovery.
+   - The main theorem then follows by rewriting `MaxDom η` as a `GluingSet` (via `MaxDom_limit`) and applying the above.
+
+2. **Cleaned up `CBLevel_comp_homeomorph`** — replaced `exact?` with the explicit proof `exact CBLevel_homeomorph φ f _`.
+
+### Remaining Sorries (5, all within `exists_disjoint_clopen_with_cofinal_ranks`)
+
+These are all internal to the second top-level theorem and fall into two groups:
+
+**Case A (bodyT infinite) — 3 sorries (lines 489, 494, 497):**
+The antichain construction has a known bug in the definition of `N` (truncation length). The definition `N(i) = 1 + sup_{j < i} sep(i, j)` only accounts for paths with index `j < i`, but incomparability for the `i < j` direction requires `sep(i, j) < N(i)`, which isn't guaranteed. The comments in the code document this issue and suggest fixes (symmetric N definition or subsequence extraction), but implementing the fix would require a substantial rewrite of the entire Case A block.
+
+**Case B (bodyT finite) — 2 sorries (lines 531, 553):**
+- `hCofinal` (line 531): The cofinality argument requires showing that if bodyT is finite, then for any β < η, there exists a BaNbhd node with rank strictly between β and η. This needs infrastructure about how CBRank decomposes over disjoint clopen partitions.
+- Sequence construction (line 553): Building the antichain sequence from the cofinality result.
+
+### Build Status
+The file compiles successfully with sorry warnings only in `exists_disjoint_clopen_with_cofinal_ranks`.
+
+# Summary of changes for run e55ff5f5-dec0-4e9d-9c5b-5ebb4e0ce1dc
+## Summary of Changes to `RequestProject/PointedGluing/MaxFunLimitRank.lean`
+
+### Sorries Resolved (5 out of 11 original sorries)
+
+1. **`gClopenFun_CBRank_eq`** — Fully proved. The key insight is that `gClopenFun B g C` and `fun x : {b : B | g b ∈ C} => g x.val` are the same function up to a homeomorphism of domains. This was proved by:
+   - Adding `CBLevel_comp_homeomorph`: CBLevel is preserved under precomposition with a homeomorphism (proved by transfinite induction)
+   - Adding `CBRank_comp_homeomorph`: CBRank equality follows from CBLevel equality
+   - Adding `gClopenDomEquiv`: explicit homeomorphism between the two domain types
+   - Adding `gClopenFun_eq_comp`: expressing gClopenFun as a composition with the homeomorphism
+
+2. **`hsep_sym` (symmetry of separation point)** — Fixed. The inner proof was correct but not connected to the outer `sorry`. Removed the redundant inner `have` and used the proof directly.
+
+3. **`hle` (Finset.sup bound)** — Proved using `Finset.le_sup` with `dif_pos`.
+
+4. **`hrank_eq` in Case A** — Replaced `sorry` with `gClopenFun_CBRank_eq (BaNbhd (seq n).2) (BaNbhd_isClopen _)`.
+
+5. **Final rank comparison in Case B** — Replaced `sorry` with `gClopenFun_CBRank_eq` and `hseq_cofinal`.
+
+### New Helper Lemmas Added
+
+- `CBLevel_comp_homeomorph` — CBLevel is invariant under precomposition with a homeomorphism
+- `CBRank_comp_homeomorph` — CBRank is invariant under precomposition with a homeomorphism
+- `gClopenDomEquiv` — Homeomorphism between `{b : B | g b ∈ C}` and `gClopenDom B g C`
+- `gClopenFun_eq_comp` — `gClopenFun` equals a composition through the homeomorphism
+- `piece_reduces_to_g` — Each piece of the MaxDom gluing reduces to g (via transitivity)
+
+### Remaining Sorries (6)
+
+1. **`gluing_via_codomain_partition`** (line 73) — Requires constructing a global continuous reduction from the GluingSet structure of MaxDom for limit ordinals, combining piece-wise reductions through disjoint codomain partitions.
+
+2. **`hkey` + two case splits** (lines 373, 378, 381) — The antichain construction in Case A has a known issue: the definition of `N` (truncation length) only accounts for `j < i`, but the proof of `¬IsPrefix` for `i < j` requires `sep(i,j) < N(i)`, which isn't guaranteed. The comments in the code document this issue and suggest a fix (using a symmetric definition of N or extracting a subsequence), but the fix is not yet implemented.
+
+3. **`hCofinal`** (line 415) — The cofinality argument for Case B: showing that if bodyT is finite, then for any β < η, there exists a BaNbhd node with rank strictly between β and η.
+
+4. **Sequence construction** (line 437) — Constructing the antichain sequence in Case B from the cofinality result.
+
+### Build Status
+The file compiles successfully with `sorry` warnings only in `gluing_via_codomain_partition` and `exists_disjoint_clopen_with_cofinal_ranks`.
+
 # Summary of changes for run c2c3f066-67c7-4f5b-b0b4-8712bc4565fa
 ## Summary of work on `MaxFun_le_limit_rank`
 
