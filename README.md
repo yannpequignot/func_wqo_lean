@@ -1,6 +1,6 @@
 # func_wqo_lean
 
-A Lean 4 formalization of the memoir *Continuous Reducibility is a Well-Quasi-Order on Continuous Functions* by Yann Pequignot.
+A Lean 4 formalization of the memoir [*Continuous Reducibility is a Well-Quasi-Order on Continuous Functions*](https://arxiv.org/abs/2410.13150) by Raphaël Carroy and Yann Pequignot. 
 
 ## Overview
 
@@ -70,22 +70,10 @@ lake build
 
 The Lean toolchain version is specified in `lean-toolchain` (`leanprover/lean4:v4.28.0`).
 
-## References
-
-- Yann Pequignot, [*Continuous Reducibility is a Well-Quasi-Order on Continuous Functions*](https://arxiv.org/abs/2410.13150) (the memoir, informal source for this formalization)
-- [Mathlib4](https://leanprover-community.github.io/mathlib4_docs/) — the Lean 4 mathematical library
-- R. Laver, *On Fraïssé's order type conjecture* (1971) — inspiration for the BQO proof strategy
-- C. St. J. A. Nash-Williams, *On well-quasi-ordering infinite trees* (1965) — BQO theory
-- J.-C. Carroy, *A quasi-order on continuous functions* (2013) — predecessor results
 
 ## Collaboration
 
-Parts of this formalization were developed with assistance from [Aristotle (Harmonic)](https://aristotle.harmonic.fun).
-
-To cite Aristotle as co-author on commits:
-```
-Co-authored-by: Aristotle (Harmonic) <aristotle-harmonic@harmonic.fun>
-```
+Parts of this formalization were developed with assistance from [Aristotle (Harmonic)](https://aristotle.harmonic.fun) and  [Claude Code](https://claude.com/claude-code).
 
 ## License
 
