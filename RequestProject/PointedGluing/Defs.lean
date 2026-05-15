@@ -272,6 +272,8 @@ noncomputable def MaxDom : Ordinal.{0} → Set (ℕ → ℕ) :=
     (fun o hlim ih => GluingSet (fun n => ih (enumBelow o n)
       (enumBelow_lt o (Order.IsSuccLimit.ne_bot hlim) n)))
 
+/-- Domain of the successor maximum function `ℓ_{succ α}` (Definition 3.5).
+`SuccMaxDom α = PointedGluingSet (fun _ => MaxDom α)`. -/
 noncomputable def SuccMaxDom : Ordinal.{0} → Set (ℕ → ℕ) :=
   fun α => PointedGluingSet (fun _ => MaxDom α)
 
@@ -294,6 +296,8 @@ min and max functions are identity functions on their domains (subtype coercion)
 noncomputable def MaxFun (α : Ordinal.{0}) : MaxDom α → (ℕ → ℕ) :=
   Subtype.val
 
+/-- The successor maximum function `ℓ_{succ α}` (Definition 3.5).
+Like `MaxFun`, this is just the subtype coercion. -/
 noncomputable def SuccMaxFun (α : Ordinal.{0}) : SuccMaxDom α → (ℕ → ℕ) :=
   Subtype.val
 

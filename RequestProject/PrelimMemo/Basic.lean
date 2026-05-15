@@ -85,37 +85,37 @@ theorem embedding_of_id_reduces {X Y : Type*}
     [TopologicalSpace X] [TopologicalSpace Y]
     (h : ContinuouslyReduces (@id X) (@id Y)) :
     ∃ (σ : X → Y), Topology.IsEmbedding σ := by
-  obtain ⟨ σ, τ, hσ, hτ, h ⟩ := h;
+  obtain ⟨σ, τ, hσ, hτ, h⟩ := h
   have h_embedding : Topology.IsEmbedding (fun x : X => ⟨σ x, Set.mem_range_self x⟩ : X → Set.range σ) := by
     have h_inj : Function.Injective (fun x : X => ⟨σ x, Set.mem_range_self x⟩ : X → Set.range σ) := by
-      intro x y hxy;
+      intro x y hxy
       grind
-    refine' ⟨ _, _ ⟩;
-    · rw [ Topology.isInducing_iff_nhds ];
-      intro x;
-      refine' le_antisymm _ _;
-      · rw [ Filter.le_def ];
-        simp +decide [ Filter.mem_comap, nhds_induced ];
-        intro U V W hW hV hU;
-        filter_upwards [ τ.continuousAt hW ] with y hy using hU <| hV <| by simpa using hy;
-      · intro s hs;
-        refine' ⟨ _, _, _ ⟩;
-        exact { y : { x // x ∈ range σ } | hσ y.val ∈ s };
-        · rw [ mem_nhds_iff ] at hs ⊢;
-          obtain ⟨ t, ht₁, ht₂, ht₃ ⟩ := hs;
-          refine' ⟨ { y : { x // x ∈ range σ } | hσ y.val ∈ t }, _, _, _ ⟩;
-          · exact fun y hy => ht₁ hy;
-          · exact ht₂.preimage ( hτ.comp_continuous ( continuous_subtype_val ) fun x => by simp +decide );
-          · grind +splitImp;
-        · grind;
-    · exact h_inj;
-  refine' ⟨ _, _ ⟩;
-  exact fun x => σ x;
-  rw [ Topology.isEmbedding_iff ] at *;
-  rw [ Topology.isInducing_iff_nhds ] at *;
-  convert h_embedding using 1;
-  · simp +decide [ nhds_induced, Filter.comap_comap ];
-    rfl;
+    refine' ⟨_, _⟩
+    · rw [ Topology.isInducing_iff_nhds ]
+      intro x
+      refine' le_antisymm _ _
+      · rw [ Filter.le_def ]
+        simp +decide [ Filter.mem_comap, nhds_induced ]
+        intro U V W hW hV hU
+        filter_upwards [ τ.continuousAt hW ] with y hy using hU <| hV <| by simpa using hy
+      · intro s hs
+        refine' ⟨_, _, _⟩
+        exact { y : { x // x ∈ range σ } | hσ y.val ∈ s }
+        · rw [ mem_nhds_iff ] at hs ⊢
+          obtain ⟨t, ht₁, ht₂, ht₃⟩ := hs
+          refine' ⟨{ y : { x // x ∈ range σ } | hσ y.val ∈ t }, _, _, _⟩
+          · exact fun y hy => ht₁ hy
+          · exact ht₂.preimage ( hτ.comp_continuous ( continuous_subtype_val ) fun x => by simp +decide )
+          · grind +splitImp
+        · grind
+    · exact h_inj
+  refine' ⟨_, _⟩
+  exact fun x => σ x
+  rw [ Topology.isEmbedding_iff ] at *
+  rw [ Topology.isInducing_iff_nhds ] at *
+  convert h_embedding using 1
+  · simp +decide [ nhds_induced, Filter.comap_comap ]
+    rfl
   · simp +decide [ Function.Injective ]
 
 end EmbeddingAndReduction

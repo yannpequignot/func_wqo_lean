@@ -250,9 +250,9 @@ The locally constant locus is open.
 theorem isOpen_locallyConstantLocus {X Y : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] (f : X → Y) :
     IsOpen (locallyConstantLocus f) := by
-  refine isOpen_iff_forall_mem_open.mpr ?_;
-  rintro x ⟨ U, hUo, hxU, hU ⟩;
-  exact ⟨ U, fun y hy => ⟨ U, hUo, hy, fun z hz => by rw [ hU z hz, hU y hy ] ⟩, hUo, hxU ⟩
+  refine isOpen_iff_forall_mem_open.mpr ?_
+  rintro x ⟨U, hUo, hxU, hU⟩
+  exact ⟨U, fun y hy => ⟨U, hUo, hy, fun z hz => by rw [ hU z hz, hU y hy ]⟩, hUo, hxU⟩
 
 /-- The *Cantor–Bendixson derivative* of `f` is the restriction of `f` to the complement
 of the locally constant locus — the set of points where `f` is not locally constant. -/

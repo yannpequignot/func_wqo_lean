@@ -132,20 +132,20 @@ lemma sigma_cont_on_pieces
          strip_mem_of_pointedGluingSet C z h⟩).val
     let piece := Subtype.val ⁻¹' RaySet (PointedGluingSet C) zeroStream i
     Continuous (fun z : ↑piece => σ z.val) := by
-  refine' Continuous.congr _ _;
-  refine' fun z => ( σ_n i ⟨ stripZerosOne i z.val.val, strip_mem_of_block C z.val i z.2.2 ⟩ ).val;
-  · refine' Continuous.comp _ _;
-    · exact continuous_subtype_val;
-    · exact hσ_n i |> Continuous.comp <| Continuous.subtype_mk ( continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val.comp <| continuous_subtype_val ) _;
+  refine' Continuous.congr _ _
+  refine' fun z => ( σ_n i ⟨stripZerosOne i z.val.val, strip_mem_of_block C z.val i z.2.2⟩ ).val
+  · refine' Continuous.comp _ _
+    · exact continuous_subtype_val
+    · exact hσ_n i |> Continuous.comp <| Continuous.subtype_mk ( continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val.comp <| continuous_subtype_val ) _
   · intro z
-    simp [RaySet] at z;
-    rename_i h;
-    have := h.2.2;
+    simp [RaySet] at z
+    rename_i h
+    have := h.2.2
     have h_firstNonzero : firstNonzero h.val.val = i := by
-      unfold firstNonzero;
-      split_ifs <;> simp_all +decide [ Nat.find_eq_iff ];
-      · exact ⟨ this.2, fun n hn => rfl ⟩;
-      · exact False.elim ( this.2 ( by rfl ) );
+      unfold firstNonzero
+      split_ifs <;> simp_all +decide [ Nat.find_eq_iff ]
+      · exact ⟨this.2, fun n hn => rfl⟩
+      · exact False.elim ( this.2 ( by rfl ) )
     cases h ; aesop
 
 /-- ContinuousOn τ_global on range(f ∘ σ): for any y in the range, ContinuousWithinAt holds.
@@ -154,29 +154,29 @@ lemma sigma_cont_on_pieces
 lemma tau_global_continuousOn
     {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
     {B : Type*} [TopologicalSpace B] [MetrizableSpace B]
-    (f : A → B) (hf : Continuous f)
+    (f : A → B) (_hf : Continuous f)
     {C : ℕ → Set (ℕ → ℕ)}
     (x : A)
     (An : ℕ → Set A)
     (hsep : ∀ n, f x ∉ closure (f '' (An n)))
     (σ_n : ∀ n, ↑(C n) → ↑(An n))
     (τ_n : ℕ → B → ℕ → ℕ)
-    (hτ_n : ∀ n, ContinuousOn (τ_n n) (Set.range ((f ∘ Subtype.val) ∘ σ_n n)))
-    (hpart : ∀ m n, m ≠ n → Disjoint (f '' (An m)) (f '' (An n)))
+    (_hτ_n : ∀ n, ContinuousOn (τ_n n) (Set.range ((f ∘ Subtype.val) ∘ σ_n n)))
+    (_hpart : ∀ m n, m ≠ n → Disjoint (f '' (An m)) (f '' (An n)))
     (σ : ↑(PointedGluingSet C) → A)
-    (σ_cont : Continuous σ)
+    (_σ_cont : Continuous σ)
     (hσ_def : σ = fun z =>
       if h : z.val = zeroStream then x
       else (σ_n (firstNonzero z.val)
         ⟨stripZerosOne (firstNonzero z.val) z.val,
          strip_mem_of_pointedGluingSet C z h⟩).val)
     (In : ℕ → Set B)
-    (hIn_def : In = fun n => Set.range ((f ∘ Subtype.val) ∘ σ_n n))
+    (_hIn_def : In = fun n => Set.range ((f ∘ Subtype.val) ∘ σ_n n))
     (h_refine : ∀ n, In n ⊆ f '' (An n))
-    (hrelclop' : IsRelativeClopenPartition In)
+    (_hrelclop' : IsRelativeClopenPartition In)
     (τi : ↑(⋃ n, In n) → ℕ)
     (hτi_n : ∀ (y : ↑(⋃ n, In n)) (n : ℕ), y.val ∈ In n → τi y = n)
-    (hτi_cont : Continuous τi)
+    (_hτi_cont : Continuous τi)
     (τ : ↑(⋃ n, In n) → ℕ → ℕ)
     (hτ_def : τ = fun y => prependZerosOne (τi y) (τ_n (τi y) y.val))
     (hτ_cont : Continuous τ)
@@ -184,7 +184,7 @@ lemma tau_global_continuousOn
     (hτg_def : τ_global = fun y => if h : y ∈ ⋃ n, In n then τ ⟨y, h⟩ else zeroStream)
     (hfx_notUI : f x ∉ ⋃ n, In n)
     (h_incl : ∀ z : ↑(PointedGluingSet C), z.val ≠ zeroStream → f (σ z) ∈ ⋃ n, In n)
-    (hcomp : Continuous (fun z : ↑(PointedGluingSet C) => τ_global (f (σ z)))) :
+    (_hcomp : Continuous (fun z : ↑(PointedGluingSet C) => τ_global (f (σ z)))) :
     ContinuousOn τ_global (Set.range (f ∘ σ)) := by
   -- Step 1: range(f ∘ σ) ⊆ {f x} ∪ ⋃ In n
   have hrange : Set.range (f ∘ σ) ⊆ {f x} ∪ ⋃ n, In n := by

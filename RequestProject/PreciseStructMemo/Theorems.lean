@@ -69,10 +69,10 @@ theorem wedge_not_injective
     (f_vert : Fin (k + 1) → ((ℕ → ℕ) → (ℕ → ℕ)))
     (f_diag : (ℕ → ℕ) → (ℕ → ℕ)) :
     ¬ Injective (WedgeFun k f_vert f_diag) := by
-  unfold WedgeFun;
-  unfold zeroStream; simp +decide [ Injective ] ;
-  use fun n => if n = 0 then 0 else 0, fun n => if n = 0 then 1 else 0; simp +decide [ funext_iff ] ;
-  unfold unprepend; aesop;
+  unfold WedgeFun
+  unfold zeroStream; simp +decide [ Injective ] 
+  use fun n => if n = 0 then 0 else 0, fun n => if n = 0 then 1 else 0; simp +decide [ funext_iff ] 
+  unfold unprepend; aesop
 
 /-- **Fact 5.3, Item 3 (BasicfactsWedge).** CB-rank of the wedge:
 `CB(⋁(f₀, …, fₖ | f_{k+1})) = max({CB(f_i) + 1 | i ≤ k} ∪ {CB(f_{k+1})})`.

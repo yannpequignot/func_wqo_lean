@@ -81,7 +81,7 @@ theorem Set.Infinite.from_strictMono {s : Set ℕ}
 
 /-- Infinite pigeonhole: if `f : ℕ → κ` and `κ` is finite, some fibre is infinite. -/
 theorem infinite_pigeonhole' {κ : Type*} [Fintype κ] (f : ℕ → κ) :
-    ∃ (e : ℕ → ℕ), ∃ (he : StrictMono e), ∃ k : κ, ∀ i : ℕ, f (e i) = k := by
+    ∃ (e : ℕ → ℕ), ∃ (_he : StrictMono e), ∃ k : κ, ∀ i : ℕ, f (e i) = k := by
   obtain ⟨k, hk⟩ := infinite_pigeonhole f
   obtain ⟨e, he, hek⟩ := hk.exists_strictMono
   exact ⟨e, he, k, fun i => hek i⟩

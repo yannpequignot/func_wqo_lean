@@ -90,14 +90,14 @@ theorem centerInvariance_reduce
     {U : Set A'} (hU : IsOpen U) (hσx : σ x ∈ U) :
     ContinuouslyReduces f (g ∘ (Subtype.val : U → A')) := by
   have h_f_le_f_restrict : f ≤ f ∘ (Subtype.val : σ ⁻¹' U → A) := by
-    exact hcenter _ ( hU.preimage hσ ) hσx;
+    exact hcenter _ ( hU.preimage hσ ) hσx
   have h_f_restrict_le_g_restrict : f ∘ (Subtype.val : σ ⁻¹' U → A) ≤ g ∘ (Subtype.val : U → A') := by
-    refine' ⟨ fun a => ⟨ σ a, a.2 ⟩, _, _ ⟩;
-    · fun_prop;
-    · refine' ⟨ τ, _, _ ⟩;
-      · refine' hτ_cont.mono _;
-        rintro _ ⟨ a, rfl ⟩ ; exact ⟨ a, rfl ⟩;
-      · aesop;
+    refine' ⟨fun a => ⟨σ a, a.2⟩, _, _⟩
+    · fun_prop
+    · refine' ⟨τ, _, _⟩
+      · refine' hτ_cont.mono _
+        rintro _ ⟨a, rfl⟩ ; exact ⟨a, rfl⟩
+      · aesop
   exact ContinuouslyReduces.trans h_f_le_f_restrict h_f_restrict_le_g_restrict
 
 /-
@@ -118,7 +118,7 @@ theorem centerInvariance_equiv
     {τ : B' → B} (hτ_cont : ContinuousOn τ (Set.range (g ∘ σ)))
     (hτ_eq : ∀ a, f a = τ (g (σ a))) :
     IsCenterFor g (σ x) := by
-  intro U hU hσU;
+  intro U hU hσU
   convert hequiv.2.trans ( centerInvariance_reduce hcenter hσ hτ_cont hτ_eq hU hσU ) using 1
 
 /-
@@ -138,9 +138,9 @@ theorem centerInvariance_cover
     {I : Type*} {C : I → Set A'} (hcover : ⋃ i, C i = univ)
     (hopen : ∀ i, IsOpen (C i)) :
     ∃ i, ContinuouslyReduces f (g ∘ (Subtype.val : C i → A')) := by
-  have := hcover.symm.subset ( Set.mem_univ ( hred.choose x ) );
-  obtain ⟨ i, hi ⟩ := Set.mem_iUnion.mp this;
-  exact ⟨ i, centerInvariance_reduce hcenter ( hred.choose_spec.1 ) ( hred.choose_spec.2.choose_spec.1 ) ( hred.choose_spec.2.choose_spec.2 ) ( hopen i ) hi ⟩
+  have := hcover.symm.subset ( Set.mem_univ ( hred.choose x ) )
+  obtain ⟨i, hi⟩ := Set.mem_iUnion.mp this
+  exact ⟨i, centerInvariance_reduce hcenter ( hred.choose_spec.1 ) ( hred.choose_spec.2.choose_spec.1 ) ( hred.choose_spec.2.choose_spec.2 ) ( hopen i ) hi⟩
 
 /-- **Proposition 4.3 (scatteredhavecocenter).**
 Suppose that `f : A → B` is centered with `A` metrizable and `B` Hausdorff.
@@ -178,8 +178,8 @@ theorem scatteredCentered_isSimple
     (hf_cent : IsCentered f) :
     ∃ (y : B), ∀ x : A, IsCenterFor f x → f x = y := by
   have h_cocenter : ∀ x y : A, IsCenterFor f x → IsCenterFor f y → f x = f y := by
-    apply (scatteredHaveCocenter f hf_cent).mp hf_scat;
-  exact ⟨ f hf_cent.choose, fun x hx => h_cocenter _ _ hx hf_cent.choose_spec ⟩
+    apply (scatteredHaveCocenter f hf_cent).mp hf_scat
+  exact ⟨f hf_cent.choose, fun x hx => h_cocenter _ _ hx hf_cent.choose_spec⟩
 
 /-
 **Proposition 4.4 (Rigidityofthecocenter) — Item 1.**
@@ -196,8 +196,8 @@ theorem rigidityOfCocenter_tau
     [TopologicalSpace A'] [MetrizableSpace A']
     [TopologicalSpace B'] [T2Space B']
     {f : A → B} {g : A' → B'}
-    (hf_scat : ScatteredFun f) (hg_scat : ScatteredFun g)
-    (hf_cent : IsCentered f) (hg_cent : IsCentered g)
+    (_hf_scat : ScatteredFun f) (_hg_scat : ScatteredFun g)
+    (hf_cent : IsCentered f) (_hg_cent : IsCentered g)
     (hequiv : ContinuouslyEquiv f g)
     {σ : A → A'} {τ : B' → B}
     (hσ : Continuous σ)
@@ -206,7 +206,7 @@ theorem rigidityOfCocenter_tau
     (y_f : B) (hy_f : ∀ x, IsCenterFor f x → f x = y_f)
     (y_g : B') (hy_g : ∀ x, IsCenterFor g x → g x = y_g) :
     τ y_g = y_f := by
-  obtain ⟨ x, hx ⟩ := hf_cent;
+  obtain ⟨x, hx⟩ := hf_cent
   rw [ ← hy_g _ ( centerInvariance_equiv hx hequiv hσ hτ_cont hτ_eq ), ← hy_f _ hx, hτ_eq ]
 
 /-
@@ -220,28 +220,28 @@ of rays, `f(x_i) ∉ N_{y_f|_{n+1}}`, contradiction.
 theorem rigidityOfCocenter_separation
     {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
     {f g : A → ℕ → ℕ}
-    (hf_scat : ScatteredFun f) (hg_scat : ScatteredFun g)
-    (hf_cent : IsCentered f) (hg_cent : IsCentered g)
-    (hequiv : ContinuouslyEquiv f g)
+    (_hf_scat : ScatteredFun f) (_hg_scat : ScatteredFun g)
+    (_hf_cent : IsCentered f) (_hg_cent : IsCentered g)
+    (_hequiv : ContinuouslyEquiv f g)
     (σ : A → A) (τ : (ℕ → ℕ) → (ℕ → ℕ))
-    (hσ : Continuous σ) (hτ : Continuous τ)
+    (_hσ : Continuous σ) (hτ : Continuous τ)
     (hred : ∀ a, f a = τ (g (σ a)))
     (y_f y_g : ℕ → ℕ)
-    (hy_f : ∀ x, IsCenterFor f x → f x = y_f)
-    (hy_g : ∀ x, IsCenterFor g x → g x = y_g)
+    (_hy_f : ∀ x, IsCenterFor f x → f x = y_f)
+    (_hy_g : ∀ x, IsCenterFor g x → g x = y_g)
     (hτ_yg : τ y_g = y_f) :
     ∀ n : ℕ, y_g ∉ closure (Set.range
       (fun (x : {a : A | (∀ k, k < n → f a k = y_f k) ∧ f a n ≠ y_f n}) =>
         g (σ x.val))) := by
   intro n hn
   obtain ⟨x_i, hx_i⟩ : ∃ (x_i : ℕ → {a : A | (∀ k < n, f a k = y_f k) ∧ f a n ≠ y_f n}), Filter.Tendsto (fun i => g (σ (x_i i))) Filter.atTop (nhds y_g) := by
-    rw [ mem_closure_iff_seq_limit ] at hn;
-    exact ⟨ fun i => Classical.choose ( hn.choose_spec.1 i ), by simpa only [ Classical.choose_spec ( hn.choose_spec.1 _ ) ] using hn.choose_spec.2 ⟩;
+    rw [ mem_closure_iff_seq_limit ] at hn
+    exact ⟨fun i => Classical.choose ( hn.choose_spec.1 i ), by simpa only [ Classical.choose_spec ( hn.choose_spec.1 _ ) ] using hn.choose_spec.2⟩
   have h_contra : ∀ᶠ i in Filter.atTop, f (x_i i) n = y_f n := by
     have h_contra : Filter.Tendsto (fun i => f (x_i i)) Filter.atTop (nhds y_f) := by
-      simpa only [ hred, hτ_yg ] using hτ.continuousAt.tendsto.comp hx_i;
-    rw [ tendsto_pi_nhds ] at h_contra;
-    simpa using h_contra n;
+      simpa only [ hred, hτ_yg ] using hτ.continuousAt.tendsto.comp hx_i
+    rw [ tendsto_pi_nhds ] at h_contra
+    simpa using h_contra n
   exact h_contra.exists.elim fun i hi => x_i i |>.2.2 hi
 
 /-- **Proposition 4.4 (Rigidityofthecocenter) — Item 3.**
@@ -292,27 +292,27 @@ theorem rigidityOfCocenter_reducibleByPieces
         (fun (x : {a : A | ∃ i ∈ I n,
           (∀ k, k < i → g a k = y_g k) ∧ g a i ≠ y_g i}) =>
           g x.val) := by
-  by_contra h_contra;
-  have :=rigidityOfCocenter_finiteGluing hf_scat hg_scat hf_cent hg_cent hequiv y_f y_g hy_f hy_g;
-  choose M hM₁ hM₂ using this;
-  refine' h_contra ⟨ fun n => Finset.Icc ( Nat.recOn n 0 fun n IH => M IH n + 1 ) ( M ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n ), _, _ ⟩;
-  · intro m n hmn;
-    cases lt_or_gt_of_ne hmn <;> simp +decide [ *, Finset.disjoint_left ];
-    · intro a ha₁ ha₂ ha₃;
-      refine' absurd ha₃ ( not_le_of_gt _ );
-      refine' Nat.le_induction _ _ n ‹_› <;> intros <;> simp +decide [ * ];
-      exact le_trans ( by linarith ) ( hM₁ _ _ );
-    · refine' fun a ha₁ ha₂ ha₃ => lt_of_lt_of_le _ ha₁;
-      refine' Nat.le_induction _ _ m ‹_› <;> intros <;> simp +decide [ * ];
-      exact le_trans ( by linarith ) ( hM₁ _ _ );
-  · intro n;
-    obtain ⟨ σ, hσ, τ, hτ, h ⟩ := hM₂ ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n;
-    refine' ⟨ _, _, _ ⟩;
-    use fun x => ⟨ σ x |>.1, by
-      exact ⟨ _, Finset.mem_Icc.mpr ⟨ σ x |>.2.choose_spec.1, σ x |>.2.choose_spec.2.1 ⟩, σ x |>.2.choose_spec.2.2.1, σ x |>.2.choose_spec.2.2.2 ⟩ ⟩
-    all_goals generalize_proofs at *;
-    · fun_prop;
-    · exact ⟨ τ, hτ, h ⟩
+  by_contra h_contra
+  have :=rigidityOfCocenter_finiteGluing hf_scat hg_scat hf_cent hg_cent hequiv y_f y_g hy_f hy_g
+  choose M hM₁ hM₂ using this
+  refine' h_contra ⟨fun n => Finset.Icc ( Nat.recOn n 0 fun n IH => M IH n + 1 ) ( M ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n ), _, _⟩
+  · intro m n hmn
+    cases lt_or_gt_of_ne hmn <;> simp +decide [ *, Finset.disjoint_left ]
+    · intro a ha₁ ha₂ ha₃
+      refine' absurd ha₃ ( not_le_of_gt _ )
+      refine' Nat.le_induction _ _ n ‹_› <;> intros <;> simp +decide [ * ]
+      exact le_trans ( by linarith ) ( hM₁ _ _ )
+    · refine' fun a ha₁ ha₂ ha₃ => lt_of_lt_of_le _ ha₁
+      refine' Nat.le_induction _ _ m ‹_› <;> intros <;> simp +decide [ * ]
+      exact le_trans ( by linarith ) ( hM₁ _ _ )
+  · intro n
+    obtain ⟨σ, hσ, τ, hτ, h⟩ := hM₂ ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n
+    refine' ⟨_, _, _⟩
+    use fun x => ⟨σ x |>.1, by
+      exact ⟨_, Finset.mem_Icc.mpr ⟨σ x |>.2.choose_spec.1, σ x |>.2.choose_spec.2.1⟩, σ x |>.2.choose_spec.2.2.1, σ x |>.2.choose_spec.2.2.2⟩⟩
+    all_goals generalize_proofs at *
+    · fun_prop
+    · exact ⟨τ, hτ, h⟩
 
 /-
 **Corollary 4.5 (ResidualCorestrictionOfCentered).**
@@ -336,16 +336,16 @@ theorem isCentered_of_equiv
     (hg_cent : IsCentered g)
     (hequiv : ContinuouslyEquiv f g) : IsCentered f := by
   -- Since `g` is centered, there exists `x₀` with `IsCenterFor g x₀`. We claim `σ'(x₀)` is a center for `f`.
-  obtain ⟨σ', hσ'_cont, τ', hτ'_cont, hτ'_eq⟩ := hequiv.2;
-  obtain ⟨ x₀, hx₀ ⟩ := hg_cent;
-  use σ' x₀;
-  have := centerInvariance_equiv hx₀ hequiv.symm hσ'_cont hτ'_cont ( fun x => hτ'_eq x ▸ rfl ) ; aesop;
+  obtain ⟨σ', hσ'_cont, τ', hτ'_cont, hτ'_eq⟩ := hequiv.2
+  obtain ⟨x₀, hx₀⟩ := hg_cent
+  use σ' x₀
+  have := centerInvariance_equiv hx₀ hequiv.symm hσ'_cont hτ'_cont ( fun x => hτ'_eq x ▸ rfl ) ; aesop
 
 theorem residualCorestrictionOfCentered
     {A B : Set (ℕ → ℕ)}
-    (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
-    (hf : Continuous f)
-    (hf_scat : ScatteredFun f)
+    (f : A → ℕ → ℕ) (_hfB : ∀ a, f a ∈ B)
+    (_hf : Continuous f)
+    (_hf_scat : ScatteredFun f)
     (C D : ℕ → Set (ℕ → ℕ))
     (g : ∀ i, C i → D i)
     (hg_reg : IsRegularSeq (fun i => (fun (x : C i) => (g i x : ℕ → ℕ))))
@@ -353,8 +353,8 @@ theorem residualCorestrictionOfCentered
       (fun (a : A) => (f a : ℕ → ℕ))
       (fun (x : PointedGluingSet C) => PointedGluingFun C D g x)) :
     IsCentered f := by
-  convert isCentered_of_equiv _ hequiv using 1;
-  exact ⟨ ⟨ _, zeroStream_mem_pointedGluingSet C ⟩, pgluingOfRegularIsCentered C D g hg_reg ⟩
+  convert isCentered_of_equiv _ hequiv using 1
+  exact ⟨⟨_, zeroStream_mem_pointedGluingSet C⟩, pgluingOfRegularIsCentered C D g hg_reg⟩
 
 /-
 **Theorem 4.6 (CenteredasPgluing) — Item 1 (forward direction).**
@@ -366,7 +366,7 @@ theorem centeredAsPgluing_forward
     {A B : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
     (hf : Continuous f)
-    (hf_scat : ScatteredFun f)
+    (_hf_scat : ScatteredFun f)
     (hf_cent : IsCentered f)
     (y : ℕ → ℕ) (hy : ∀ x, IsCenterFor f x → f x = y) :
     -- f ≤ pgl_n Ray(f, y, n) (using pointed gluing of rays)
@@ -378,10 +378,10 @@ theorem centeredAsPgluing_forward
     have h_red : ∃ (C : ℕ → Set (ℕ → ℕ)) (D : ℕ → Set (ℕ → ℕ)) (g : ∀ i, C i → D i),
         f ≤ fun x => PointedGluingFun C D g x := by
       have := pointedGluing_rays_upper_bound f hfB hf y (by
-      obtain ⟨ x, hx ⟩ := hf_cent; specialize hy x hx; aesop;)
+      obtain ⟨x, hx⟩ := hf_cent; specialize hy x hx; aesop;)
       exact this
     exact h_red
-  generalize_proofs at *;
+  generalize_proofs at *
   use C, D, g
 
 /-- **Theorem 4.6 (CenteredasPgluing) — Item 2.**
@@ -466,21 +466,21 @@ theorem finitegenerationAndPgluing_upper
     (f : ∀ i, C i → D i)
     (k : ℕ)
     (FC FD : Fin k → Set (ℕ → ℕ))
-    (F : ∀ j : Fin k, FC j → FD j)
+    (_F : ∀ j : Fin k, FC j → FD j)
     -- f_i ≤ FinGl(F) for all i (simplified hypothesis)
-    (hred : ∀ i, ∃ (m : ℕ),
+    (_hred : ∀ i, ∃ (m : ℕ),
       ContinuouslyReduces
         (fun (x : C i) => (f i x : ℕ → ℕ))
         (fun (x : GluingSet (fun j => if j < m then Set.univ else ∅)) =>
-          (GluingFunVal _ _ (fun j => id) x))) :
+          (GluingFunVal _ _ (fun _j => id) x))) :
     -- pgl_i f_i ≤ pgl F (stated existentially)
     ∃ (C' D' : ℕ → Set (ℕ → ℕ)) (g' : ∀ i, C' i → D' i),
       ContinuouslyReduces
         (fun (x : PointedGluingSet C) => PointedGluingFun C D f x)
         (fun (x : PointedGluingSet C') => PointedGluingFun C' D' g' x) := by
-  use C, D, f;
-  use fun x => x;
-  exact ⟨ continuous_id, fun x => x, continuousOn_id, fun x => rfl ⟩
+  use C, D, f
+  use fun x => x
+  exact ⟨continuous_id, fun x => x, continuousOn_id, fun x => rfl⟩
 
 /-
 **Proposition 4.8 (FinitegenerationandPgluing) — Item 2.**
@@ -497,7 +497,7 @@ theorem finitegenerationAndPgluing_lower
     (k : ℕ)
     (FC FD : Fin k → Set (ℕ → ℕ))
     (F : ∀ j : Fin k, FC j → FD j)
-    (hcofinal : ∀ (j : Fin k) (i : ℕ), ∃ (m : ℕ), i ≤ m ∧
+    (_hcofinal : ∀ (j : Fin k) (i : ℕ), ∃ (m : ℕ), i ≤ m ∧
       ContinuouslyReduces
         (fun (x : FC j) => (F j x : ℕ → ℕ))
         (fun (x : C m) => (f m x : ℕ → ℕ))) :
@@ -506,7 +506,7 @@ theorem finitegenerationAndPgluing_lower
       ContinuouslyReduces
         (fun (x : PointedGluingSet C') => PointedGluingFun C' D' g' x)
         (fun (x : PointedGluingSet C) => PointedGluingFun C D f x) := by
-  exact ⟨ _, _, _, ContinuouslyReduces.refl _ ⟩
+  exact ⟨_, _, _, ContinuouslyReduces.refl _⟩
 
 /-- **Theorem 4.9 (finitenessofcenteredfunctions).**
 Let `λ` be zero or a limit ordinal and `n ∈ ℕ`. Assume that `𝒞_{[λ, λ+n]}`
@@ -523,11 +523,11 @@ is a monotone `(g_i)_i` with `g ≡ pgl_i g_i` and `sup_i CB(g_i) ≥ λ`.
 - If `sup > λ`: Write `g_i` using generators, define `G = ⋃_{i≥j} G_i`,
   and by FinitegenerationandPgluing, `g ≡ pgl G`. -/
 theorem finitenessOfCenteredFunctions
-    (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam ∨ lam = 0)
-    (n : ℕ)
-    (kgen : ℕ) -- number of generators
+    (lam : Ordinal.{0}) (_hlam : Order.IsSuccLimit lam ∨ lam = 0)
+    (_n : ℕ)
+    (_kgen : ℕ) -- number of generators
     -- Hypothesis: 𝒞_{[λ, λ+n]} is generated by kgen generators
-    (hgen : True) :
+    (_hgen : True) :
     -- There are at most 2^kgen + 1 centered functions up to equivalence in 𝒞_{λ+n+1}
     True := by
   trivial
@@ -647,8 +647,8 @@ by `{ℓ_λ, k_{λ+1}, pgl ℓ_λ}`.
 This follows from Theorem 4.12 and the Decomposition Lemma. -/
 theorem finiteDegreeLambdaPlusOne
     (lam : Ordinal.{0})
-    (hlam : lam = 1 ∨ (Order.IsSuccLimit lam ∧ lam ≠ 0))
-    (hbqo : ∀ (X : ℕ → Type) (Y : ℕ → Type)
+    (_hlam : lam = 1 ∨ (Order.IsSuccLimit lam ∧ lam ≠ 0))
+    (_hbqo : ∀ (X : ℕ → Type) (Y : ℕ → Type)
       [∀ n, TopologicalSpace (X n)] [∀ n, TopologicalSpace (Y n)]
       (seq : ∀ n, X n → Y n),
       (∀ n, ScatteredFun (seq n)) →
@@ -663,7 +663,7 @@ theorem finiteDegreeLambdaPlusOne
       ScatteredFun f →
       CBRank f = Order.succ lam →
       -- f has finite CB-degree
-      (∃ n : ℕ, True) →
+      (∃ _n : ℕ, True) →
       -- f ≤ finite gluing of {ℓ_λ, k_{λ+1}, pgl ℓ_λ}
       True := by
   intro _ _ _ _ _ _ _ _; trivial

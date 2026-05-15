@@ -6,6 +6,17 @@ set_option maxHeartbeats 4000000
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
 
+/-!
+# Baire Space Basics
+
+This file defines the Baire space `ℕ → ℕ` with the product topology and establishes
+its basic topological properties, including:
+
+* Clopen basis from cylinder sets
+* Countable topological basis
+* Disjointification of clopen covers
+-/
+
 
 /-- The constant zero sequence `0^ω ∈ ℕ → ℕ`. -/
 def zeroStream : ℕ → ℕ := fun _ => 0
@@ -35,11 +46,11 @@ lemma baire_nbhd_isClopen (x : Baire) (n : ℕ) :
 
   -- PROOF 2: The intersection is Open
   have h_open : IsOpen (⋂ i ∈ Finset.range n, {h : Baire | h i = x i}) := by
-    apply Set.Finite.isOpen_biInter (Finset.finite_toSet ( Finset.range n ) );
+    apply Set.Finite.isOpen_biInter (Finset.finite_toSet ( Finset.range n ) )
     intro i _
     have h_preimage : {h : Baire | h i = x i} = (fun h => h i) ⁻¹' {x i} := rfl
-    rw [ isOpen_pi_iff ];
-    exact fun h hf => ⟨ { i }, fun _ => { x i }, by aesop ⟩
+    rw [ isOpen_pi_iff ]
+    exact fun h hf => ⟨{ i }, fun _ => { x i }, by aesop⟩
   -- Combine them explicitly (IsClopen is defined as IsClosed ∧ IsOpen)
   exact ⟨h_closed, h_open⟩
 
@@ -62,17 +73,17 @@ In the Baire space ℕ → ℕ, the set `{f | f i = a}` is clopen for every `i a
 -/
 lemma baire_fiber_isClopen (i a : ℕ) :
     IsClopen {f : ℕ → ℕ | f i = a} := by
-  constructor;
-  · exact isClosed_eq ( continuous_apply i ) continuous_const;
-  · rw [ isOpen_pi_iff ];
-    exact fun f hf => ⟨ { i }, fun _ => { a }, by aesop ⟩
+  constructor
+  · exact isClosed_eq ( continuous_apply i ) continuous_const
+  · rw [ isOpen_pi_iff ]
+    exact fun f hf => ⟨{ i }, fun _ => { a }, by aesop⟩
 
 /-
 A cylinder set (finite intersection of fibers) in the Baire space is clopen.
 -/
 lemma baire_cylinder_isClopen (s : Finset ℕ) (g : ℕ → ℕ) :
     IsClopen {f : ℕ → ℕ | ∀ i ∈ s, f i = g i} := by
-  induction s using Finset.induction <;> simp_all +decide [ Set.setOf_and ];
+  induction s using Finset.induction <;> simp_all +decide [ Set.setOf_and ]
   · exact isClopen_univ
   · exact IsClopen.inter (baire_fiber_isClopen _ _) ‹_›
 
@@ -81,9 +92,9 @@ Singletons form a topological basis for the discrete topology on ℕ.
 -/
 lemma nat_singleton_basis :
     IsTopologicalBasis {s : Set ℕ | ∃ n, s = {n}} := by
-  refine' isTopologicalBasis_of_isOpen_of_nhds _ _;
-  · aesop;
-  · exact fun a u ha hu => ⟨ { a }, ⟨ a, rfl ⟩, by simp, by simpa ⟩
+  refine' isTopologicalBasis_of_isOpen_of_nhds _ _
+  · aesop
+  · exact fun a u ha hu => ⟨{ a }, ⟨a, rfl⟩, by simp, by simpa⟩
 
 /-
 Neighbourhoods given by initial segments form a neighbourhood basis in subspace of the Baire space.
@@ -142,42 +153,42 @@ The Baire space has a topological basis consisting of clopen sets.
 -/
 lemma baire_has_clopen_basis :
     ∃ B : Set (Set (ℕ → ℕ)), IsTopologicalBasis B ∧ B.Countable ∧ ∀ s ∈ B, IsClopen s := by
-  refine' ⟨ _, _, _, _ ⟩;
-  refine' { s : Set ( ℕ → ℕ ) | ∃ ( F : Finset ℕ ) ( g : ℕ → ℕ ), s = { f : ℕ → ℕ | ∀ i ∈ F, f i = g i } };
-  · refine' isTopologicalBasis_of_isOpen_of_nhds _ _;
-    · simp +zetaDelta at *;
-      intro u F g hu; rw [ hu ] ; exact baire_cylinder_isClopen F g |>.isOpen;
-    · intro a u ha hu;
-      rw [ isOpen_pi_iff ] at hu;
-      obtain ⟨ I, u, hu₁, hu₂ ⟩ := hu a ha;
-      refine' ⟨ _, ⟨ I, a, rfl ⟩, _, _ ⟩ <;> simp_all +decide [ Set.subset_def ];
+  refine' ⟨_, _, _, _⟩
+  refine' { s : Set ( ℕ → ℕ ) | ∃ ( F : Finset ℕ ) ( g : ℕ → ℕ ), s = { f : ℕ → ℕ | ∀ i ∈ F, f i = g i } }
+  · refine' isTopologicalBasis_of_isOpen_of_nhds _ _
+    · simp +zetaDelta at *
+      intro u F g hu; rw [ hu ] ; exact baire_cylinder_isClopen F g |>.isOpen
+    · intro a u ha hu
+      rw [ isOpen_pi_iff ] at hu
+      obtain ⟨I, u, hu₁, hu₂⟩ := hu a ha
+      refine' ⟨_, ⟨I, a, rfl⟩, _, _⟩ <;> simp_all +decide [ Set.subset_def ]
   · -- The set of finite subsets of ℕ is countable.
     have h_finite_subsets_countable : Set.Countable {F : Finset ℕ | True} := by
-      exact Set.countable_univ;
-    refine' Set.Countable.mono _ ( h_finite_subsets_countable.biUnion fun F _ => Set.countable_range ( fun g : F → ℕ => { f : ℕ → ℕ | ∀ i : F, f i = g i } ) );
-    intro s hs; obtain ⟨ F, g, rfl ⟩ := hs; simp +decide [ Set.ext_iff ] ;
-    exact ⟨ F, fun i => g i, fun x => ⟨ fun h i hi => h i hi, fun h i hi => h i hi ⟩ ⟩;
-  · rintro s ⟨ F, g, rfl ⟩ ; exact baire_cylinder_isClopen F g;
+      exact Set.countable_univ
+    refine' Set.Countable.mono _ ( h_finite_subsets_countable.biUnion fun F _ => Set.countable_range ( fun g : F → ℕ => { f : ℕ → ℕ | ∀ i : F, f i = g i } ) )
+    intro s hs; obtain ⟨F, g, rfl⟩ := hs; simp +decide [ Set.ext_iff ] 
+    exact ⟨F, fun i => g i, fun x => ⟨fun h i hi => h i hi, fun h i hi => h i hi⟩⟩
+  · rintro s ⟨F, g, rfl⟩ ; exact baire_cylinder_isClopen F g
 
 /-
 In the Baire space, every open set is a countable union of clopen sets.
 -/
 lemma baire_open_eq_countable_union_clopen {U : Set (ℕ → ℕ)} (hU : IsOpen U) :
     ∃ C : ℕ → Set (ℕ → ℕ), (∀ k, IsClopen (C k)) ∧ U = ⋃ k, C k := by
-  obtain ⟨ B, hB₁, hB₂, hB₃ ⟩ := baire_has_clopen_basis;
+  obtain ⟨B, hB₁, hB₂, hB₃⟩ := baire_has_clopen_basis
   have h_union : U = ⋃₀ { s ∈ B | s ⊆ U } := by
     exact hB₁.open_eq_sUnion' hU
   have h_countable : Set.Countable { s ∈ B | s ⊆ U } := by
-    exact hB₂.mono fun s hs => hs.1;
-  have := h_countable.exists_eq_range;
-  by_cases h : { s ∈ B | s ⊆ U }.Nonempty;
-  · obtain ⟨ f, hf ⟩ := this h;
-    refine' ⟨ f, _, _ ⟩;
-    · exact fun k => hB₃ _ <| hf.symm.subset ( Set.mem_range_self k ) |>.1;
-    · convert h_union using 1;
-      simp +decide [ hf];
-  · simp_all +singlePass [ Set.not_nonempty_iff_eq_empty ];
-    exact ⟨ fun _ => ∅, fun _ => by simp +decide [ IsClopen ], by simp +decide ⟩
+    exact hB₂.mono fun s hs => hs.1
+  have := h_countable.exists_eq_range
+  by_cases h : { s ∈ B | s ⊆ U }.Nonempty
+  · obtain ⟨f, hf⟩ := this h
+    refine' ⟨f, _, _⟩
+    · exact fun k => hB₃ _ <| hf.symm.subset ( Set.mem_range_self k ) |>.1
+    · convert h_union using 1
+      simp +decide [ hf]
+  · simp_all +singlePass [ Set.not_nonempty_iff_eq_empty ]
+    exact ⟨fun _ => ∅, fun _ => by simp +decide [ IsClopen ], by simp +decide⟩
 
 /-
 In any subspace of the Baire space, every open set is a countable union of
@@ -187,13 +198,13 @@ lemma subspace_open_eq_countable_union_clopen (A : Set (ℕ → ℕ))
     {U : Set A} (hU : IsOpen U) :
     ∃ C : ℕ → Set A, (∀ k, IsClopen (C k)) ∧ U = ⋃ k, C k := by
   obtain ⟨V, hV⟩ : ∃ V : Set (ℕ → ℕ), IsOpen V ∧ U = Subtype.val ⁻¹' V := by
-    obtain ⟨ V, hV₁, hV₂ ⟩ := hU;
-    exact ⟨ V, hV₁, hV₂.symm ⟩;
+    obtain ⟨V, hV₁, hV₂⟩ := hU
+    exact ⟨V, hV₁, hV₂.symm⟩
   obtain ⟨C, hC⟩ : ∃ C : ℕ → Set (ℕ → ℕ), (∀ k, IsClopen (C k)) ∧ V = ⋃ k, C k := by
-    exact baire_open_eq_countable_union_clopen hV.1;
-  use fun k => Subtype.val ⁻¹' C k;
-  simp_all +decide [ Set.ext_iff ];
-  intro k; specialize hC; have := hC.1 k; exact ⟨ this.1.preimage continuous_subtype_val, this.2.preimage continuous_subtype_val ⟩ ;
+    exact baire_open_eq_countable_union_clopen hV.1
+  use fun k => Subtype.val ⁻¹' C k
+  simp_all +decide [ Set.ext_iff ]
+  intro k; specialize hC; have := hC.1 k; exact ⟨this.1.preimage continuous_subtype_val, this.2.preimage continuous_subtype_val⟩ 
 
 end ClopenBasis
 
@@ -205,9 +216,9 @@ The `disjointed` of a sequence of clopen sets is clopen.
 lemma disjointed_clopen {X : Type*} [TopologicalSpace X]
     (f : ℕ → Set X) (hf : ∀ n, IsClopen (f n)) (n : ℕ) :
     IsClopen (disjointed f n) := by
-  convert IsClopen.diff ( hf n ) _;
-  induction' ( Finset.Iio n ) using Finset.induction <;> simp_all +decide [ Finset.sup_insert];
-  · exact isClopen_empty;
+  convert IsClopen.diff ( hf n ) _
+  induction' ( Finset.Iio n ) using Finset.induction <;> simp_all +decide [ Finset.sup_insert]
+  · exact isClopen_empty
   · exact IsClopen.union ( hf _ ) ‹_›
 
 end DisjointedClopen
@@ -246,12 +257,12 @@ clopen subset containing that point.
 lemma baire_subspace_exists_clopen_subset_of_open
     (A : Set Baire) (x : A) (U : Set A) (hU : IsOpen U) (hx : x ∈ U) :
     ∃ V : Set A, IsClopen V ∧ x ∈ V ∧ V ⊆ U := by
-  rcases hU with ⟨V, hV, rfl⟩;
+  rcases hU with ⟨V, hV, rfl⟩
   obtain ⟨W, hW⟩ : ∃ W : Set Baire, IsClopen W ∧ x.val ∈ W ∧ W ⊆ V := by
-    exact baire_exists_clopen_subset_of_open x.val V hV hx;
-  refine' ⟨ Subtype.val ⁻¹' W, _, _, _ ⟩;
-  · exact hW.1.preimage continuous_subtype_val;
-  · aesop;
+    exact baire_exists_clopen_subset_of_open x.val V hV hx
+  refine' ⟨Subtype.val ⁻¹' W, _, _, _⟩
+  · exact hW.1.preimage continuous_subtype_val
+  · aesop
   · exact Set.preimage_mono hW.2.2
 
 
@@ -337,7 +348,7 @@ lemma extendSeq_isPrefix {n : ℕ} (s : Fin n → ℕ) (k : ℕ) :
   ⟨Nat.le_succ n, fun i => by
     simp only [extendSeq, Fin.snoc]
     split_ifs with h
-    · congr 1;
+    · congr 1
     · exact absurd i.isLt (by omega)⟩
 
 /-- `BaNbhd`s for different extensions are pairwise disjoint. -/

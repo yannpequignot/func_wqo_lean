@@ -74,10 +74,10 @@ theorem baire_open_reduction_rel
       (disjoint_disjointed C_flat h_mi_ne_mj) ⟨hxDi, hxDj⟩
   · -- ⋃ V n = ⋃ U n
     have h_union_D : ⋃ m, D m = ⋃ n, U n := by
-      rw [ iUnion_disjointed ];
-      ext x; simp [C_flat, hC_union];
-      exact ⟨ fun ⟨ m, hm ⟩ => ⟨ _, _, hm ⟩, fun ⟨ n, k, hk ⟩ => ⟨ Nat.pair n k, by simpa using hk ⟩ ⟩;
-    convert h_union_D using 1;
+      rw [ iUnion_disjointed ]
+      ext x; simp [C_flat, hC_union]
+      exact ⟨fun ⟨m, hm⟩ => ⟨_, _, hm⟩, fun ⟨n, k, hk⟩ => ⟨Nat.pair n k, by simpa using hk⟩⟩
+    convert h_union_D using 1
     ext x; simp [V]
 
 end MainTheorem

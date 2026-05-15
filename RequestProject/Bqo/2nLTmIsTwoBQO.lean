@@ -9,6 +9,13 @@ set_option maxHeartbeats 4000000
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
 
+/-!
+# 2n < m implies Two-BQO
+
+This file proves that continuous reducibility restricted to functions
+with certain CB-rank bounds forms a better-quasi-order.
+-/
+
 noncomputable section
 
 open Classical

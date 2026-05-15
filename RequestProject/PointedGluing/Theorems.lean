@@ -27,30 +27,30 @@ This is a direct application of Pgluingasupperbound with the identity partition
 theorem pointedGluing_rays_upper_bound
     {A B : Set (ℕ → ℕ)}
     (f : A → ℕ → ℕ) (hfB : ∀ a, f a ∈ B)
-    (hf : Continuous f)
-    (y : ℕ → ℕ) (hy : y ∈ B) :
+    (_hf : Continuous f)
+    (y : ℕ → ℕ) (_hy : y ∈ B) :
     ∃ (C D : ℕ → Set (ℕ → ℕ)) (h : ∀ i, C i → D i),
       ContinuouslyReduces f
         (fun (x : PointedGluingSet C) => PointedGluingFun C D h x) := by
-  use fun i => if h : i = 0 then A else ∅;
-  use fun i => if i = 0 then B else ∅;
+  use fun i => if h : i = 0 then A else ∅
+  use fun i => if i = 0 then B else ∅
   use fun i a => ⟨f ⟨a.val, by
     grind⟩, by
     aesop⟩
-  generalize_proofs at *;
-  refine' ⟨ _, _, _ ⟩;
-  use fun a => ⟨ prependZerosOne 0 a.val, Or.inr <| Set.mem_iUnion.mpr ⟨ 0, a.val, a.property, rfl ⟩ ⟩;
-  · refine' Continuous.subtype_mk _ _;
-    exact continuous_prependZerosOne 0 |> Continuous.comp <| continuous_subtype_val;
-  · refine' ⟨ _, _, _ ⟩;
-    use fun x => x ∘ fun n => n + 1;
-    · fun_prop;
-    · intro x; ext n; simp +decide [ PointedGluingFun ] ;
-      split_ifs <;> simp_all +decide [ prependZerosOne ];
-      · rename_i h; have := congr_fun h 0; simp_all +decide [ prependZerosOne ] ;
-      · congr;
-      · simp_all +decide [ firstNonzero, prependZerosOne ];
-        unfold stripZerosOne at *; simp_all +decide [ prependZerosOne ] ;
+  generalize_proofs at *
+  refine' ⟨_, _, _⟩
+  use fun a => ⟨prependZerosOne 0 a.val, Or.inr <| Set.mem_iUnion.mpr ⟨0, a.val, a.property, rfl⟩⟩
+  · refine' Continuous.subtype_mk _ _
+    exact continuous_prependZerosOne 0 |> Continuous.comp <| continuous_subtype_val
+  · refine' ⟨_, _, _⟩
+    use fun x => x ∘ fun n => n + 1
+    · fun_prop
+    · intro x; ext n; simp +decide [ PointedGluingFun ] 
+      split_ifs <;> simp_all +decide [ prependZerosOne ]
+      · rename_i h; have := congr_fun h 0; simp_all +decide [ prependZerosOne ] 
+      · congr
+      · simp_all +decide [ firstNonzero, prependZerosOne ]
+        unfold stripZerosOne at *; simp_all +decide [ prependZerosOne ] 
 
 
 /-- **Corollary (SplittingaPgluingonatail).**
@@ -65,8 +65,8 @@ Formal statement does not match the memoir.  -/
 theorem splitting_pointedGluing_tail
     (A B : ℕ → Set (ℕ → ℕ))
     (f : ∀ i, A i → B i)
-    (hf : ∀ i, Continuous (f i))
-    (n : ℕ) :
+    (_hf : ∀ i, Continuous (f i))
+    (_n : ℕ) :
     ContinuouslyEquiv
       (fun (x : PointedGluingSet A) => PointedGluingFun A B f x)
       (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) := by
@@ -416,11 +416,11 @@ If `(CB(f_n))_n` is regular, then `CB(pgl_n f_n) = λ + 1` by
 Proposition (CBrankofPgluingofregularsequence1), and `k_{λ+1}` being minimum
 gives the reverse. -/
 theorem consequences_general_structure_1
-    (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam)
+    (lam : Ordinal.{0}) (_hlam : Order.IsSuccLimit lam)
     (A B : ℕ → Set (ℕ → ℕ))
     (f : ∀ n, A n → B n)
     (hf_scat : ∀ n, ScatteredFun (fun (x : A n) => (f n x : ℕ → ℕ)))
-    (hcb_bound : ∀ n γ, lam ≤ γ →
+    (_hcb_bound : ∀ n γ, lam ≤ γ →
       CBLevel (fun (x : A n) => (f n x : ℕ → ℕ)) γ = ∅) :
     -- pgl_n f_n reduces to k_{λ+1}
     ∃ (X : Type) (Y : Type) (_ : TopologicalSpace X) (_ : TopologicalSpace Y)
@@ -442,8 +442,8 @@ The proof uses the General Structure Theorem: `ℓ_λ ≤ k_{λ+1}` (since
 Since `CB(f) ≥ λ + 2`, we have `k_{λ+2} ≤ f` by Minfunctions. -/
 theorem consequences_general_structure_2
     {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    (f : X → Y) (hf : ScatteredFun f)
-    (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam)
+    (f : X → Y) (_hf : ScatteredFun f)
+    (lam : Ordinal.{0}) (_hlam : Order.IsSuccLimit lam)
     (hcb : (CBLevel f (lam + 2)).Nonempty) :
     -- pgl ℓ_λ ≤ f
     ∃ (X' : Type) (Y' : Type) (_ : TopologicalSpace X') (_ : TopologicalSpace Y')

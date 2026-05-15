@@ -10,11 +10,23 @@ set_option maxHeartbeats 8000000
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
 
+/-!
+# MaxFun Limit Rank
+
+This file contains the infrastructure for the limit rank argument in the
+General Structure Theorem. It defines `gClopenDom`/`gClopenFun` for restricting
+a function to the preimage of a clopen set, and proves key lemmas about
+CB-rank preservation and the tree argument for producing disjoint clopen sets
+with cofinal CB-ranks.
+-/
+
 noncomputable section
 
+/-- Domain restriction of `g` to the preimage of a set `C` in the codomain. -/
 def gClopenDom (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (C : Set (ℕ → ℕ)) : Set (ℕ → ℕ) :=
   {x : ℕ → ℕ | ∃ (h : x ∈ B), g ⟨x, h⟩ ∈ C}
 
+/-- Function `g` restricted to the preimage of `C` in the codomain. -/
 def gClopenFun (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (C : Set (ℕ → ℕ)) :
     gClopenDom B g C → ℕ → ℕ :=
   fun ⟨x, hx⟩ => g ⟨x, hx.choose⟩
@@ -73,36 +85,36 @@ private lemma gluingSet_blockwise_sigma_cont
     {B : Set (ℕ → ℕ)} (A : ℕ → Set (ℕ → ℕ))
     (σ_n : ∀ n, A n → B) (hσ_cont : ∀ n, Continuous (σ_n n)) :
     Continuous (fun x : GluingSet A => σ_n (x.val 0) ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩) := by
-  refine' continuous_iff_continuousAt.mpr _;
+  refine' continuous_iff_continuousAt.mpr _
   intro x
   have h_block : IsOpen {y : GluingSet A | y.val 0 = x.val 0} := by
-    convert isClopen_preimage_zero ( x.val 0 ) |> IsClopen.isOpen |> IsOpen.preimage ( continuous_subtype_val ) using 1;
+    convert isClopen_preimage_zero ( x.val 0 ) |> IsClopen.isOpen |> IsOpen.preimage ( continuous_subtype_val ) using 1
   have h_cont_on_block : ContinuousOn (fun x : GluingSet A => σ_n (x.val 0) ⟨unprepend x.val, gluingSet_unprepend_mem A x⟩) {y : GluingSet A | y.val 0 = x.val 0} := by
     have h_cont_unprepend : Continuous (fun x : GluingSet A => unprepend x.val) := by
       exact continuous_unprepend.comp continuous_subtype_val
     have h_cont_on_block : ContinuousOn (fun x : {y : GluingSet A | y.val 0 = x.val 0} => σ_n (x.val.val 0) ⟨unprepend x.val.val, gluingSet_unprepend_mem A x.val⟩) Set.univ := by
-      refine' Continuous.continuousOn _;
-      convert hσ_cont ( x.val 0 ) |> Continuous.comp <| show Continuous fun y : { y : GluingSet A | y.val 0 = x.val 0 } => ⟨ unprepend y.val.val, by
-                                                          convert gluingSet_unprepend_mem A y.val using 1;
-                                                          exact y.2.symm ▸ rfl ⟩ from ?_ using 1
-      generalize_proofs at *;
-      · grind;
-      · exact Continuous.subtype_mk ( h_cont_unprepend.comp <| continuous_subtype_val ) _;
-    rw [ continuousOn_iff_continuous_restrict ] at *;
-    convert h_cont_on_block.comp ( show Continuous fun y : { y : GluingSet A // y.val 0 = x.val 0 } => ⟨ ⟨ y.val, by aesop ⟩, by aesop ⟩ from ?_ ) using 1;
-    fun_prop;
+      refine' Continuous.continuousOn _
+      convert hσ_cont ( x.val 0 ) |> Continuous.comp <| show Continuous fun y : { y : GluingSet A | y.val 0 = x.val 0 } => ⟨unprepend y.val.val, by
+                                                          convert gluingSet_unprepend_mem A y.val using 1
+                                                          exact y.2.symm ▸ rfl⟩ from ?_ using 1
+      generalize_proofs at *
+      · grind
+      · exact Continuous.subtype_mk ( h_cont_unprepend.comp <| continuous_subtype_val ) _
+    rw [ continuousOn_iff_continuous_restrict ] at *
+    convert h_cont_on_block.comp ( show Continuous fun y : { y : GluingSet A // y.val 0 = x.val 0 } => ⟨⟨y.val, by aesop⟩, by aesop⟩ from ?_ ) using 1
+    fun_prop
   exact h_cont_on_block.continuousAt ( h_block.mem_nhds <| by aesop )
 
 /-- If each block of a GluingSet reduces to g with images in disjoint clopens C(p n),
     then the entire GluingSet reduces to g. -/
 private lemma gluingSet_blockwise_reduces
-    {B : Set (ℕ → ℕ)} (g : B → ℕ → ℕ) (hgc : Continuous g)
+    {B : Set (ℕ → ℕ)} (g : B → ℕ → ℕ) (_hgc : Continuous g)
     (A : ℕ → Set (ℕ → ℕ))
     (C : ℕ → Set (ℕ → ℕ))
     (hC_clopen : ∀ n, IsClopen (C n))
     (hC_disj : ∀ i j, i ≠ j → Disjoint (C i) (C j))
     (p : ℕ → ℕ) (hp : Function.Injective p)
-    (σ_n : ∀ n, A n → B) (τ_n : ∀ n, (ℕ → ℕ) → (ℕ → ℕ))
+    (σ_n : ∀ n, A n → B) (τ_n : ∀ _n, (ℕ → ℕ) → (ℕ → ℕ))
     (hσ_cont : ∀ n, Continuous (σ_n n))
     (hτ_cont : ∀ n, ContinuousOn (τ_n n) (Set.range (g ∘ σ_n n)))
     (hg_mem : ∀ n (x : A n), g (σ_n n x) ∈ C (p n))
@@ -168,7 +180,7 @@ private lemma gluingSet_blockwise_reduces
     exact (prepend_unprepend x.val).symm
 
 lemma gluing_via_codomain_partition
-    (η : Ordinal.{0}) (hη : η < omega1) (hlim : Order.IsSuccLimit η)
+    (η : Ordinal.{0}) (_hη : η < omega1) (hlim : Order.IsSuccLimit η)
     (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (hgc : Continuous g)
     (C : ℕ → Set (ℕ → ℕ))
     (hC_clopen : ∀ n, IsClopen (C n))
@@ -202,15 +214,15 @@ section TreeArgument
 variable {B : Set (ℕ → ℕ)} {g : B → ℕ → ℕ}
 variable (η : Ordinal.{0})
 
-/-- The restriction of `g` to the preimage of a set `S ⊆ ℕ → ℕ`. -/
+/-- Restriction of `g` to the preimage of `S`. -/
 def gRestr (S : Set (ℕ → ℕ)) : {x : B | g x ∈ S} → ℕ → ℕ :=
   fun x => g x.val
 
-/-- The CB rank of `g` restricted to the preimage of `BaNbhd s`. -/
+/-- CB-rank of `g` restricted to the preimage of the basic neighborhood `BaNbhd s`. -/
 noncomputable def cbRankRestr (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) {n : ℕ} (s : Fin n → ℕ) : Ordinal.{0} :=
   CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val)
 
-/-- The tree: all finite sequences whose associated CB-rank restriction equals η. -/
+/-- The tree `T` of finite sequences `s` such that `CBRank(g|₁{BaNbhd s}) = η`. -/
 def TreeT (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (η : Ordinal.{0}) :
     (Σ n : ℕ, Fin n → ℕ) → Prop :=
   fun ⟨_, s⟩ => cbRankRestr B g s = η
@@ -314,28 +326,28 @@ lemma CBLevel_comp_homeomorph {X Y Z : Type*} [TopologicalSpace X] [TopologicalS
     [TopologicalSpace Z]
     (f : X → Z) (φ : Y ≃ₜ X) (α : Ordinal.{0}) :
     CBLevel (f ∘ φ) α = φ ⁻¹' (CBLevel f α) := by
-      induction' α using Ordinal.limitRecOn with α ih;
-      · simp +decide [ CBLevel_zero ];
+      induction' α using Ordinal.limitRecOn with α ih
+      · simp +decide [ CBLevel_zero ]
       · -- By definition of isolatedLocus, we have that the isolated locus of a composition is the preimage of the isolated locus of the original function.
         have h_isolatedLocus : isolatedLocus (f ∘ φ) (φ ⁻¹' (CBLevel f α)) = φ ⁻¹' isolatedLocus f (CBLevel f α) := by
-          ext y;
-          constructor <;> rintro ⟨ h₁, U, hU, hy, hU' ⟩;
-          · refine' ⟨ h₁, φ '' U, _, _, _ ⟩ <;> simp_all +decide [ Set.image_subset_iff ];
-          · refine' ⟨ _, φ ⁻¹' U, hU.preimage φ.continuous, _, _ ⟩ <;> aesop;
-        simp_all +decide [ CBLevel_succ' ];
+          ext y
+          constructor <;> rintro ⟨h₁, U, hU, hy, hU'⟩
+          · refine' ⟨h₁, φ '' U, _, _, _⟩ <;> simp_all +decide
+          · refine' ⟨_, φ ⁻¹' U, hU.preimage φ.continuous, _, _⟩ <;> aesop
+        simp_all +decide [ CBLevel_succ' ]
       · exact CBLevel_homeomorph φ f _
 
 lemma CBRank_comp_homeomorph {X Y Z : Type*} [TopologicalSpace X] [TopologicalSpace Y]
     [TopologicalSpace Z]
     (f : X → Z) (φ : Y ≃ₜ X) :
     CBRank (f ∘ φ) = CBRank f := by
-      unfold CBRank;
-      congr! 3;
-      rw [ CBLevel_comp_homeomorph, CBLevel_comp_homeomorph ];
-      constructor <;> intro h <;> ext x <;> simp_all +decide [ Set.ext_iff ];
+      unfold CBRank
+      congr! 3
+      rw [ CBLevel_comp_homeomorph, CBLevel_comp_homeomorph ]
+      constructor <;> intro h <;> ext x <;> simp_all +decide [ Set.ext_iff ]
       simpa using h ( φ.symm x )
 
-/-- The natural map from `{b : B | g b ∈ C}` to `gClopenDom B g C`. -/
+/-- Homeomorphism between `{b : B | g b ∈ C}` and `gClopenDom B g C`. -/
 def gClopenDomEquiv (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (C : Set (ℕ → ℕ)) :
     {b : B | g b ∈ C} ≃ₜ gClopenDom B g C where
   toFun := fun ⟨⟨x, hB⟩, hC⟩ => ⟨x, ⟨hB, hC⟩⟩
@@ -374,8 +386,8 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
   set bodyT : Set (ℕ → ℕ) :=
     {x : ℕ → ℕ | ∀ n, T_prop n (fun i => x i)}
   -- ── Step 2: Case split ──────────────────────────────────────────────────
-  by_cases hbody : bodyT.Infinite;
-    · -- ══ Case A: bodyT infinite ══════════════════════════════════════════
+  by_cases hbody : bodyT.Infinite
+  · -- ══ Case A: bodyT infinite ══════════════════════════════════════════
       obtain ⟨seq, hseq_incompat, hseq_T⟩ :
           ∃ (seq : ℕ → Σ n : ℕ, Fin n → ℕ),
             (∀ i j, i ≠ j → ¬IsPrefix (seq i).2 (seq j).2 ∧

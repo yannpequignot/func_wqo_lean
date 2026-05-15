@@ -123,11 +123,11 @@ theorem disjoint_union_implies_locally
     IsLocallyInClass f F := by
   -- For any $x \in X$, there exists $i \in I$ such that $x \in P_i$.
   have h_exists_i : ∀ x : X, ∃ i : I, x ∈ P i := by
-    exact fun x => by simpa using Set.ext_iff.mp hdu.2.2.1 x;
+    exact fun x => by simpa using Set.ext_iff.mp hdu.2.2.1 x
   intro x
   obtain ⟨i, hi⟩ := h_exists_i x
-  use P i;
-  exact ⟨ hdu.1 i, hi, by convert hF i using 1; ext a; exact hdu.2.2.2 i a ▸ rfl ⟩
+  use P i
+  exact ⟨hdu.1 i, hi, by convert hF i using 1; ext a; exact hdu.2.2.2 i a ▸ rfl⟩
 
 /-
 **Proposition 2.14 (0dimanddisjointunion).**
@@ -149,31 +149,31 @@ theorem locally_implies_disjoint_union_baire
       F C (fun a => f a.val) → F D (fun a => f a.val)) :
     ∃ (I : Type) (P : I → Set A) (fi : ∀ i, P i → Baire),
       IsDisjointUnion' f P fi ∧ ∀ i, F (P i) (fi i) := by
-  choose C hC hc using hloc;
+  choose C hC hc using hloc
   -- use Lindelof property to get a countable subcover
   obtain ⟨I, hI⟩ : ∃ I : Set A, Set.Countable I ∧ ⋃ x ∈ I, C x = Set.univ := by
     have h_countable_subcover : IsLindelof (Set.univ : Set A) := by
       exact isLindelof_univ
-    have := h_countable_subcover.elim_countable_subcover ( fun x => C x );
-    exact Exists.elim ( this ( fun x => ( hC x ).isOpen ) ( fun x _ => Set.mem_iUnion_of_mem x ( hc x |>.1 ) ) ) fun r hr => ⟨ r, hr.1, Set.Subset.antisymm ( Set.subset_univ _ ) hr.2 ⟩;
-  have := hI.1.exists_eq_range;
-  by_cases hI_empty : I.Nonempty;
+    have := h_countable_subcover.elim_countable_subcover ( fun x => C x )
+    exact Exists.elim ( this ( fun x => ( hC x ).isOpen ) ( fun x _ => Set.mem_iUnion_of_mem x ( hc x |>.1 ) ) ) fun r hr => ⟨r, hr.1, Set.Subset.antisymm ( Set.subset_univ _ ) hr.2⟩
+  have := hI.1.exists_eq_range
+  by_cases hI_empty : I.Nonempty
   · obtain ⟨g, hg⟩ : ∃ g : ℕ → A, I = Set.range g := by
-      exact this hI_empty;
-    refine' ⟨ ℕ, fun n => disjointed ( fun n => C ( g n ) ) n, fun n => fun a => f a.val, _, _ ⟩ <;> simp_all +decide [ IsDisjointUnion' ];
-    · refine' ⟨ _, _, _ ⟩;
-      · exact fun i => disjointed_clopen (fun n => C (g n)) (fun n => hC (↑(g n)) (g n).property) i;
-      · exact fun i j hij => disjoint_disjointed _ hij;
-      · convert hI.2 using 1;
-        exact iUnion_disjointed;
-    · intro n;
-      apply hF_restrict;
-      exact disjointed_subset _ _;
-      · exact disjointed_clopen _ ( fun n => hC _ _ ) _;
-      · exact hc _ _ |>.2;
-  · simp_all +decide [ Set.not_nonempty_iff_eq_empty.mp hI_empty ];
-    simp_all +decide [ IsDisjointUnion' ];
-    exact ⟨ PEmpty, fun _ => ∅, by aesop ⟩
+      exact this hI_empty
+    refine' ⟨ℕ, fun n => disjointed ( fun n => C ( g n ) ) n, fun n => fun a => f a.val, _, _⟩ <;> simp_all +decide [ IsDisjointUnion' ]
+    · refine' ⟨_, _, _⟩
+      · exact fun i => disjointed_clopen (fun n => C (g n)) (fun n => hC (↑(g n)) (g n).property) i
+      · exact fun i j hij => disjoint_disjointed _ hij
+      · convert hI.2 using 1
+        exact iUnion_disjointed
+    · intro n
+      apply hF_restrict
+      exact disjointed_subset _ _
+      · exact disjointed_clopen _ ( fun n => hC _ _ ) _
+      · exact hc _ _ |>.2
+  · simp_all +decide [ Set.not_nonempty_iff_eq_empty.mp hI_empty ]
+    simp_all +decide [ IsDisjointUnion' ]
+    exact ⟨PEmpty, fun _ => ∅, by aesop⟩
 
 end ZeroDimAndDisjointUnion
 
@@ -202,10 +202,10 @@ theorem cb_rank_of_clopen_union {X Y : Type*} [TopologicalSpace X] [TopologicalS
       -- Rewrite CBRank (f|_{Aᵢ}) using CBRank_eq_sInf_empty
       -- We need: α ≥ CBRank (f|_{Aᵢ}), and CBLevel (f|_{Aᵢ}) (CBRank (f|_{Aᵢ})) = ∅,
       -- and antitone gives CBLevel (f|_{Aᵢ}) α = ∅.
-      obtain h_Ai_open : IsOpen (A i) := h_open i;
+      obtain h_Ai_open : IsOpen (A i) := h_open i
       have h_CBf_empty: CBLevel f (CBRank f) = ∅ := by
-        exact CBLevel_eq_empty_at_rank f hf;
-      obtain h_iff := CBLevel_open_restrict f _ h_Ai_open (CBRank f);
+        exact CBLevel_eq_empty_at_rank f hf
+      obtain h_iff := CBLevel_open_restrict f _ h_Ai_open (CBRank f)
       have hfi_empty : CBLevel (fun x : A i => f x.val) (CBRank f) = ∅ := by
         ext x
         simp only [Set.mem_empty_iff_false, iff_false]
@@ -254,7 +254,7 @@ theorem cb_rank_of_clopen_union {X Y : Type*} [TopologicalSpace X] [TopologicalS
         exact hemp
       exact absurd hle (not_le.mpr h)
     have h_CBf_empty: CBLevel f (CBRank f) = ∅ := by
-      exact CBLevel_eq_empty_at_rank f hf;
+      exact CBLevel_eq_empty_at_rank f hf
     -- But CBLevel (f|_{Aᵢ}) (CBRank f) = ∅ from h_CBf_empty
     have hempty : CBLevel (fun x : A i => f x.val) (CBRank f) = ∅ := by
       have h_openi : IsOpen (A i) := h_open i
@@ -308,14 +308,14 @@ For a scattered function `f : A → Y`, the stabilizing set is nonempty
 -/
 lemma cb_stabilizing_set_nonempty {X Y : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] [Small.{0} X]
-    (f : X → Y) (hf : ScatteredFun f) :
+    (f : X → Y) (_hf : ScatteredFun f) :
     {α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α)}.Nonempty := by
   -- By definition of scattered, the CB level at sometimes stabilizes.
   have hCBStabilize : ∃ α, CBLevel f α = CBLevel f (Order.succ α) := by
     by_contra h
     push_neg at h
     --clauses t, 3, 0
-    exact absurd ( CBLevel_strictAnti_of_ne f h ) ( by rintro ⟨ g, hg ⟩ ; exact not_injective_of_ordinal g hg );
+    exact absurd ( CBLevel_strictAnti_of_ne f h ) ( by rintro ⟨g, hg⟩ ; exact not_injective_of_ordinal g hg )
   exact hCBStabilize
 
 /-
@@ -325,10 +325,10 @@ lemma cbLevel_at_cbRank_empty {X Y : Type*}
     [TopologicalSpace X] [TopologicalSpace Y] [Small.{0} X]
     (f : X → Y) (hf : ScatteredFun f) :
     CBLevel f (CBRank f) = ∅ := by
-  by_cases h_empty : (CBLevel f (CBRank f)).Nonempty;
+  by_cases h_empty : (CBLevel f (CBRank f)).Nonempty
   · have h_eq : CBLevel f (CBRank f) = CBLevel f (Order.succ (CBRank f)) := by
-      exact csInf_mem ( cb_stabilizing_set_nonempty f hf );
-    exact absurd h_eq ( ne_of_gt ( CBLevel_succ_ssubset_of_scattered f hf _ h_empty ) );
+      exact csInf_mem ( cb_stabilizing_set_nonempty f hf )
+    exact absurd h_eq ( ne_of_gt ( CBLevel_succ_ssubset_of_scattered f hf _ h_empty ) )
   · exact Set.not_nonempty_iff_eq_empty.mp h_empty
 
 /-
@@ -339,11 +339,11 @@ lemma scattered_restriction_open {X Y : Type*}
     {f : X → Y} (hf : ScatteredFun f)
     (U : Set X) (hU : IsOpen U) :
     ScatteredFun (f ∘ (Subtype.val : U → X)) := by
-  intro S hS;
-  obtain ⟨ x, hx ⟩ := hS;
-  obtain ⟨ V, hV₁, hV₂, hV₃ ⟩ := hf ( Subtype.val '' S ) ⟨ _, Set.mem_image_of_mem _ hx ⟩;
-  refine' ⟨ Subtype.val ⁻¹' V, _, _, _ ⟩ <;> simp_all +decide [ Set.Nonempty ];
-  · exact hU.inter hV₁;
+  intro S hS
+  obtain ⟨x, hx⟩ := hS
+  obtain ⟨V, hV₁, hV₂, hV₃⟩ := hf ( Subtype.val '' S ) ⟨_, Set.mem_image_of_mem _ hx⟩
+  refine' ⟨Subtype.val ⁻¹' V, _, _, _⟩ <;> simp_all +decide [ Set.Nonempty ]
+  · exact hU.inter hV₁
   · grind +extAll
 
 /-
@@ -360,10 +360,10 @@ lemma isolatedLocus_gives_simple_neighborhood {X Y : Type*}
       CBLevel f (Order.succ β) ∩ U = ∅ ∧
       ∀ y ∈ U ∩ CBLevel f β, f y = f x := by
   obtain ⟨U, hU_open, hx_in_U, hconst⟩ : ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ ∀ y ∈ U ∩ (CBLevel f β), f y = f x := by
-    exact hx.2;
-  refine' ⟨ U, hU_open, hx_in_U, _, hconst ⟩;
-  simp_all +decide [ Set.ext_iff, CBLevel_succ' ];
-  intro y hy hy' hy''; contrapose! hy'; unfold isolatedLocus at *; aesop;
+    exact hx.2
+  refine' ⟨U, hU_open, hx_in_U, _, hconst⟩
+  simp_all +decide [ Set.ext_iff, CBLevel_succ' ]
+  intro y hy hy' hy''; contrapose! hy'; unfold isolatedLocus at *; aesop
 
 /-
 Key lemma for decomposition: the restriction of f to a Baire-clopen set
@@ -380,22 +380,22 @@ lemma restriction_to_clopen_is_simple
     (hempty : CBLevel f (Order.succ β) ∩ (Subtype.val ⁻¹' V : Set A) = ∅)
     (hconst : ∃ y : Baire, ∀ z ∈ (Subtype.val ⁻¹' V : Set A) ∩ CBLevel f β, f z = y) :
     SimpleFun (f ∘ (Subtype.val : {a : A | (a : Baire) ∈ V} → A)) := by
-  refine' ⟨ _, β, _, _, _ ⟩;
-  · apply_rules [ ScatteredFun, scattered_restriction_open ];
-    exact hV.isOpen.preimage continuous_subtype_val;
-  · obtain ⟨ x, hx₁, hx₂ ⟩ := hx_exists; use ⟨ x, hx₁ ⟩ ; simp_all +decide [ local_cb_derivative ] ;
+  refine' ⟨_, β, _, _, _⟩
+  · apply_rules [ ScatteredFun, scattered_restriction_open ]
+    exact hV.isOpen.preimage continuous_subtype_val
+  · obtain ⟨x, hx₁, hx₂⟩ := hx_exists; use ⟨x, hx₁⟩ ; simp_all +decide [ local_cb_derivative ] 
     have h_local : Subtype.val '' CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ V} → A)) β = (CBLevel f β) ∩ Subtype.val ⁻¹' V := by
-      convert local_cb_derivative ( Subtype.val ⁻¹' V ) ( hV.2.preimage ( continuous_subtype_val ) ) β using 1;
-      exact Pi.topologicalSpace;
-    exact h_local.symm.subset ⟨ hx₂, hx₁ ⟩ |> fun ⟨ y, hy₁, hy₂ ⟩ => hy₂ ▸ hy₁;
+      convert local_cb_derivative ( Subtype.val ⁻¹' V ) ( hV.2.preimage ( continuous_subtype_val ) ) β using 1
+      exact Pi.topologicalSpace
+    exact h_local.symm.subset ⟨hx₂, hx₁⟩ |> fun ⟨y, hy₁, hy₂⟩ => hy₂ ▸ hy₁
   · have h_local_cb_derivative : Subtype.val '' CBLevel (f ∘ (Subtype.val : {a : A | a.val ∈ V} → A)) (Order.succ β) = CBLevel f (Order.succ β) ∩ Subtype.val ⁻¹' V := by
-      apply local_cb_derivative;
-      exact hV.isOpen.preimage continuous_subtype_val;
-    aesop;
-  · use hconst.choose;
-    intro x hx;
-    apply hconst.choose_spec;
-    exact ⟨ x.2, local_cb_derivative _ ( show IsOpen ( Subtype.val ⁻¹' V ) from hV.isOpen.preimage continuous_subtype_val ) _ |>.subset ( Set.mem_image_of_mem _ hx ) |> fun h => h.1 ⟩
+      apply local_cb_derivative
+      exact hV.isOpen.preimage continuous_subtype_val
+    aesop
+  · use hconst.choose
+    intro x hx
+    apply hconst.choose_spec
+    exact ⟨x.2, local_cb_derivative _ ( show IsOpen ( Subtype.val ⁻¹' V ) from hV.isOpen.preimage continuous_subtype_val ) _ |>.subset ( Set.mem_image_of_mem _ hx ) |> fun h => h.1⟩
 
 /-
 **Decomposition Lemma.** Any scattered function from a zero-dimensional separable
@@ -429,20 +429,20 @@ theorem decomposition_lemma_baire
   obtain ⟨β, hβ⟩ : ∃ β : Ordinal.{0}, x ∈ CBLevel f β ∧ x ∉ CBLevel f (Order.succ β) := by
     have h_empty : CBLevel f (CBRank f) = ∅ := by
       -- Apply the lemma that states the CBLevel at the CB rank is empty.
-      apply cbLevel_at_cbRank_empty; assumption;
+      apply cbLevel_at_cbRank_empty; assumption
     have h_exists_beta : ∃ β : Ordinal.{0}, x ∉ CBLevel f β := by
-      exact ⟨ _, fun hx => h_empty.subset hx ⟩;
-    exact exit_ordinal_is_successor x _ h_exists_beta.choose_spec |> fun ⟨ β, hβ₁, hβ₂, hβ₃ ⟩ => ⟨ β, hβ₂, hβ₃ ⟩;
+      exact ⟨_, fun hx => h_empty.subset hx⟩
+    exact exit_ordinal_is_successor x _ h_exists_beta.choose_spec |> fun ⟨β, hβ₁, hβ₂, hβ₃⟩ => ⟨β, hβ₂, hβ₃⟩
   obtain ⟨U, hU_open, hxU, hU_empty, hU_const⟩ : ∃ U : Set A, IsOpen U ∧ x ∈ U ∧ CBLevel f (Order.succ β) ∩ U = ∅ ∧ ∀ y ∈ U ∩ CBLevel f β, f y = f x := by
-    apply isolatedLocus_gives_simple_neighborhood;
-    exact Classical.not_not.1 fun h => hβ.2 <| by rw [ CBLevel_succ' ] ; exact ⟨ hβ.1, h ⟩ ;
+    apply isolatedLocus_gives_simple_neighborhood
+    exact Classical.not_not.1 fun h => hβ.2 <| by rw [ CBLevel_succ' ] ; exact ⟨hβ.1, h⟩ 
   obtain ⟨V, hV_clopen, hxV, hV_subset⟩ : ∃ V : Set Baire, IsClopen V ∧ x.val ∈ V ∧ Subtype.val ⁻¹' V ⊆ U := by
     obtain ⟨W, hW_open, hxW, hW_subset⟩ : ∃ W : Set Baire, IsOpen W ∧ x.val ∈ W ∧ Subtype.val ⁻¹' W ⊆ U := by
-      rcases hU_open with ⟨ W, hW_open, rfl ⟩ ; use W; aesop;
-    exact Exists.elim ( baire_exists_clopen_subset_of_open x.val W hW_open hxW ) fun V hV => ⟨ V, hV.1, hV.2.1, Set.Subset.trans ( Set.preimage_mono hV.2.2 ) hW_subset ⟩;
-  refine' ⟨ V, hV_clopen, hxV, _ ⟩;
+      rcases hU_open with ⟨W, hW_open, rfl⟩ ; use W; aesop
+    exact Exists.elim ( baire_exists_clopen_subset_of_open x.val W hW_open hxW ) fun V hV => ⟨V, hV.1, hV.2.1, Set.Subset.trans ( Set.preimage_mono hV.2.2 ) hW_subset⟩
+  refine' ⟨V, hV_clopen, hxV, _⟩
   apply restriction_to_clopen_is_simple f hf β V hV_clopen ⟨x, hxV, hβ.left⟩ (by
-  exact Set.eq_empty_of_forall_notMem fun y hy => hU_empty.subset ⟨ hy.1, hV_subset hy.2 ⟩) (by
-  exact ⟨ f x, fun z hz => hU_const z ⟨ hV_subset hz.1, hz.2 ⟩ ⟩)
+  exact Set.eq_empty_of_forall_notMem fun y hy => hU_empty.subset ⟨hy.1, hV_subset hy.2⟩) (by
+  exact ⟨f x, fun z hz => hU_const z ⟨hV_subset hz.1, hz.2⟩⟩)
 
 end DecompositionLemma

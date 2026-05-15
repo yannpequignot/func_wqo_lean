@@ -224,7 +224,7 @@ theorem TwoBQO.prod {α β : Type*} {r : α → α → Prop} {s : β → β → 
 `∀ i, α i` with pointwise quasi-order is 2-BQO when each component is. -/
 theorem TwoBQO.pi : ∀ (n : ℕ) (α : Fin n → Type*)
     (r : ∀ i : Fin n, α i → α i → Prop)
-    (h : ∀ i, TwoBQO (r i)),
+    (_h : ∀ i, TwoBQO (r i)),
     TwoBQO (fun f g : ∀ i, α i => ∀ i, r i (f i) (g i)) := by
   intro n
   induction n with

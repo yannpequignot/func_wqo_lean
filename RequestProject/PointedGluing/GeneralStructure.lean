@@ -59,20 +59,20 @@ private lemma gRestrFun_CBLevel_union_empty (B : Set (ℕ → ℕ)) (g : B → �
     (hgc : Continuous g) (β : Ordinal.{0})
     (h : ∀ k : ℕ, CBLevel (gRestrFun B g k) β = ∅) :
     CBLevel g β = ∅ := by
-  convert CBLevel_open_union_empty g ( fun k => { b : B | ( g b ) 0 = k } ) ( fun k => ?_ ) ( fun x => ?_ ) β ?_;
-  · exact hgc.comp continuous_id' |> Continuous.comp ( continuous_apply 0 ) |> Continuous.isOpen_preimage |> fun h => h { k } <| by simp +decide ;
-  · exact ⟨ _, rfl ⟩;
+  convert CBLevel_open_union_empty g ( fun k => { b : B | ( g b ) 0 = k } ) ( fun k => ?_ ) ( fun x => ?_ ) β ?_
+  · exact hgc.comp continuous_id' |> Continuous.comp ( continuous_apply 0 ) |> Continuous.isOpen_preimage |> fun h => h { k } <| by simp +decide 
+  · exact ⟨_, rfl⟩
   · intro k
     have h_homeo : ∃ (e : {b : B | (g b) 0 = k} ≃ₜ gRestrDom B g k), (gRestrFun B g k) ∘ e = (g ∘ Subtype.val : {b : B | (g b) 0 = k} → ℕ → ℕ) := by
-      refine' ⟨ _, _ ⟩;
-      refine' ⟨ _, _, _ ⟩;
-      refine' ⟨ fun x => ⟨ x.val, ⟨ x.1.2, x.2 ⟩ ⟩, fun x => ⟨ ⟨ x.val, x.2.choose ⟩, x.2.choose_spec ⟩, _, _ ⟩ <;> simp +decide [ funext_iff ];
-      all_goals norm_num [ funext_iff, LeftInverse, RightInverse ];
-      · fun_prop (disch := solve_by_elim);
-      · fun_prop (disch := solve_by_elim);
-      · exact?;
-    obtain ⟨ e, he ⟩ := h_homeo;
-    have := CBLevel_homeomorph e ( gRestrFun B g k ) β; aesop;
+      refine' ⟨_, _⟩
+      refine' ⟨_, _, _⟩
+      refine' ⟨fun x => ⟨x.val, ⟨x.1.2, x.2⟩⟩, fun x => ⟨⟨x.val, x.2.choose⟩, x.2.choose_spec⟩, _, _⟩ <;> simp +decide
+      all_goals norm_num [ funext_iff, LeftInverse, RightInverse ]
+      · fun_prop (disch := solve_by_elim)
+      · fun_prop (disch := solve_by_elim)
+      · intro; simp [gRestrFun]
+    obtain ⟨e, he⟩ := h_homeo
+    have := CBLevel_homeomorph e ( gRestrFun B g k ) β; aesop
 
 /-
 For each γ < η = CBRank g, some k has CBRank(gRestrFun k) > γ.
@@ -82,14 +82,14 @@ private lemma gRestrFun_CBRank_cofinal (B : Set (ℕ → ℕ)) (g : B → ℕ �
     (η : Ordinal.{0}) (hrank : CBRank g = η)
     (γ : Ordinal.{0}) (hγ : γ < η) :
     ∃ k : ℕ, γ < CBRank (gRestrFun B g k) := by
-  contrapose! hγ;
+  contrapose! hγ
   -- By assumption, CBLevel(gRestrFun B g k) γ = ∅ for all k.
   have h_empty : ∀ k : ℕ, CBLevel (gRestrFun B g k) γ = ∅ := by
-    intro k;
-    apply Set.eq_empty_of_forall_notMem;
-    intro x hx;
-    have := CBLevel_eq_empty_at_rank ( gRestrFun B g k ) ( gRestrFun_scattered B g hg k );
-    exact this.subset ( CBLevel_antitone _ ( hγ k ) hx );
+    intro k
+    apply Set.eq_empty_of_forall_notMem
+    intro x hx
+    have := CBLevel_eq_empty_at_rank ( gRestrFun B g k ) ( gRestrFun_scattered B g hg k )
+    exact this.subset ( CBLevel_antitone _ ( hγ k ) hx )
   exact hrank ▸ CBRank_le_of_CBLevel_empty g γ ( gRestrFun_CBLevel_union_empty B g hgc γ h_empty )
 
 
@@ -124,25 +124,25 @@ private lemma exists_injection_above_targets (η : Ordinal.{0}) (hη : η < omeg
     ∃ p : ℕ → ℕ, Function.Injective p ∧ ∀ n, β n ≤ cofinalSeq η (p n) := by
   have := @enumBelow_surj η hη (by
   rintro rfl; specialize hβ 0; simp_all +decide ;)
-  generalize_proofs at *;
-  rw [ show cofinalSeq η = fun n => enumBelow η n from ?_ ];
+  generalize_proofs at *
+  rw [ show cofinalSeq η = fun n => enumBelow η n from ?_ ]
   · have h_infinite : ∀ n, Set.Infinite {m : ℕ | β n ≤ enumBelow η m} := by
       intro n
       have h_infinite : Set.Infinite {m | β n ≤ m ∧ m < η} := by
         have h_infinite : ∀ m : Ordinal.{0}, β n ≤ m ∧ m < η → ∃ m' : Ordinal.{0}, β n ≤ m' ∧ m' < η ∧ m < m' := by
-          exact fun m hm => ⟨ Order.succ m, hm.1.trans ( Order.le_succ _ ), hlim.succ_lt hm.2, Order.lt_succ m ⟩;
-        contrapose! h_infinite;
-        exact ⟨ Finset.max' ( h_infinite.toFinset ) ⟨ β n, h_infinite.mem_toFinset.mpr ⟨ le_rfl, hβ n ⟩ ⟩, h_infinite.mem_toFinset.mp ( Finset.max'_mem _ _ ), fun m' hm₁ hm₂ => Finset.le_max' _ _ ( h_infinite.mem_toFinset.mpr ⟨ hm₁, hm₂ ⟩ ) ⟩;
-      intro h_finite;
-      exact h_infinite <| Set.Finite.subset ( h_finite.image fun m => enumBelow η m ) fun x hx => by cases' this ⟨ x, hx.2 ⟩ with m hm; aesop;
-    use fun n => Nat.recOn n ( Nat.find <| Set.Infinite.nonempty <| h_infinite 0 ) fun n ih => Nat.find <| Set.Infinite.exists_gt ( h_infinite ( n + 1 ) ) ih;
-    refine' ⟨ _, _ ⟩;
-    · refine' strictMono_nat_of_lt_succ _ |> StrictMono.injective;
-      exact fun n => Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.2;
-    · intro n; induction n <;> simp_all +decide [ Nat.find_spec ( h_infinite _ |> Set.Infinite.nonempty ) ] ;
-      · exact Nat.find_spec ( h_infinite 0 |> Set.Infinite.nonempty );
-      · exact Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.1;
-  · unfold cofinalSeq; aesop;
+          exact fun m hm => ⟨Order.succ m, hm.1.trans ( Order.le_succ _ ), hlim.succ_lt hm.2, Order.lt_succ m⟩
+        contrapose! h_infinite
+        exact ⟨Finset.max' ( h_infinite.toFinset ) ⟨β n, h_infinite.mem_toFinset.mpr ⟨le_rfl, hβ n⟩⟩, h_infinite.mem_toFinset.mp ( Finset.max'_mem _ _ ), fun m' hm₁ hm₂ => Finset.le_max' _ _ ( h_infinite.mem_toFinset.mpr ⟨hm₁, hm₂⟩ )⟩
+      intro h_finite
+      exact h_infinite <| Set.Finite.subset ( h_finite.image fun m => enumBelow η m ) fun x hx => by cases' this ⟨x, hx.2⟩ with m hm; aesop
+    use fun n => Nat.recOn n ( Nat.find <| Set.Infinite.nonempty <| h_infinite 0 ) fun n ih => Nat.find <| Set.Infinite.exists_gt ( h_infinite ( n + 1 ) ) ih
+    refine' ⟨_, _⟩
+    · refine' strictMono_nat_of_lt_succ _ |> StrictMono.injective
+      exact fun n => Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.2
+    · intro n; induction n <;> simp_all +decide
+      · exact Nat.find_spec ( h_infinite 0 |> Set.Infinite.nonempty )
+      · exact Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.1
+  · unfold cofinalSeq; aesop
 
 /-- Core inequality: MaxFun(η + n) ≤ MinFun(η + 2n), by well-founded induction on η
     and regular induction on n. -/
