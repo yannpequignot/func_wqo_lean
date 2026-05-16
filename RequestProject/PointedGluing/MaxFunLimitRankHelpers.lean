@@ -113,3 +113,16 @@ lemma infinite_baire_antichain_prefixes
   -- ¬ IsPrefix (seq j).2 (seq i).2
   · rintro ⟨_, hagree⟩
     exact hij (hk j i (fun l => (hagree l).symm))
+
+/-
+Discrete topology transfers through `Subtype.val`: if `S` is a discrete subset
+of `↥A` (a subtype of `X`), then `Subtype.val '' S` is a discrete subset of `X`.
+-/
+lemma discreteTopology_image_val {X : Type*} [TopologicalSpace X]
+    {A : Set X} (S : Set A) [DiscreteTopology S] :
+    DiscreteTopology (Subtype.val '' S : Set X) := by
+  rw [ discreteTopology_subtype_iff ] at *;
+  simp_all +decide [ Filter.inf_principal_eq_bot, nhdsWithin ];
+  intro x hx hxS; specialize ‹∀ a : X, ∀ b : a ∈ A, ⟨ a, b ⟩ ∈ S → Sᶜ ∈ 𝓝 ⟨ a, b ⟩ ⊓ Filter.principal { ⟨ a, b ⟩ } ᶜ› x hx hxS; simp_all +decide [ Filter.mem_inf_principal ] ;
+  rw [ mem_nhds_subtype ] at *;
+  rcases ‹_› with ⟨ u, hu, hu' ⟩ ; filter_upwards [ hu ] with y hy ; specialize hu' ; aesop;

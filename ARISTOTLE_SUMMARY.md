@@ -1,3 +1,44 @@
+# Summary of changes for run fc71fc8c-af78-408f-ac2e-4202c7fccf12
+## Fixed all sorries in Case B of `exists_disjoint_clopen_with_cofinal_ranks`
+
+The file `RequestProject/PointedGluing/MaxFunLimitRank.lean` now builds successfully with no remaining `sorry` statements in Case B.
+
+### What was proved
+
+The theorem `exists_disjoint_clopen_with_cofinal_ranks` establishes that given a scattered continuous function `g : B → ℕ → ℕ` with CB-rank `η` (a limit ordinal), for any sequence `δ` with `δ n < η`, there exist pairwise disjoint clopen sets `C n` and an injection `p` such that `δ n < CBRank(g|C(p n))`.
+
+**Case B** handles the situation where the body of the tree T (the set of infinite paths through T) is finite. The proof proceeds in several steps:
+
+1. **Cofinality (`hCofinal`)**: For any `β < η`, there exists a "frontier node" (a finite sequence not in T whose parent is in T) with CB-rank > β. This is proved by contradiction: if all frontier nodes had rank ≤ β, then every point in `CBLevel g (succ β)` would map into the finite bodyT, making `g` locally constant on that CB-level, forcing `CBLevel g (succ (succ β)) = ∅` and `CBRank g ≤ succ (succ β) < η`, a contradiction.
+
+2. **Sequence construction**: Using `hCofinal`, an inductive sequence of frontier nodes is built with strictly increasing CB-ranks, ensuring each `δ i` is exceeded. Strictly increasing ranks guarantee distinct nodes.
+
+3. **Incompatibility**: Distinct frontier nodes are shown to be pairwise incomparable (no prefix relation) via `TreeT_prefix_closed`: if one frontier node were a prefix of another with strictly shorter length, it would be a prefix of the other's parent (which is in T), and by prefix-closure of T, it would itself be in T — contradicting its frontier status.
+
+### Helper lemmas added
+
+- `CBLevel_succ_succ_empty_of_finite_image`: If all points in `CBLevel g (succ β)` map into a finite set, then `CBLevel g (succ (succ β)) = ∅`.
+- `CBLevel_empty_of_le_rank`: If `CBRank f ≤ β` for a scattered function, then `CBLevel f β = ∅`.
+- `not_mem_CBLevel_of_open_restrict_empty`: Points in an open set with empty restricted CB-level are not in the ambient CB-level.
+
+# Summary of changes for run 173ad7a9-0ed4-4d38-8a32-d438ead97caa
+Fixed the proof of `exists_disjoint_clopen_with_cofinal_ranks` (Case A) in `RequestProject/PointedGluing/MaxFunLimitRank.lean` by properly using `infinite_baire_antichain_prefixes`.
+
+**Changes made:**
+
+1. **`RequestProject/PointedGluing/MaxFunLimitRankHelpers.lean`**: Added and proved `discreteTopology_image_val` — a helper lemma showing that discrete topology transfers through `Subtype.val`: if `S` is a discrete subset of `↥A` (a subtype of `X`), then `Subtype.val '' S` is a discrete subset of `X`.
+
+2. **`RequestProject/PointedGluing/MaxFunLimitRank.lean`** (Case A of `exists_disjoint_clopen_with_cofinal_ranks`):
+   - Replaced the two `sorry`s in Case A with a complete proof.
+   - The proof maps the discrete subset `S` of `bodyT` to `S' := Subtype.val '' S` (a discrete subset of `ℕ → ℕ`) using `discreteTopology_image_val`.
+   - Applies `infinite_baire_antichain_prefixes` to an injection `ℕ → ↥S'` to obtain an antichain `seq` of finite prefixes.
+   - Shows each `seq i` satisfies `T_prop` because it's a prefix of some element in `S' ⊆ bodyT`, and all truncations of bodyT elements are in T.
+   - Concludes by taking `C n := BaNbhd (seq n).2` with `p := id`, using the antichain's incomparability for disjointness and `T_prop` (giving `CBRank = η > δ n`) for the cofinal rank condition.
+
+3. **Renamed `MaxMinhelpers.lean` → `MaxMinHelpers.lean`**: Fixed a case-sensitivity issue (lowercase 'h') that caused build failures on Linux but would work on macOS.
+
+**Remaining sorries**: The Case B sorries (`hCofinal` and the sequence construction) in `exists_disjoint_clopen_with_cofinal_ranks` were pre-existing and not part of this fix request. Both modified files build successfully.
+
 # Summary of changes for run 79f85201-2064-4c88-b927-99616509418c
 ## Code Quality Improvements — Mathlib Standards
 

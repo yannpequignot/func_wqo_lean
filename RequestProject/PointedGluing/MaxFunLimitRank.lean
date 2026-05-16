@@ -368,6 +368,101 @@ lemma gClopenFun_CBRank_eq : ∀ (C : Set (ℕ → ℕ)), IsClopen C →
   rw [gClopenFun_eq_comp]
   exact CBRank_comp_homeomorph _ _
 
+
+/-- If all points in CBLevel g (succ β) map to a finite set under g, then
+    CBLevel g (succ (succ β)) = ∅. -/
+lemma CBLevel_succ_succ_empty_of_finite_image
+    {B : Set (ℕ → ℕ)} {g : B → ℕ → ℕ} (hgc : Continuous g)
+    (β : Ordinal.{0})
+    (F : Set (ℕ → ℕ)) (hF : F.Finite)
+    (hcontain : ∀ b : B, b ∈ CBLevel g (Order.succ β) → g b ∈ F) :
+    CBLevel g (Order.succ (Order.succ β)) = ∅ := by
+  -- By CBLevel_succ', CBLevel g (succ (succ β)) = CBLevel g (succ β) \ isolatedLocus g (CBLevel g (succ β)).
+  have hcb_succ_succ : CBLevel g (Order.succ (Order.succ β)) = CBLevel g (Order.succ β) \ isolatedLocus g (CBLevel g (Order.succ β)) := by
+    exact CBLevel_succ' g (Order.succ β);
+  ext x; simp [hcb_succ_succ];
+  intro hx;
+  -- Since F is finite, F \ {g x} is finite hence closed (by Set.Finite.isClosed in the T1 space ℕ → ℕ).
+  have hF_closed : IsClosed (F \ {g x}) := by
+    exact hF.subset ( Set.diff_subset ) |> Set.Finite.isClosed;
+  refine' ⟨ _, _, _ ⟩;
+  exact hx;
+  exact { y : B | g y ∉ F \ { g x } };
+  exact ⟨ hF_closed.isOpen_compl.preimage hgc, by aesop, fun y hy => Classical.not_not.1 fun h => hy.1 <| by aesop ⟩
+
+/-
+If CBRank ≤ β for a scattered function, then CBLevel at β is empty.
+-/
+lemma CBLevel_empty_of_le_rank {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    [Small.{0} X]
+    (f : X → Y) (hf : ScatteredFun f) (β : Ordinal.{0}) (hle : CBRank f ≤ β) :
+    CBLevel f β = ∅ := by
+  -- Since f is scattered, CBLevel_eq_empty_at_rank gives CBLevel f (CBRank f) = ∅.
+  have h_empty : CBLevel f (CBRank f) = ∅ := by
+    exact CBLevel_eq_empty_at_rank f hf
+  generalize_proofs at *; (
+  exact Set.eq_empty_of_subset_empty ( CBLevel_antitone f hle |> Set.Subset.trans <| h_empty.symm ▸ Set.Subset.rfl ))
+
+/-
+If b ∈ an open set S ⊆ B and CBLevel of g restricted to S at α is empty,
+    then b ∉ CBLevel g α.
+-/
+lemma not_mem_CBLevel_of_open_restrict_empty
+    {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+    (f : X → Y) (S : Set X) (hS : IsOpen S)
+    (b : X) (hb : b ∈ S) (α : Ordinal.{0})
+    (hempty : CBLevel (f ∘ Subtype.val : S → Y) α = ∅) :
+    b ∉ CBLevel f α := by
+  by_contra h_contra;
+  -- Apply the CBLevel_open_restrict lemma to b and hb.
+  have h_restrict : (⟨b, hb⟩ : S) ∈ CBLevel (f ∘ Subtype.val) α := by
+    convert CBLevel_open_restrict f S hS α ⟨ b, hb ⟩ |>.2 h_contra;
+  exact hempty.subset h_restrict
+
+/-
+this lemma is the crux of the General structure theorem
+it is instrumental in showing that any scattered function
+of limit CBRank η reduces (and hence is equivalent) to MaxFun η
+
+The proof follows the one presented in the memoir.
+Let `η<ω1`​ be a successor limit ordinal,
+and let `g:B→ℕ` be a continuous scattered function
+such that CBRank(g)=η.
+Given a sequence of ordinals `δ_n<η`,
+we wish to find a sequence of pairwise disjoint clopen sets
+`Cn⊆ℕ` and an injective sequence of indices pn such that for each n,
+the Cantor-Bendixson rank of g restricted to Cpn​​ is strictly greater than δn​.
+
+We define a tree T of finite sequences `s∈ℕ^{<ℕ}`.
+A sequence s is in T if the rank of g corestricted to the neighborhood BaNbhd(s)
+is equal to the total rank η. Let the body of this tree, bodyT,
+be the set of infinite sequences `x∈ℕ^\N`such that every prefix of `x` is in `T`.
+We proceed by cases on the size of bodyT.
+Case 1: bodyT is infinite
+
+If the set of infinite branches is infinite,
+we can find an infinite sequence of branches
+that are distinct enough to allow us to pick
+an infinite antichain of prefixes.
+Specifically, because bodyT is a subset of the Baire space,
+we can select a sequence of finite prefixes snsn​ such that
+no si​ is a prefix of sj for i≠j.
+
+Case 2: bodyT is finite
+
+If bodyT is finite, the rank must be realized by the "frontier" of T.
+We define a frontier node to be a sequence s such that s∉T, but its parent is in T.
+
+First, we observe that for any β<η, there must exist a frontier node s
+such that the rank of g corestricted to BaNbhd(s) is greater than β.
+If this were not the case—that is, if all nodes outside T
+whose parents are in T had rank at most β
+—then the Cantor-Bendixson level of g at succ(β)
+would be entirely contained within the finite set bodyT.
+Since bodyT is finite, the subsequent level would
+necessarily be empty, implying that CBRank(g)≤succ(succ(β))<η.
+This contradicts the assumption that CBRank(g)=η.
+-/
 lemma exists_disjoint_clopen_with_cofinal_ranks
     (η : Ordinal.{0}) (hη : η < omega1) (hlim : Order.IsSuccLimit η)
     (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (hgc : Continuous g) (hg : ScatteredFun g)
@@ -379,13 +474,10 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
       (∀ i j, i ≠ j → Disjoint (C i) (C j)) ∧
       ∀ n, δ n < CBRank (gClopenFun B g (C (p n))) := by
   -- ── Step 1: Build the tree T ────────────────────────────────────────────
-  -- T_prop n s ↔ CBRank(g|BaNbhd s) = η
   let T_prop : ∀ n : ℕ, (Fin n → ℕ) → Prop :=
     fun _ s => CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val) = η
-  -- The body [T] = {x : ℕ → ℕ | ∀ n, T_prop n (x ↾ n)}
   set bodyT : Set (ℕ → ℕ) :=
     {x : ℕ → ℕ | ∀ n, T_prop n (fun i => x i)}
-  -- ── Step 2: Case split ──────────────────────────────────────────────────
   by_cases hbody : bodyT.Infinite
   · -- ══ Case A: bodyT infinite ══════════════════════════════════════════
     obtain ⟨seq, hseq_incompat, hseq_T⟩ :
@@ -396,69 +488,214 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
       obtain ⟨S, hS_inf, hS_disc⟩ :=
         haveI : Infinite bodyT := hbody.to_subtype
         exists_infinite_discreteTopology bodyT
-      -- use exists_infinite_discreteTopology bodyT
-      -- to find an infinite discrete subspace S of bodyT
-      -- then Use the antichain construction from the helpers file
-      -- on S not on bodyT
-      let f : ℕ ↪ S := hS_inf.natEmbedding S
-      -- obtain ⟨seq, hseq_ac, hseq_trunc⟩ :=
-      --   infinite_baire_antichain_prefixes (B := S) f hS_inf hS_disc
-      sorry
-    sorry
+      let S' : Set (ℕ → ℕ) := Subtype.val '' S
+      have hS'_inf : S'.Infinite := hS_inf.image Subtype.val_injective.injOn
+      have hS'_disc : DiscreteTopology ↥S' := @discreteTopology_image_val _ _ _ S hS_disc
+      have hS'_sub : S' ⊆ bodyT := by
+        rintro x ⟨⟨y, hy⟩, _, rfl⟩; exact hy
+      haveI : Infinite S' := hS'_inf.to_subtype
+      let f : ℕ → ↥S' := hS'_inf.natEmbedding S'
+      have hf_inj : Injective f := (hS'_inf.natEmbedding S').injective
+      obtain ⟨seq, hseq_ac, hseq_trunc⟩ :=
+        infinite_baire_antichain_prefixes f hf_inj hS'_disc
+      refine ⟨seq, hseq_ac, fun i => ?_⟩
+      obtain ⟨m, hm⟩ := hseq_trunc i
+      have hbody_m : (f m).val ∈ bodyT := hS'_sub (f m).prop
+      show T_prop (seq i).1 (seq i).2
+      have := hbody_m (seq i).1
+      have heq : (seq i).2 = fun (j : Fin (seq i).1) => (f m).val (j : ℕ) := funext hm
+      rw [heq]; exact this
+    refine ⟨fun n => BaNbhd (seq n).2, id, Function.injective_id,
+            fun n => BaNbhd_isClopen _, ?_, ?_⟩
+    · intro i j hij
+      obtain ⟨hst, hts⟩ := hseq_incompat i j hij
+      exact BaNbhd_incomparable_disjoint (seq i).2 (seq j).2 hst hts
+    · intro n
+      simp only [id]
+      rw [gClopenFun_CBRank_eq (BaNbhd (seq n).2) (BaNbhd_isClopen _)]
+      rw [hseq_T n]
+      exact hδ n
   · -- ══ Case B: bodyT finite ════════════════════════════════════════════
-    -- The minimal elements of ℕ^{<ω} \ T form a finite antichain F.
-    -- Their BaNbhds are pairwise disjoint clopens covering (ℕ→ℕ) \ bodyT.
-    -- Key: the ranks {CBRank(g|BaNbhd s) | s ∈ F} are cofinal in η.
-    -- F is the set of sequences s of length n+1 (∅∈ T) such that
-    -- s∉ T ans s|n ∈ T
-    -- Cofinality: for any β < η, some s ∈ F has CBRank(g|BaNbhd s) > β.
-    -- Proof: if all had rank ≤ β, then CB_β(g) ⊆ g⁻¹(bodyT). But bodyT is
-    -- finite, so every point of g⁻¹(bodyT) is isolated in CB_β(g), giving
-    -- CB_{β+1}(g) = ∅, so CBRank g ≤ β + 1 < η — contradiction with hrank.
+    -- Helper: ∀ b, b ∈ CBLevel g (succ β) → g b ∈ bodyT
+    -- (assuming all frontier nodes have rank ≤ β)
+    have hcontain_aux : ∀ (β : Ordinal.{0}),
+        (∀ (n : ℕ) (s : Fin (n+1) → ℕ),
+          ¬T_prop (n+1) s → T_prop n (fun i : Fin n => s i.castSucc) →
+          CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val) ≤ β) →
+        ∀ b : B, b ∈ CBLevel g (Order.succ β) → (g b) ∈ bodyT := by
+      intro β hβ b hb
+      by_contra hnot;
+      -- By definition of $bodyT$, there exists some $n$ such that $¬T_prop n (fun i => (g b) ↑i)$.
+      obtain ⟨n, hn⟩ : ∃ n, ¬T_prop n (fun i => (g b) i) := by
+        exact not_forall.mp fun h => hnot fun n => h n;
+      -- Let's take the minimal such n.
+      obtain ⟨n₀, hn₀⟩ : ∃ n₀, ¬T_prop n₀ (fun i => (g b) i) ∧ ∀ m < n₀, T_prop m (fun i => (g b) i) := by
+        exact ⟨ Nat.find ( ⟨ n, hn ⟩ : ∃ n, ¬T_prop n fun i => g b ↑i ), Nat.find_spec ( ⟨ n, hn ⟩ : ∃ n, ¬T_prop n fun i => g b ↑i ), fun m mn => by aesop ⟩;
+      -- Since $n₀$ is minimal, we have $T_prop (n₀ - 1) (fun i => (g b) i.castSucc)$.
+      have hT_prop_prev : T_prop (n₀ - 1) (fun i => (g b) i.castSucc) := by
+        rcases n₀ <;> simp_all +decide [ Fin.castSucc ];
+        convert hrank using 1;
+        convert CBRank_comp_homeomorph _ _;
+        swap;
+        refine' ⟨ _, _, _ ⟩;
+        refine' ⟨ fun x => ⟨ x.val, _ ⟩, fun x => ⟨ x, _ ⟩, _, _ ⟩ <;> simp +decide [ BaNbhd ];
+        all_goals norm_num [ Function.LeftInverse, Function.RightInverse ];
+        · exact continuous_subtype_val;
+        · fun_prop;
+      rcases n₀ <;> simp_all +decide;
+      · contrapose! hn₀;
+        convert hT_prop_prev using 1;
+      · have := hβ _ _ hn₀.1 ( hn₀.2 _ le_rfl );
+        apply not_mem_CBLevel_of_open_restrict_empty g {x : B | g x ∈ BaNbhd (fun i : Fin (Nat.succ ‹_›) => g b i)} (by
+        exact hgc.isOpen_preimage _ ( BaNbhd_isOpen _ )) b (by
+        exact mem_setOf.mpr (congrFun rfl)) (Order.succ β) (by
+        apply CBLevel_empty_of_le_rank;
+        · exact scattered_restrict g hg {x | g x ∈ BaNbhd fun i => g b ↑i};
+        · exact le_trans this ( Order.le_succ _ )) hb
     have hCofinal : ∀ β : Ordinal.{0}, β < η →
-        ∃ (n : ℕ) (s : Fin (n+1) → ℕ), ¬T_prop (n+1) s ∧ T_prop n (fun i : Fin n => s i.castSucc)  ∧
+        ∃ (n : ℕ) (s : Fin (n+1) → ℕ), ¬T_prop (n+1) s ∧ T_prop n (fun i : Fin n => s i.castSucc) ∧
           β < CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val) := by
-      -- For any β < η, we find a BaNbhd node s with β < rank(g|BaNbhd s) < η.
-      -- This uses the fact that the ranks of the level-1 BaNbhd partitions
-      -- cannot all be ≤ β (otherwise CBRank g ≤ β < η, contradiction).
-      -- By contradiction, let β<η such that g has rank at most beta
-      -- on all g^-1(BaNbhd s) for s ∈ F
-      -- V=g^-1(bodyT) is clopen as a preimage of a finite set
-      -- and g has rank at most 1 on V since g is locally constant on g
-      -- so by CBLevel_open_union_empty g has rank at most max(beta,1)<η
-      -- contradiction
-      sorry
-    -- For each n : ℕ, apply hCofinal to δ n to get a sequence of
-    -- not-in-T nodes with rank > δ n.
-    -- Then take their ⊏-minimal prefixes (which are in F, hence pairwise
-    -- incomparable) to get pairwise disjoint BaNbhds.
-    -- More precisely: choose seq n to be a ⊏-minimal s with ¬T_prop and
-    -- CBRank(g|BaNbhd s) > δ n.  Minimality ensures incomparability.
+      intro β hβ
+      by_contra hall
+      push_neg at hall
+      have hcontain := hcontain_aux β hall
+      have hempty : CBLevel g (Order.succ (Order.succ β)) = ∅ :=
+        CBLevel_succ_succ_empty_of_finite_image hgc β bodyT
+          (Set.not_infinite.mp hbody) hcontain
+      exact absurd (hrank ▸ CBRank_le_of_CBLevel_empty g _ hempty)
+        (not_le.mpr (hlim.succ_lt (hlim.succ_lt hβ)))
+    -- Frontier nodes have rank < η
+    have hfrontier_rank_lt : ∀ (n : ℕ) (s : Fin (n+1) → ℕ),
+        ¬T_prop (n+1) s →
+        CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val) < η := by
+      intro n s hs_prop
+      have h_rank_le : CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val) ≤ CBRank g := by
+        apply CBRank_open_restrict_le
+        · assumption
+        · exact hgc.isOpen_preimage _ (BaNbhd_isOpen _)
+      exact lt_of_le_of_ne (hrank ▸ h_rank_le) hs_prop
+    -- Build sequence with strictly increasing ranks ensuring distinctness
+    -- Step function: given β < η, get a node with rank in (β, η)
+    have hstep : ∀ (β : Ordinal.{0}), β < η →
+        ∃ (p : Σ n : ℕ, Fin n → ℕ),
+          ¬T_prop p.1 p.2 ∧
+          (∃ (m : ℕ) (heq : p.1 = m + 1),
+            T_prop m (fun i : Fin m => p.2 (heq ▸ Fin.castSucc i))) ∧
+          β < CBRank (fun x : {b : B | g b ∈ BaNbhd p.2} => g x.val) ∧
+          CBRank (fun x : {b : B | g b ∈ BaNbhd p.2} => g x.val) < η := by
+      intro β hβ
+      obtain ⟨n, s, hnt, htp, hgt⟩ := hCofinal β hβ
+      exact ⟨⟨n + 1, s⟩, hnt, ⟨n, rfl, htp⟩, hgt, hfrontier_rank_lt n s hnt⟩
+    -- Build the sequence using Nat.rec
+    let rankOf : (Σ n : ℕ, Fin n → ℕ) → Ordinal :=
+      fun p => CBRank (fun x : {b : B | g b ∈ BaNbhd p.2} => g x.val)
+    let build : ℕ → (Σ n : ℕ, Fin n → ℕ) × { r : Ordinal // r < η } := fun i =>
+      Nat.rec
+        (let p := (hstep (δ 0) (hδ 0)).choose
+         (p, ⟨rankOf p, (hstep (δ 0) (hδ 0)).choose_spec.2.2.2⟩))
+        (fun k prev =>
+          let β := max (δ (k + 1)) prev.2.val
+          let p := (hstep β (max_lt (hδ (k + 1)) prev.2.prop)).choose
+          (p, ⟨rankOf p, (hstep β (max_lt (hδ (k + 1)) prev.2.prop)).choose_spec.2.2.2⟩))
+        i
+    -- Properties of the build function
+    have hbuild_not : ∀ i, ¬T_prop (build i).1.1 (build i).1.2 := by
+      intro i;
+      induction' i with i ih;
+      · exact Classical.choose_spec ( hstep ( δ 0 ) ( hδ 0 ) ) |>.1;
+      · exact Exists.choose_spec ( hstep ( Max.max ( δ ( i + 1 ) ) ( build i |>.2 |>.1 ) ) ( max_lt ( hδ _ ) ( build i |>.2 |>.2 ) ) ) |>.1
+    have hbuild_par : ∀ i, ∃ (m : ℕ) (heq : (build i).1.1 = m + 1),
+        T_prop m (fun j : Fin m => (build i).1.2 (heq ▸ Fin.castSucc j)) := by
+      intro i;
+      induction' i with i ih;
+      · exact Exists.choose_spec ( hstep ( δ 0 ) ( hδ 0 ) ) |>.2.1;
+      · exact ( hstep _ ( max_lt ( hδ _ ) ( build i |>.2.2 ) ) |> Exists.choose_spec |> And.right |> And.left )
+    have hbuild_cofinal : ∀ i, δ i < rankOf (build i).1 := by
+      intro i;
+      induction' i with i ih;
+      · exact Classical.choose_spec ( hstep ( δ 0 ) ( hδ 0 ) ) |>.2.2.1;
+      · exact lt_of_le_of_lt ( le_max_left _ _ ) ( hstep _ ( by
+          exact max_lt ( hδ _ ) ( build i |>.2 |>.2 ) ) |> Exists.choose_spec |> And.right |> And.right |> And.left )
+    have hbuild_strict : ∀ i, rankOf (build i).1 < rankOf (build (i + 1)).1 := by
+      intro i;
+      refine' lt_of_le_of_lt _ ( hstep _ _ |> Exists.choose_spec |> And.right |> And.right |> And.left );
+      · cases i <;> simp +decide [ build ];
+      · exact max_lt ( hδ _ ) ( build i |>.2 |>.2 )
+    -- Strictly increasing ranks implies strictly monotone
+    have hbuild_strict_mono : StrictMono (fun i => rankOf (build i).1) :=
+      strictMono_nat_of_lt_succ hbuild_strict
+    -- Helper: if s is a prefix of t's parent (both frontier nodes), then s is in T
+    have hprefix_in_T : ∀ (i j : ℕ),
+        IsPrefix (build i).1.2 (build j).1.2 →
+        (build i).1.1 < (build j).1.1 →
+        T_prop (build i).1.1 (build i).1.2 := by
+      intro i j ⟨hle, hagree⟩ hlt
+      obtain ⟨mj, heqj, hparj⟩ := hbuild_par j
+      -- (build i).1.1 < (build j).1.1 = mj + 1, so (build i).1.1 ≤ mj
+      have hle_mj : (build i).1.1 ≤ mj := by omega
+      -- Construct the prefix from (build i).1.2 to the parent of (build j).1
+      -- (build j).1 has length mj+1, so its snd : Fin (mj+1) → ℕ
+      -- We define the parent as the init of (build j).1.2
+      set parent : Fin mj → ℕ := fun k => (build j).1.2 ⟨k.val, by omega⟩
+      have hpre_parent : IsPrefix (build i).1.2 parent := by
+        refine ⟨hle_mj, fun k => ?_⟩
+        simp only [parent]
+        rw [hagree k]
+      -- parent and hparj's function agree pointwise (same Fin val)
+      have hparj' : T_prop mj parent := by
+        -- Both parent and the function in hparj apply (build j).1.2 to Fin elements
+        -- with the same .val, so BaNbhd parent = BaNbhd (hparj's function)
+        -- parent k and (heqj ▸ castSucc k) are Fin elements with the same .val
+        have : parent = fun k : Fin mj => (build j).1.2 (heqj ▸ Fin.castSucc k) := by
+          funext k; simp only [parent]
+          have val_preserved : ∀ {a b : ℕ} (heq : a = b) (x : Fin a), (heq ▸ x : Fin b).val = x.val := by
+            intros; subst_vars; rfl
+          -- Both sides apply (build j).1.2 to a Fin with val = k.val
+          have h1 : (⟨k.val, by omega⟩ : Fin (build j).1.1).val = (heqj ▸ Fin.castSucc k).val := by
+            rw [val_preserved]; exact Fin.val_castSucc k
+          exact congrArg (build j).1.2 (Fin.ext h1)
+        rw [this]; exact hparj
+      exact @TreeT_prefix_closed B g η hrank.symm _ _ _ _ hpre_parent hparj' hg hgc
+    -- Incompatibility: distinct frontier nodes are incomparable
     obtain ⟨seq, hseq_incompat, hseq_cofinal⟩ :
         ∃ (seq : ℕ → Σ n : ℕ, Fin n → ℕ),
           (∀ i j, i ≠ j → ¬IsPrefix (seq i).2 (seq j).2 ∧
                            ¬IsPrefix (seq j).2 (seq i).2) ∧
           ∀ i, δ i < CBRank (fun x : {b : B | g b ∈ BaNbhd (seq i).2} => g x.val) := by
-      -- For each i, hCofinal (δ i) (hδ i) gives some node with rank > δ i.
-      -- Take its ⊏-minimal prefix not in T (exists since T is prefix-closed
-      -- and the node itself is not in T).
-      -- Since bodyT is finite, F is finite, so by pigeonhole some element of F
-      -- is used for infinitely many i — but we only need a sequence, not
-      -- distinct elements, so repetition is fine for the rank condition.
-      -- For disjointness: take seq i to be elements of F (finite antichain),
-      -- cycling or using a fixed enumeration of F together with the injection p.
-      -- The injection p : ℕ → ℕ handles the case where F is finite by
-      -- selecting which Cₙ to use for each δ n query.
-      sorry
-    -- Now take C n := BaNbhd (seq n).2 and p := id (or the appropriate index).
+      refine ⟨fun i => (build i).1, fun i j hij => ⟨?_, ?_⟩, hbuild_cofinal⟩
+      · -- ¬IsPrefix (build i).1.2 (build j).1.2
+        intro ⟨hle, hagree⟩
+        by_cases heqlen : (build i).1.1 = (build j).1.1
+        · -- Same length: prefix means equal, contradicting different ranks
+          have heq_node : (build i).1 = (build j).1 := by
+            -- Since the first components are equal and the second components are equal on the Fin type, the pairs are equal.
+            apply Sigma.ext; exact heqlen; exact (by
+            exact (Fin.heq_fun_iff heqlen).mpr hagree)
+          have : rankOf (build i).1 = rankOf (build j).1 := by rw [heq_node]
+          exact absurd this (ne_of_apply_ne id (hbuild_strict_mono.injective.ne hij))
+        · -- Different length: shorter is prefix of parent (in T), contradicting ¬T_prop
+          have hlt : (build i).1.1 < (build j).1.1 := lt_of_le_of_ne hle heqlen
+          exact (hbuild_not i) (hprefix_in_T i j ⟨hle, hagree⟩ hlt)
+      · -- ¬IsPrefix (build j).1.2 (build i).1.2 (symmetric case)
+        intro ⟨hle, hagree⟩
+        by_cases heqlen : (build j).1.1 = (build i).1.1
+        · have heq_node : (build j).1 = (build i).1 := by
+            -- Since the first components are equal and the second components are equal for all indices, the pairs themselves must be equal.
+            apply Sigma.ext;
+            · -- Apply the hypothesis `heqlen` directly to conclude the proof.
+              apply heqlen;
+            · exact (Fin.heq_fun_iff heqlen).mpr hagree
+          have : rankOf (build j).1 = rankOf (build i).1 := by rw [heq_node]
+          exact absurd this (ne_of_apply_ne id (hbuild_strict_mono.injective.ne (Ne.symm hij)))
+        · have hlt : (build j).1.1 < (build i).1.1 := lt_of_le_of_ne hle heqlen
+          exact (hbuild_not j) (hprefix_in_T j i ⟨hle, hagree⟩ hlt)
+    -- Now take C n := BaNbhd (seq n).2 and p := id.
     refine ⟨fun n => BaNbhd (seq n).2, id, Function.injective_id,
             fun n => BaNbhd_isClopen _, ?_, ?_⟩
     · intro i j hij
       obtain ⟨hst, hts⟩ := hseq_incompat i j hij
-      exact BaNbhd_incomparable_disjoint (seq i).2 (seq j).2 hst hts -- or sorry
+      exact BaNbhd_incomparable_disjoint (seq i).2 (seq j).2 hst hts
     · intro n
-      -- hseq_cofinal n : δ n < CBRank(g|BaNbhd (seq n).2)
-      -- Need to identify gClopenFun with the restriction — then exact hseq_cofinal n.
       simp only [id]
       rw [gClopenFun_CBRank_eq (BaNbhd (seq n).2) (BaNbhd_isClopen _)]
       exact hseq_cofinal n
