@@ -45,12 +45,12 @@ theorem pointedGluing_rays_upper_bound
   · refine' ⟨_, _, _⟩
     use fun x => x ∘ fun n => n + 1
     · fun_prop
-    · intro x; ext n; simp +decide [ PointedGluingFun ] 
+    · intro x; ext n; simp +decide [ PointedGluingFun ]
       split_ifs <;> simp_all +decide [ prependZerosOne ]
-      · rename_i h; have := congr_fun h 0; simp_all +decide [ prependZerosOne ] 
+      · rename_i h; have := congr_fun h 0; simp_all +decide [ prependZerosOne ]
       · congr
       · simp_all +decide [ firstNonzero, prependZerosOne ]
-        unfold stripZerosOne at *; simp_all +decide [ prependZerosOne ] 
+        unfold stripZerosOne at *; simp_all +decide [ prependZerosOne ]
 
 
 /-- **Corollary (SplittingaPgluingonatail).**
@@ -295,78 +295,19 @@ theorem classification_compact_domains
 /- **Theorem (JSLgeneralstructure). General Structure Theorem — Main consequence.**
 For all `f` and `g` in 𝒞: `2 · CB(f) < CB(g)` implies `f ≤ g`.
 
-The original statement had two issues:
-1. The first conjunct had `CBRank g ≤ CBRank f` but should be `CBRank f ≤ CBRank g`
-   (the manuscript says CB(f) ≤ CB(g) = λ, not CB(f) ≥ CB(g) = λ).
-   Counterexample: A = {0^ω}, B = ∅, f = Subtype.val, g = empty function.
-   Then CBRank g = 0 ≤ CBRank f, but f cannot reduce to g (no map from nonempty to empty).
-2. Missing `Continuous f`, `Continuous g`, and `η < omega1` hypotheses, required
-   by maxFun_is_maximum' and minFun_is_minimum.
-
-The corrected and proved version is `general_structure_theorem` in
-`PointedGluing/GeneralStructure.lean`, which imports MinFun.lean
-(needed for `minFun_is_minimum`, which cannot be imported here
-due to a circular dependency). -/
--- theorem general_structure_theorem_ORIGINAL
---     (A B : Set Baire)
---     (f : A → Baire) (g : B → Baire)
---     (hf : ScatteredFun f) (hg : ScatteredFun g)
---     (η : Ordinal.{0})
---     (hlam : Order.IsSuccLimit η ∨ η = 0):
---       ((CBRank g = η ∧  CBRank g ≤ CBRank f)
---       -> ContinuouslyReduces f g)
---       ∧
---       (∀ n : ℕ, (CBRank f = η + n ∧ CBRank g ≥ η + 2 * n + 1) -> ContinuouslyReduces f g) := by
---   sorry
+ it is theorem general_structure_theorem in PointedGluing.GeneralStructure
+ -/
 
 
--- /-- **Theorem (JSLgeneralstructure) — Item 1.**
--- If `CB(f) ≤ CB(g) = λ` where `λ` is a limit ordinal or zero, then `f ≤ g`.
-
-
--- The proof finds a sequence of pairwise incomparable finite sequences in the tree
--- of elements with CB-rank `λ`, and applies Gluingaslowerbound. -/
--- theorem general_structure
---     {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
---     {X' Y' : Type*} [TopologicalSpace X'] [TopologicalSpace Y']
---     (f : X → Y) (g : X' → Y')
---     (hf : ScatteredFun f) (hg : ScatteredFun g)
---     (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam ∨ lam = 0)
---     (hcb_f : ∀ γ, lam < γ → CBLevel f γ = ∅)
---     (hcb_g : ∀ γ, lam < γ → CBLevel g γ = ∅)
---     (hcb_g_ne : (CBLevel g lam).Nonempty) :
---     ContinuouslyReduces f g := by
---   sorry
-
-
--- /-- **Theorem (JSLgeneralstructure) — Item 2.**
--- For all `n ∈ ℕ`, if `CB(f) = λ + n` and `λ + 2n + 1 ≤ CB(g)`, then `f ≤ g`,
--- where `λ` is a limit ordinal or zero.
-
-
--- The proof is by induction on `λ`. For the base case, use Maxfunctions and Minfunctions
--- to get `f ≤ ℓ_{λ+n} ≤ k_{λ+2n+1} ≤ g`. For the inductive step, use
--- `ℓ_α = ω · pgl ℓ_β` for successor `α = β + 1`. -/
--- theorem general_structure_successor
---     {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
---     {X' Y' : Type*} [TopologicalSpace X'] [TopologicalSpace Y']
---     (f : X → Y) (g : X' → Y')
---     (hf : ScatteredFun f) (hg : ScatteredFun g)
---     (lam : Ordinal.{0}) (hlam : Order.IsSuccLimit lam ∨ lam = 0)
---     (n : ℕ)
---     (hcb_f : ∀ γ, lam + ↑n < γ → CBLevel f γ = ∅)
---     (hcb_f_ne : (CBLevel f (lam + ↑n)).Nonempty)
---     (hcb_g_ne : (CBLevel g (lam + ↑(2 * n + 1))).Nonempty) :
---     ContinuouslyReduces f g := by
---   sorry
 
 
 /-- **Proposition (FGgivesBQO_2).**
-If `𝒞_β` is BQO for all `β < α`, then `𝒞_{<α}` is BQO.
+If `𝒞_β` is 2-BQO for all `β < α`, then `𝒞_{<α}` is 2-BQO.
 
 
 The proof defines the partial order `≤•` on ordinals by
 `α₀ ≤• α₁ iff α₀ = α₁ or 2α₀ < α₁`.
+This 2nLTm defined in Bqo.2nLTmIsTwoBQO.
 This is a BQO (as a sum of copies of `(ℕ, ≤•)` along the limit ordinals).
 The General Structure Theorem shows that the map `f ↦ (CB(f), f)` into the
 `≤•`-indexed sum of levels is a co-homomorphism for continuous reducibility.
@@ -375,24 +316,45 @@ Since a co-homomorphic image of a BQO is BQO, `𝒞_{<α}` is BQO.
 
 In particular, if each level is finitely generated (Theorem 1.3), then
 `𝒞` is BQO (Theorems 1.4 and 1.5). -/
-theorem finitely_generated_implies_bqo
-    (α : Ordinal.{0})
-    -- Hypothesis: each level 𝒞_β for β < α is WQO
-    (hlev : ∀ (β : Ordinal.{0}), β < α →
-      ∀ (X : ℕ → Type) (Y : ℕ → Type)
-        [∀ n, TopologicalSpace (X n)] [∀ n, TopologicalSpace (Y n)]
-        (seq : ∀ n, X n → Y n),
-        (∀ n, ScatteredFun (seq n)) →
-        (∀ n, CBRank (seq n) = β) →
-        ∃ m n, m < n ∧ ContinuouslyReduces (seq m) (seq n)) :
-    -- Conclusion: 𝒞_{<α} is WQO
-    ∀ (X : ℕ → Type) (Y : ℕ → Type)
-      [∀ n, TopologicalSpace (X n)] [∀ n, TopologicalSpace (Y n)]
-      (seq : ∀ n, X n → Y n),
-      (∀ n, ScatteredFun (seq n)) →
-      (∀ n, CBRank (seq n) < α) →
-      ∃ m n, m < n ∧ ContinuouslyReduces (seq m) (seq n) := by
+def ScatFun := Σ (A : Set (ℕ → ℕ)), { f : A → ℕ → ℕ // ScatteredFun f }
+
+def scatReduces (F G : ScatFun) : Prop :=
+  ContinuouslyReduces F.2.1 G.2.1
+
+/-- Any bad pair-sequence in ScatFun has all its CB-ranks bounded below ω₁,
+    and restricts to one concentrated on a single level β.
+    Sketch
+    we define a partial order $\leq^\bullet$ on $\omega_1$ by $\alpha_0\leq^\bullet \alpha_1$ if and only if $\alpha_0=\alpha_1$ or $2\alpha_0<\alpha_1$
+    As any ordinal $\alpha$ can be uniquely written as $\alpha=\lambda+n$ with $\lambda$ limit or null and $n\in\N$ and $2\alpha=\lambda+2n$, we have:
+    $\lambda_0+n_0 \leq^\bullet \lambda_1+n_1 \Lglra \lambda_0<\lambda_1\mbox{ or } \bigl(\lambda_0=\lambda_1\mbox{ and } n_0\leq^\bullet n_1 \bigr).$
+    This partial order is the sum of the BQO 2nLTm along ω_1, so it is 2-BQO by TwoBQO.lexSigma
+
+    Then the proof follows roughly TwoBQO.lexSigma (which could be generalized to a sum along a 2-BQO `partial` order, antisymmetry is crucial),
+    let fr = fun m n => CBRank f m n
+    by composing with a StrictMono this function is
+    either strictly increasing for the version of 2nLTm on omega1.
+      but then f is good by the general structure theorem
+    or constant equal to some ordinal β, as desired.
+ -/
+theorem bad_pairseq_restricts_to_level
+    (f : PairSeq ScatFun)
+    (hbad : BadPairSeq scatReduces f) :
+    ∃ (β : Ordinal.{0}) (_ : β < omega1)
+      (e : ℕ → ℕ) (he : StrictMono e),
+      BadPairSeq scatReduces (restrictPairSeq f e he) ∧
+      ∀ m n (h : m < n), CBRank (restrictPairSeq f e he m n h).2.1 = β := by
   sorry
+
+/-- If 𝒞_β is 2-BQO for all β < ω₁, then ScatFun is 2-BQO. -/
+theorem twoBQO_of_twoBQO_levels
+    (hlev : ∀ β : Ordinal.{0}, β < omega1 →
+      ¬ ∃ f : PairSeq ScatFun,
+        BadPairSeq scatReduces f ∧
+        ∀ m n h, CBRank (f m n h).2.1 = β) :
+    ¬ ∃ f : PairSeq ScatFun, BadPairSeq scatReduces f := by
+  intro ⟨f, hbad⟩
+  obtain ⟨β, hβ, e, he, hbad', hrank⟩ := bad_pairseq_restricts_to_level f hbad
+  exact hlev β hβ ⟨restrictPairSeq f e he, hbad', hrank⟩
 
 
 /-
@@ -403,7 +365,7 @@ of f_i to find an open set where the function is constant. If S = {0ω}, trivial
 /- pointedGluing_scattered is already proved in PointedGluingUpperBound.lean -/
 
 
-/-- **Corollary (ConsequencesGeneralStructureThm) — Item 1.**
+/-! **Corollary (ConsequencesGeneralStructureThm) — Item 1.**
 If `(f_n)_n` is in `𝒞_{<λ}` for `λ` limit, then `pgl_n f_n ≤ k_{λ+1}`.
 If moreover `(CB(f_n))_n` is regular with `sup_n CB(f_n) = λ`,
 then `pgl_n f_n ≡ k_{λ+1}`.
@@ -414,41 +376,45 @@ for a cofinal sequence, giving `f_n ≤ k_{α_{k_n}+1}`.
 Then Pgluingasupperbound gives `pgl_n f_n ≤ k_{λ+1}`.
 If `(CB(f_n))_n` is regular, then `CB(pgl_n f_n) = λ + 1` by
 Proposition (CBrankofPgluingofregularsequence1), and `k_{λ+1}` being minimum
-gives the reverse. -/
-theorem consequences_general_structure_1
-    (lam : Ordinal.{0}) (_hlam : Order.IsSuccLimit lam)
-    (A B : ℕ → Set (ℕ → ℕ))
-    (f : ∀ n, A n → B n)
-    (hf_scat : ∀ n, ScatteredFun (fun (x : A n) => (f n x : ℕ → ℕ)))
-    (_hcb_bound : ∀ n γ, lam ≤ γ →
-      CBLevel (fun (x : A n) => (f n x : ℕ → ℕ)) γ = ∅) :
-    -- pgl_n f_n reduces to k_{λ+1}
-    ∃ (X : Type) (Y : Type) (_ : TopologicalSpace X) (_ : TopologicalSpace Y)
-      (k : X → Y),
-      ScatteredFun k ∧
-      ContinuouslyReduces
-        (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) k := by
-  refine ⟨PointedGluingSet A, ℕ → ℕ, inferInstance, inferInstance,
-    fun x => PointedGluingFun A B f x, ?_, ContinuouslyReduces.refl _⟩
-  exact pointedGluing_scattered A B f hf_scat
+gives the reverse.
+FIX STATEMENT using MinFun α = k_{α+1}
+-/
+-- theorem consequences_general_structure_1
+--     (lam : Ordinal.{0}) (_hlam : Order.IsSuccLimit lam)
+--     (A B : ℕ → Set (ℕ → ℕ))
+--     (f : ∀ n, A n → B n)
+--     (hf_scat : ∀ n, ScatteredFun (fun (x : A n) => (f n x : ℕ → ℕ)))
+--     (_hcb_bound : ∀ n γ, lam ≤ γ →
+--       CBLevel (fun (x : A n) => (f n x : ℕ → ℕ)) γ = ∅) :
+--     -- pgl_n f_n reduces to k_{λ+1}
+--     ∃ (X : Type) (Y : Type) (_ : TopologicalSpace X) (_ : TopologicalSpace Y)
+--       (k : X → Y),
+--       ScatteredFun k ∧
+--       ContinuouslyReduces
+--         (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) k := by
+--   refine ⟨PointedGluingSet A, ℕ → ℕ, inferInstance, inferInstance,
+--     fun x => PointedGluingFun A B f x, ?_, ContinuouslyReduces.refl _⟩
+--   exact pointedGluing_scattered A B f hf_scat
 
 
-/-- **Corollary (ConsequencesGeneralStructureThm) — Item 2.**
+/-! **Corollary (ConsequencesGeneralStructureThm) — Item 2.**
 If `CB(f) ≥ λ + 2` for a limit ordinal `λ`, then `pgl ℓ_λ ≤ f`.
 
 
 The proof uses the General Structure Theorem: `ℓ_λ ≤ k_{λ+1}` (since
 `2 · λ < λ + 1` for limit `λ`), so `pgl ℓ_λ ≤ pgl k_{λ+1} = k_{λ+2}`.
-Since `CB(f) ≥ λ + 2`, we have `k_{λ+2} ≤ f` by Minfunctions. -/
-theorem consequences_general_structure_2
-    {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
-    (f : X → Y) (_hf : ScatteredFun f)
-    (lam : Ordinal.{0}) (_hlam : Order.IsSuccLimit lam)
-    (hcb : (CBLevel f (lam + 2)).Nonempty) :
-    -- pgl ℓ_λ ≤ f
-    ∃ (X' : Type) (Y' : Type) (_ : TopologicalSpace X') (_ : TopologicalSpace Y')
-      (h : X' → Y'),
-      ContinuouslyReduces h f := by
-  obtain ⟨x, hx⟩ := hcb
-  exact ⟨PUnit, PUnit, inferInstance, inferInstance, id,
-    fun _ => x, continuous_const, fun _ => PUnit.unit, continuousOn_const, fun _ => rfl⟩
+Since `CB(f) ≥ λ + 2`, we have `k_{λ+2} ≤ f` by Minfunctions.
+FIX STATEMENT using MaxFun λ = l_λ
+-/
+-- theorem consequences_general_structure_2
+--     {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
+--     (f : X → Y) (_hf : ScatteredFun f)
+--     (lam : Ordinal.{0}) (_hlam : Order.IsSuccLimit lam)
+--     (hcb : (CBLevel f (lam + 2)).Nonempty) :
+--     -- pgl ℓ_λ ≤ f
+--     ∃ (X' : Type) (Y' : Type) (_ : TopologicalSpace X') (_ : TopologicalSpace Y')
+--       (h : X' → Y'),
+--       ContinuouslyReduces h f := by
+--   obtain ⟨x, hx⟩ := hcb
+--   exact ⟨PUnit, PUnit, inferInstance, inferInstance, id,
+--     fun _ => x, continuous_const, fun _ => PUnit.unit, continuousOn_const, fun _ => rfl⟩

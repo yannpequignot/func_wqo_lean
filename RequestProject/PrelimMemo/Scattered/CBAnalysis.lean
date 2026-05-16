@@ -140,7 +140,6 @@ noncomputable def CBRank {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
   sInf {α : Ordinal.{0} | (CBLevel f α) = (CBLevel f (Order.succ α))}
 
 
-
 end CBDerivative
 
 section ScatteredIffEmptyKernel
@@ -216,6 +215,8 @@ lemma CBLevel_strictAnti_of_ne {X Y : Type*}
       apply CBLevel_antitone
       exact Order.succ_le_iff.mpr hαβ
     exact hg α |>.2 ( h_eq ▸ h_subset ( hg β |>.1 ) )
+
+
 
 /-
 If `f` is scattered and `CBLevel f α` is nonempty, then `CBLevel f (succ α)` is
@@ -384,7 +385,7 @@ lemma cbrank_restriction_le_of_empty_level {X Y : Type*}
   ext x
   constructor <;> intro hx <;> contrapose! hempty
   · exact ⟨x, by simpa using local_cb_derivative U hU ( Order.succ β ) |>.subset ⟨x, hx, rfl⟩⟩
-  · contrapose! hempty; simp_all +decide [ CBLevel_succ' ] 
+  · contrapose! hempty; simp_all +decide [ CBLevel_succ' ]
 
 lemma limit_locally_lower {X Y : Type*}
     [TopologicalSpace X]
@@ -581,5 +582,22 @@ theorem ContinuouslyReduces.rank_monotone {X X' Y Y' : Type*}
   have hmono := ContinuouslyReduces.cb_monotone hσ heq α
   exact Set.image_eq_empty.mp (Set.subset_empty_iff.mp (hmono.trans hα.subset))
 
+/-- The CB-rank of a scattered function on a subspace of Baire space is
+    a countable ordinal, i.e. strictly less than ω₁.
+
+    Proof sketch: the complements of CB levels form a strictly increasing
+    chain of open sets in A (a subspace of ℕ → ℕ, which is second countable).
+    By regularity of ℵ₁ = Cardinal.aleph 1, no countable family can be
+    cofinal in omega1, so the chain must stabilize before omega1.
+
+    Key ingredients needed:
+    - `CBLevel_isClosed` : CB levels are closed (by transfinite induction)
+    - `Cardinal.isRegular_aleph_one` : aleph 1 is a regular cardinal
+    - `TopologicalSpace.exists_countable_basis` : A has a countable basis
+    TODO: complete this proof. -/
+axiom CBRank_lt_omega1
+    {A : Set (ℕ → ℕ)} {f : A → ℕ → ℕ}
+    (hf : ScatteredFun f) :
+    CBRank f < omega1
 
 end ReductionAndCB
