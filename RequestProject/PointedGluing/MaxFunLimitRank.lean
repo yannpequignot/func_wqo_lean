@@ -388,59 +388,45 @@ lemma exists_disjoint_clopen_with_cofinal_ranks
   -- ── Step 2: Case split ──────────────────────────────────────────────────
   by_cases hbody : bodyT.Infinite
   · -- ══ Case A: bodyT infinite ══════════════════════════════════════════
-      obtain ⟨seq, hseq_incompat, hseq_T⟩ :
-          ∃ (seq : ℕ → Σ n : ℕ, Fin n → ℕ),
-            (∀ i j, i ≠ j → ¬IsPrefix (seq i).2 (seq j).2 ∧
-                            ¬IsPrefix (seq j).2 (seq i).2) ∧
-            ∀ i, T_prop (seq i).1 (seq i).2 := by
-        -- Use the antichain construction from the helpers file
-        let f : ℕ ↪ bodyT := hbody.natEmbedding bodyT
-        have hf_inj : Injective (fun i => (f i).val) :=
-          fun i j h => f.injective (Subtype.val_injective h)
-        obtain ⟨seq, hseq_ac, hseq_trunc⟩ :=
-          infinite_baire_antichain_prefixes (fun i => (f i).val) hf_inj
-        refine ⟨seq, hseq_ac, fun i => ?_⟩
-        obtain ⟨m, hm⟩ := hseq_trunc i
-        -- seq(i) is a truncation of f(m).val, which is in bodyT
-        -- so T_prop holds for this truncation
-        have hfm_body := (f m).prop
-        simp only [bodyT, Set.mem_setOf_eq] at hfm_body
-        show T_prop (seq i).1 (seq i).2
-        simp only [T_prop]
-        have : (fun j : Fin (seq i).1 => (f m).val ↑j) = (seq i).2 := by
-          ext j; exact (hm j).symm
-        rw [← this]
-        exact hfm_body (seq i).1
-      refine ⟨fun n => BaNbhd (seq n).2, id, Function.injective_id,
-              fun n => BaNbhd_isClopen _, ?_, ?_⟩
-      · intro i j hij
-        obtain ⟨hst, hts⟩ := hseq_incompat i j hij
-        exact BaNbhd_incomparable_disjoint (seq i).2 (seq j).2 hst hts
-      · intro n
-        show δ n < CBRank (gClopenFun B g (BaNbhd (seq n).2))
-        have hrank_eq : CBRank (gClopenFun B g (BaNbhd (seq n).2)) =
-              CBRank (fun x : {b : B | g b ∈ BaNbhd (seq n).2} => g x.val) :=
-          gClopenFun_CBRank_eq (BaNbhd (seq n).2) (BaNbhd_isClopen _)
-        rw [hrank_eq]
-        have hT := hseq_T n
-        simp only [T_prop] at hT
-        rw [hT]
-        exact hδ n
+    obtain ⟨seq, hseq_incompat, hseq_T⟩ :
+        ∃ (seq : ℕ → Σ n : ℕ, Fin n → ℕ),
+          (∀ i j, i ≠ j → ¬IsPrefix (seq i).2 (seq j).2 ∧
+                          ¬IsPrefix (seq j).2 (seq i).2) ∧
+          ∀ i, T_prop (seq i).1 (seq i).2 := by
+      obtain ⟨S, hS_inf, hS_disc⟩ :=
+        haveI : Infinite bodyT := hbody.to_subtype
+        exists_infinite_discreteTopology bodyT
+      -- use exists_infinite_discreteTopology bodyT
+      -- to find an infinite discrete subspace S of bodyT
+      -- then Use the antichain construction from the helpers file
+      -- on S not on bodyT
+      let f : ℕ ↪ S := hS_inf.natEmbedding S
+      -- obtain ⟨seq, hseq_ac, hseq_trunc⟩ :=
+      --   infinite_baire_antichain_prefixes (B := S) f hS_inf hS_disc
+      sorry
+    sorry
   · -- ══ Case B: bodyT finite ════════════════════════════════════════════
     -- The minimal elements of ℕ^{<ω} \ T form a finite antichain F.
     -- Their BaNbhds are pairwise disjoint clopens covering (ℕ→ℕ) \ bodyT.
     -- Key: the ranks {CBRank(g|BaNbhd s) | s ∈ F} are cofinal in η.
-    --
+    -- F is the set of sequences s of length n+1 (∅∈ T) such that
+    -- s∉ T ans s|n ∈ T
     -- Cofinality: for any β < η, some s ∈ F has CBRank(g|BaNbhd s) > β.
     -- Proof: if all had rank ≤ β, then CB_β(g) ⊆ g⁻¹(bodyT). But bodyT is
     -- finite, so every point of g⁻¹(bodyT) is isolated in CB_β(g), giving
     -- CB_{β+1}(g) = ∅, so CBRank g ≤ β + 1 < η — contradiction with hrank.
     have hCofinal : ∀ β : Ordinal.{0}, β < η →
-        ∃ (n : ℕ) (s : Fin n → ℕ), ¬T_prop n s ∧
+        ∃ (n : ℕ) (s : Fin (n+1) → ℕ), ¬T_prop (n+1) s ∧ T_prop n (fun i : Fin n => s i.castSucc)  ∧
           β < CBRank (fun x : {b : B | g b ∈ BaNbhd s} => g x.val) := by
       -- For any β < η, we find a BaNbhd node s with β < rank(g|BaNbhd s) < η.
       -- This uses the fact that the ranks of the level-1 BaNbhd partitions
       -- cannot all be ≤ β (otherwise CBRank g ≤ β < η, contradiction).
+      -- By contradiction, let β<η such that g has rank at most beta
+      -- on all g^-1(BaNbhd s) for s ∈ F
+      -- V=g^-1(bodyT) is clopen as a preimage of a finite set
+      -- and g has rank at most 1 on V since g is locally constant on g
+      -- so by CBLevel_open_union_empty g has rank at most max(beta,1)<η
+      -- contradiction
       sorry
     -- For each n : ℕ, apply hCofinal to δ n to get a sequence of
     -- not-in-T nodes with rank > δ n.
