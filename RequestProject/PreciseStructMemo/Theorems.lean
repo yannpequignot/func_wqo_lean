@@ -4,9 +4,7 @@ import RequestProject.PrelimMemo.Scattered.Decomposition
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Formalization of `5_precise_struct_memo.tex` — Main Theorems
@@ -60,7 +58,7 @@ theorem wedge_preserves_continuity
     Continuous (WedgeFun k f_vert f_diag) := by
   sorry
 
-/-
+/--
 **Fact 5.3, Item 2 (BasicfactsWedge).** If `k > 0`, then the wedge is
 not injective. This is because `(0) ⌢ 0^ω` and `(1) ⌢ 0^ω` both map to `0^ω`.
 -/
@@ -70,8 +68,8 @@ theorem wedge_not_injective
     (f_diag : (ℕ → ℕ) → (ℕ → ℕ)) :
     ¬ Injective (WedgeFun k f_vert f_diag) := by
   unfold WedgeFun
-  unfold zeroStream; simp +decide [ Injective ] 
-  use fun n => if n = 0 then 0 else 0, fun n => if n = 0 then 1 else 0; simp +decide [ funext_iff ] 
+  unfold zeroStream; simp +decide [Injective]
+  use fun n => if n = 0 then 0 else 0, fun n => if n = 0 then 1 else 0; simp +decide [funext_iff]
   unfold unprepend; aesop
 
 /-- **Fact 5.3, Item 3 (BasicfactsWedge).** CB-rank of the wedge:

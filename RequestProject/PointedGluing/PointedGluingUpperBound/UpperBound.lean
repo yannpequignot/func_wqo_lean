@@ -3,9 +3,7 @@ import RequestProject.PointedGluing.PointedGluingUpperBound.BasicProperties
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Pointed Gluing — Upper Bound (Proposition 3.5, Corollaries 3.6–3.7)
@@ -47,13 +45,13 @@ theorem sufficient_cond_continuity
       (∀ n, x n ∈ U) → a ∈ Uᶜ → Filter.Tendsto x Filter.atTop (nhds a) →
       Filter.Tendsto (f ∘ x) Filter.atTop (nhds (f a))) :
     Continuous f := by
-  refine' continuous_iff_continuousAt.2 fun x => _
+  refine continuous_iff_continuousAt.2 fun x => ?_
   by_cases hx : x ∈ U
-  · exact hcont_U.continuousAt ( hU.mem_nhds hx )
+  · exact hcont_U.continuousAt (hU.mem_nhds hx)
   · by_contra h_discon
     obtain ⟨V, hV⟩ : ∃ V : Set B, IsOpen V ∧ f x ∈ V ∧ ∀ U' ∈ nhds x, ∃ y ∈ U', f y ∉ V := by
-      rw [ ContinuousAt ] at h_discon
-      rw [ Filter.tendsto_iff_forall_eventually_mem ] at h_discon
+      rw [ContinuousAt] at h_discon
+      rw [Filter.tendsto_iff_forall_eventually_mem] at h_discon
       simp +zetaDelta at *
       rcases h_discon with ⟨V, hV₁, hV₂⟩
       rcases mem_nhds_iff.mp hV₁ with ⟨W, hW₁, hW₂⟩
@@ -61,24 +59,24 @@ theorem sufficient_cond_continuity
     -- Since $x \notin U$, we can consider the set $I = \{n \mid x_n \in U\}$.
     obtain ⟨x_n, hx_n⟩ : ∃ x_n : ℕ → A, Filter.Tendsto x_n Filter.atTop (nhds x) ∧ ∀ n, f (x_n n) ∉ V := by
       have := hV.2.2
-      rcases ( nhds_basis_opens x ).exists_antitone_subbasis with ⟨U', hU'⟩
-      choose y hy using fun n => this ( U' n ) ( hU'.1 n |>.2.mem_nhds ( hU'.1 n |>.1 ) )
+      rcases (nhds_basis_opens x).exists_antitone_subbasis with ⟨U', hU'⟩
+      choose y hy using fun n => this (U' n) (hU'.1 n |>.2.mem_nhds (hU'.1 n |>.1))
       exact ⟨y, hU'.2.tendsto fun n => hy n |>.1, fun n => hy n |>.2⟩
     -- Since $x \notin U$, we can consider the set $I = \{n \mid x_n \in U\}$. If $I$ is finite, then $x_n$ is eventually in $U^c$, and we can apply the continuity of $f$ on $U^c$.
     by_cases hI_finite : Set.Finite {n | x_n n ∈ U}
     · -- Since $I$ is finite, there exists some $N$ such that for all $n \geq N$, $x_n \in U^c$.
       obtain ⟨N, hN⟩ : ∃ N, ∀ n ≥ N, x_n n ∈ Uᶜ := by
-        exact ⟨hI_finite.bddAbove.some + 1, fun n hn => fun h => not_lt_of_ge ( hI_finite.bddAbove.choose_spec h ) hn⟩
+        exact ⟨hI_finite.bddAbove.some + 1, fun n hn => fun h => not_lt_of_ge (hI_finite.bddAbove.choose_spec h) hn⟩
       have h_cont_compl : Filter.Tendsto (fun n => f (x_n n)) Filter.atTop (nhds (f x)) := by
         have := hcont_compl x hx
-        exact this.tendsto.comp ( Filter.tendsto_inf.mpr ⟨hx_n.1, Filter.tendsto_principal.mpr <| Filter.eventually_atTop.mpr ⟨N, fun n hn => hN n hn⟩⟩ )
-      exact absurd ( h_cont_compl.eventually ( hV.1.mem_nhds hV.2.1 ) ) fun h => by obtain ⟨n, hn⟩ := h.and ( Filter.eventually_ge_atTop N ) |> fun h => h.exists; exact hx_n.2 n hn.1
+        exact this.tendsto.comp (Filter.tendsto_inf.mpr ⟨hx_n.1, Filter.tendsto_principal.mpr <| Filter.eventually_atTop.mpr ⟨N, fun n hn => hN n hn⟩⟩)
+      exact absurd (h_cont_compl.eventually (hV.1.mem_nhds hV.2.1)) fun h => by obtain ⟨n, hn⟩ := h.and (Filter.eventually_ge_atTop N) |> fun h => h.exists; exact hx_n.2 n hn.1
     · -- Since $I$ is infinite, we can extract a subsequence $(x_{n_k})$ such that $x_{n_k} \in U$ for all $k$.
       obtain ⟨n_k, hn_k⟩ : ∃ n_k : ℕ → ℕ, StrictMono n_k ∧ ∀ k, x_n (n_k k) ∈ U := by
-        exact ⟨fun k => Nat.recOn k ( Nat.find <| Set.Infinite.nonempty hI_finite ) fun k ih => Nat.find <| Set.Infinite.exists_gt hI_finite ih, strictMono_nat_of_lt_succ fun k => Nat.find_spec ( Set.Infinite.exists_gt hI_finite _ ) |>.2, fun k => Nat.recOn k ( Nat.find_spec <| Set.Infinite.nonempty hI_finite ) fun k ih => Nat.find_spec ( Set.Infinite.exists_gt hI_finite _ ) |>.1⟩
+        exact ⟨fun k => Nat.recOn k (Nat.find <| Set.Infinite.nonempty hI_finite) fun k ih => Nat.find <| Set.Infinite.exists_gt hI_finite ih, strictMono_nat_of_lt_succ fun k => Nat.find_spec (Set.Infinite.exists_gt hI_finite _) |>.2, fun k => Nat.recOn k (Nat.find_spec <| Set.Infinite.nonempty hI_finite) fun k ih => Nat.find_spec (Set.Infinite.exists_gt hI_finite _) |>.1⟩
       have h_subseq : Filter.Tendsto (fun k => f (x_n (n_k k))) Filter.atTop (nhds (f x)) := by
-        exact hseq _ _ hn_k.2 hx ( hx_n.1.comp hn_k.1.tendsto_atTop )
-      exact absurd ( h_subseq.eventually ( hV.1.mem_nhds hV.2.1 ) ) fun h => by obtain ⟨k, hk⟩ := h.exists; exact hx_n.2 ( n_k k ) hk
+        exact hseq _ _ hn_k.2 hx (hx_n.1.comp hn_k.1.tendsto_atTop)
+      exact absurd (h_subseq.eventually (hV.1.mem_nhds hV.2.1)) fun h => by obtain ⟨k, hk⟩ := h.exists; exact hx_n.2 (n_k k) hk
 
 
 /-!
@@ -253,7 +251,7 @@ theorem pointedGluing_upper_bound
       have hσ_cont_Oj : ContinuousOn σ {b : A | f b ∈ RaySet B y j} := by
         -- Since σ_j j is continuous and toPointed j is continuous, their composition is continuous.
         have h_cont_comp : Continuous (fun b : {b : A | f b ∈ RaySet B y j} => toPointed j (σ_j j b)) := by
-          convert Continuous.comp ( show Continuous ( fun x : GluingSet ( fun i => if i ∈ I j then C i else ∅ ) => gluingToPointed C ⟨x, embed_mem j x⟩ ) from ?_ ) ( hσ_j j ) using 1
+          convert Continuous.comp (show Continuous (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => gluingToPointed C ⟨x, embed_mem j x⟩) from ?_) (hσ_j j) using 1
           -- The function gluingToPointed is continuous because it is a composition of continuous functions: the inclusion map and the prependZerosOne function.
           have h_cont : Continuous (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne (x.val 0) (unprepend x.val)) := by
             have h_cont : ∀ i ∈ I j, Continuous (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne i (unprepend x.val)) := by
@@ -261,21 +259,21 @@ theorem pointedGluing_upper_bound
             have h_cont : ∀ i ∈ I j, IsOpen {x : GluingSet (fun i => if i ∈ I j then C i else ∅) | x.val 0 = i} := by
               intro i hi
               have h_cont : IsOpen {x : ℕ → ℕ | x 0 = i} := by
-                rw [ isOpen_pi_iff ]
+                rw [isOpen_pi_iff]
                 exact fun f hf => ⟨{ 0 }, fun _ => { i }, by aesop⟩
-              exact h_cont.preimage ( continuous_subtype_val )
+              exact h_cont.preimage (continuous_subtype_val)
             have h_cont : ∀ i ∈ I j, ContinuousOn (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne i (unprepend x.val)) {x : GluingSet (fun i => if i ∈ I j then C i else ∅) | x.val 0 = i} := by
-              exact fun i hi => Continuous.continuousOn ( by solve_by_elim )
+              exact fun i hi => Continuous.continuousOn (by solve_by_elim)
             have h_cont : ContinuousOn (fun x : GluingSet (fun i => if i ∈ I j then C i else ∅) => prependZerosOne (x.val 0) (unprepend x.val)) (⋃ i ∈ I j, {x : GluingSet (fun i => if i ∈ I j then C i else ∅) | x.val 0 = i}) := by
               intro x hx
               simp +zetaDelta at *
-              exact ContinuousAt.continuousWithinAt ( by exact ContinuousAt.congr ( h_cont _ hx |> ContinuousOn.continuousAt <| IsOpen.mem_nhds ( by solve_by_elim ) <| by simp ) <| Filter.EventuallyEq.symm <| Filter.eventuallyEq_of_mem ( IsOpen.mem_nhds ( by solve_by_elim ) <| by simp ) fun y hy => by aesop )
+              exact ContinuousAt.continuousWithinAt (by exact ContinuousAt.congr (h_cont _ hx |> ContinuousOn.continuousAt <| IsOpen.mem_nhds (by solve_by_elim) <| by simp) <| Filter.EventuallyEq.symm <| Filter.eventuallyEq_of_mem (IsOpen.mem_nhds (by solve_by_elim) <| by simp) fun y hy => by aesop)
             convert h_cont using 1
-            rw [ show ( ⋃ i ∈ I j, { x : GluingSet ( fun i => if i ∈ I j then C i else ∅ ) | ( x : ℕ → ℕ ) 0 = i } ) = Set.univ from Set.eq_univ_of_forall fun x => Set.mem_iUnion₂.mpr ⟨_, embed_block j x, rfl⟩ ] ; simp +decide [ continuousOn_univ ]
-          rw [ continuous_induced_rng ]
+            rw [show (⋃ i ∈ I j, { x : GluingSet (fun i => if i ∈ I j then C i else ∅) | (x : ℕ → ℕ) 0 = i }) = Set.univ from Set.eq_univ_of_forall fun x => Set.mem_iUnion₂.mpr ⟨_, embed_block j x, rfl⟩] ; simp +decide [continuousOn_univ]
+          rw [continuous_induced_rng]
           convert h_cont using 1
           exact funext fun x => toPointed_val j x
-        rw [ continuousOn_iff_continuous_restrict ]
+        rw [continuousOn_iff_continuous_restrict]
         convert h_cont_comp using 1
         exact funext fun x => hσ_eq_on_Oj x x.2
       exact (hσ_cont_Oj.continuousAt (hOj.mem_nhds hj)).continuousWithinAt
@@ -297,13 +295,13 @@ theorem pointedGluing_upper_bound
       -- Since f(x_n n) → y and f(x_n n) ∈ RaySet B y j_n, j_n → ∞
       -- Since I j are pairwise disjoint, k_n ∈ I j_n are distinct, hence k_n → ∞
       -- Then prependZerosOne k_n · → zeroStream by prependZerosOne_eventually_in_nhds
-      rw [ tendsto_subtype_rng ]
+      rw [tendsto_subtype_rng]
       -- Apply the fact that `prependZerosOne` tends to `zeroStream` as `k` tends to infinity.
       have h_append_zero : Filter.Tendsto (fun n => (σ_j (rayIdx (x_n n) (hU_n n)) ⟨x_n n, rayIdx_inray (x_n n) (hU_n n)⟩).val 0) Filter.atTop Filter.atTop := by
         have h_append_zero : Filter.Tendsto (fun n => rayIdx (x_n n) (hU_n n)) Filter.atTop Filter.atTop := by
           apply rayIdx_tendsto_atTop_of_converge
           any_goals tauto
-          simpa [ ha₀ ] using hf.continuousAt.tendsto.comp hx_n_tendsto
+          simpa [ha₀] using hf.continuousAt.tendsto.comp hx_n_tendsto
         exact
           disjoint_finset_member_tendsto_atTop hI_disj
             (fun n =>
@@ -550,7 +548,7 @@ This is a direct application of Pgluingasupperbound with the identity partition
 `I_j = {j}`.
 -/
 
-/-
+/--
 The pointed gluing of scattered functions is scattered.
 Given nonempty S, if S contains a non-zero element in block i, use ScatteredFun
 of f_i to find an open set where the function is constant. If S = {0ω}, trivial.
@@ -562,12 +560,12 @@ lemma pointedGluing_scattered
     ScatteredFun (fun (x : PointedGluingSet A) => PointedGluingFun A B f x) := by
   intro S hS_nonempty
   by_cases h_zero : S = {⟨zeroStream, zeroStream_mem_pointedGluingSet A⟩}
-  · refine' ⟨Set.univ, isOpen_univ, _, _⟩ <;> aesop
+  · refine ⟨Set.univ, isOpen_univ, ?_, ?_⟩ <;> aesop
   · obtain ⟨y, hy⟩ : ∃ y ∈ S, y.val ≠ zeroStream := by
       contrapose! h_zero
       exact Set.eq_singleton_iff_nonempty_unique_mem.mpr ⟨hS_nonempty, fun y hy => Subtype.ext <| h_zero y hy⟩
     obtain ⟨i, hi⟩ : ∃ i : ℕ, (∀ k, k < i → y.val k = 0) ∧ y.val i ≠ 0 := by
-      exact ⟨Nat.find ( show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h ), fun k hk => by_contra fun hk' => Nat.find_min ( show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h ) hk hk', Nat.find_spec ( show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h )⟩
+      exact ⟨Nat.find (show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h), fun k hk => by_contra fun hk' => Nat.find_min (show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h) hk hk', Nat.find_spec (show ∃ i, y.val i ≠ 0 from not_forall.mp fun h => hy.2 <| funext h)⟩
     -- Define Block_i as the set of elements in the pointed gluing set whose first nonzero entry is at index i.
     set Block_i : Set (PointedGluingSet A) := {z : PointedGluingSet A | (∀ k, k < i → z.val k = 0) ∧ z.val i ≠ 0}
     -- Since $S$ is nonempty and contains elements with first nonzero entry at index $i$, we can apply the scatteredness of $f_i$ to find an open set $V$ in $A_i$ where $f_i$ is constant.
@@ -575,18 +573,18 @@ lemma pointedGluing_scattered
       apply hf_scat i
       exact ⟨⟨stripZerosOne i y.val, strip_mem_of_block A y i ⟨hi.1, hi.2⟩⟩, ⟨y, ⟨hy.1, hi⟩, rfl⟩⟩
     obtain ⟨V₀, hV₀_open, hV₀_eq⟩ : ∃ V₀ : Set (ℕ → ℕ), IsOpen V₀ ∧ V = Subtype.val ⁻¹' V₀ := by
-      obtain ⟨V₀, hV₀_open, rfl⟩ := hV_open; exact ⟨V₀, hV₀_open, rfl⟩ 
-    refine' ⟨Block_i ∩ { z : PointedGluingSet A | stripZerosOne i z.val ∈ V₀ }, _, _, _⟩
-    · refine' IsOpen.inter _ _
-      · convert isOpen_block i |> IsOpen.preimage ( continuous_subtype_val ) using 1
-      · exact hV₀_open.preimage ( continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val )
+      obtain ⟨V₀, hV₀_open, rfl⟩ := hV_open; exact ⟨V₀, hV₀_open, rfl⟩
+    refine ⟨Block_i ∩ { z : PointedGluingSet A | stripZerosOne i z.val ∈ V₀ }, ?_, ?_, ?_⟩
+    · refine IsOpen.inter ?_ ?_
+      · convert isOpen_block i |> IsOpen.preimage (continuous_subtype_val) using 1
+      · exact hV₀_open.preimage (continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val)
     · obtain ⟨z, hz⟩ := hV_nonempty
       obtain ⟨y, hy₁, hy₂⟩ := hz.2
       exact ⟨y, ⟨⟨hy₁.2, by aesop⟩, hy₁.1⟩⟩
     · intro x hx x' hx'
-      simp_all +decide [ PointedGluingFun ]
-      rw [ if_neg, if_neg ]
-      · rw [ firstNonzero_eq_of_block _ _ hx.1.1, firstNonzero_eq_of_block _ _ hx'.1.1 ]
+      simp_all +decide [PointedGluingFun]
+      rw [if_neg, if_neg]
+      · rw [firstNonzero_eq_of_block _ _ hx.1.1, firstNonzero_eq_of_block _ _ hx'.1.1]
         grind +suggestions
       · exact ne_zeroStream_of_block _ _ hx'.1.1
       · exact ne_zeroStream_of_block _ _ hx.1.1

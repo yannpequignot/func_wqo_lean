@@ -10,9 +10,7 @@ import RequestProject.PointedGluing.MinFunLocalHelpers
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 8000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 ## Section 6: Pointed Gluing as a Lower Bound (Proposition 3.11)
@@ -20,7 +18,7 @@ Lemma and helpers for the main lower bound result are in
 `LowerBoundLemma.lean`. This file contains the main theorem and some auxiliary lemmas.
 -/
 
-/-
+/--
 MinFun 0 reduces to any function with nonempty domain.
 -/
 lemma minFun_zero_reduces {A : Set (ℕ → ℕ)}
@@ -28,12 +26,12 @@ lemma minFun_zero_reduces {A : Set (ℕ → ℕ)}
     (hne : A.Nonempty) :
     ContinuouslyReduces (MinFun 0) f := by
   obtain ⟨x, hx⟩ := hne
-  refine' ⟨fun _ => ⟨x, hx⟩, _, _⟩
+  refine ⟨fun _ => ⟨x, hx⟩, ?_, ?_⟩
   · exact continuous_const
-  · refine' ⟨fun _ => zeroStream, _, _⟩ <;> norm_num [ MinFun ]
+  · refine ⟨fun _ => zeroStream, ?_, ?_⟩ <;> norm_num [MinFun]
     · exact continuousOn_const
-    · simp +decide [ MinDom ]
-      simp +decide [ PointedGluingSet ]
+    · simp +decide [MinDom]
+      simp +decide [PointedGluingSet]
 
 theorem pointedGluing_lower_bound
     {A : Set (ℕ → ℕ)}
@@ -188,46 +186,46 @@ theorem pointedGluing_lower_bound
     -- So f x ∉ closure(range(f ∘ σseq n)) = closure(f '' An n)
     -- Since $f x \in \text{cylfx } (mseq n)$ and $\text{closure } (\text{range } (f \circ \sigmaseq n)) \cap \text{cylfx } (mseq n) = \emptyset$, it follows that $f x \notin \text{closure } (\text{range } (f \circ \sigmaseq n))$.
     have h_not_in_closure : f x ∉ closure (range (fun z => f (σseq n z))) := by
-      exact fun h => Set.notMem_empty _ <| hclos n ▸ Set.mem_inter h ( hfx_cylfx _ )
+      exact fun h => Set.notMem_empty _ <| hclos n ▸ Set.mem_inter h (hfx_cylfx _)
     convert h_not_in_closure using 1
-    simp +decide [ An, Set.image ]
+    simp +decide [An, Set.image]
     congr! 2
-    exact Set.ext fun x => ⟨by rintro ⟨a, ha, ⟨b, hb, hab⟩, rfl⟩ ; exact ⟨⟨b, hb⟩, by simp [ hab ]⟩, by rintro ⟨⟨a, ha⟩, rfl⟩ ; exact ⟨_, _, ⟨a, ha, rfl⟩, rfl⟩⟩
+    exact Set.ext fun x => ⟨by rintro ⟨a, ha, ⟨b, hb, hab⟩, rfl⟩ ; exact ⟨⟨b, hb⟩, by simp [hab]⟩, by rintro ⟨⟨a, ha⟩, rfl⟩ ; exact ⟨_, _, ⟨a, ha, rfl⟩, rfl⟩⟩
   · -- hrelclop: IsRelativeClopenPartition (fun m => f '' An m)
     constructor
     · intro i j hij
       -- Since $i \neq j$, without loss of generality, assume $i < j$.
       wlog hij : i < j generalizing i j
-      · exact Disjoint.symm ( this _ _ ( Ne.symm ‹_› ) ( lt_of_le_of_ne ( le_of_not_gt hij ) ( Ne.symm ‹_› ) ) )
+      · exact Disjoint.symm (this _ _ (Ne.symm ‹_›) (lt_of_le_of_ne (le_of_not_gt hij) (Ne.symm ‹_›)))
       · have h_disjoint : f '' An j ⊆ cylfx (mseq i) := by
           exact Set.image_subset_iff.mpr fun z hz => by obtain ⟨w, rfl⟩ := hz; exact threading i j hij w
         have h_disjoint : f '' An i ⊆ closure (range (fun z => f (σseq i z))) := by
           exact Set.image_subset_iff.mpr fun x hx => subset_closure <| by obtain ⟨z, rfl⟩ := hx; exact Set.mem_range_self z
-        exact Set.disjoint_left.mpr fun x hx₁ hx₂ => Set.notMem_empty x <| hclos i ▸ Set.mem_inter ( h_disjoint hx₁ ) ( ‹f '' An j ⊆ cylfx ( mseq i ) › hx₂ )
+        exact Set.disjoint_left.mpr fun x hx₁ hx₂ => Set.notMem_empty x <| hclos i ▸ Set.mem_inter (h_disjoint hx₁) (‹f '' An j ⊆ cylfx (mseq i) › hx₂)
     · intro n
       -- Let's define the clopen set C_n.
       set C_n := (cylfx (mseq n))ᶜ ∩ ⋂ m ∈ Finset.range n, cylfx (mseq m)
       -- By definition of $C_n$, we know that $f '' An n \subseteq C_n$.
       have h_subset : ∀ z ∈ An n, f z ∈ C_n := by
         rintro _ ⟨z, rfl⟩
-        refine' ⟨_, _⟩
+        refine ⟨?_, ?_⟩
         · exact fun h => hclos n |> fun h' => h' |> fun h'' => h'' |> fun h''' => h''' |> fun h'''' => h'''' |> fun h''''' => h''''' |> fun h'''''' => h'''''' |> fun h''''''' => h''''''' |> fun h'''''''' => by
             exact h'''''''' |> fun h => h |> fun h => h |> fun h => h |> fun h => h |> fun h => h |> fun h => h |> fun h => h |> fun h => h |> fun h => by
               have := h
               exact this.subset ⟨subset_closure ⟨z, rfl⟩, by assumption⟩
-        · exact Set.mem_iInter₂.mpr fun m hm => threading m n ( Finset.mem_range.mp hm ) z
+        · exact Set.mem_iInter₂.mpr fun m hm => threading m n (Finset.mem_range.mp hm) z
       -- By definition of $C_n$, we know that $f '' An j \cap C_n = \emptyset$ for $j \neq n$.
       have h_disjoint : ∀ j, j ≠ n → ∀ z ∈ An j, f z ∉ C_n := by
         intros j hj z hz hC_n
         by_cases h_cases : j < n
         · obtain ⟨w, rfl⟩ := hz
-          exact hclos j |> fun h => h.subset ⟨subset_closure <| Set.mem_range_self w, hC_n.2 |> Set.mem_iInter₂.mp |> fun h => h j ( Finset.mem_range.mpr h_cases )⟩
+          exact hclos j |> fun h => h.subset ⟨subset_closure <| Set.mem_range_self w, hC_n.2 |> Set.mem_iInter₂.mp |> fun h => h j (Finset.mem_range.mpr h_cases)⟩
         · grind
       -- Since $C_n$ is clopen, the preimage of $C_n$ under the inclusion map is open.
       have h_preimage_open : IsOpen (Subtype.val ⁻¹' C_n : Set (⋃ j, f '' An j)) := by
-        refine' IsOpen.preimage _ _
+        refine IsOpen.preimage ?_ ?_
         · exact continuous_subtype_val
-        · exact IsOpen.inter ( isOpen_compl_iff.mpr ( hcylfx_clopen _ |>.1 ) ) ( isOpen_biInter_finset fun _ _ => hcylfx_open _ )
+        · exact IsOpen.inter (isOpen_compl_iff.mpr (hcylfx_clopen _ |>.1)) (isOpen_biInter_finset fun _ _ => hcylfx_open _)
       convert h_preimage_open using 1
       ext ⟨z, hz⟩; simp
       constructor
@@ -242,8 +240,9 @@ theorem pointedGluing_lower_bound
       exact hm₀ (cyl_antitone m₀ (kseq n) (le_trans hn (hk n)) (hσcyl n z))⟩
   · -- hred: ContinuouslyReduces (g n) (f ∘ Subtype.val)
     intro n
-    refine ⟨σ_n n, (hσc n).subtype_mk _, τseq n, ?_, fun z => hcomm n z⟩
-    convert hτc n using 2
+    refine ⟨σ_n n, (hσc n).subtype_mk ?_, τseq n, ?_, fun z => hcomm n z⟩
+    · exact fun x => ⟨x, rfl⟩
+    · convert hτc n using 2
 
 private lemma pgl_val_to_minFun_succ' (γ : Ordinal.{0}) {A : Set (ℕ → ℕ)} (f : A → ℕ → ℕ) :
     ContinuouslyReduces
@@ -546,9 +545,9 @@ private lemma minFun_reduces_to_subtype_reduces
       (fun (z : {u : ℕ → ℕ | u ∈ A ∧ u ∈ V}) => f ⟨z.val, z.prop.1⟩)) :
     ContinuouslyReduces (MinFun α) f := by
   obtain ⟨σ_V, hσ_V_cont, τ_V, hσ_V_range, hσ_V_τ_V⟩ := h
-  refine' ⟨_, _⟩
+  refine ⟨?_, ?_⟩
   exact fun x => ⟨σ_V x |>.1, σ_V x |>.2.1⟩
-  refine' ⟨_, τ_V, _, _⟩
+  refine ⟨?_, τ_V, ?_, ?_⟩
   · fun_prop
   · grind +revert
   · exact hσ_V_τ_V
@@ -558,8 +557,8 @@ private lemma isolated_point_exists_in_CBLevel
     (hscat : ScatteredFun f) (α : Ordinal.{0})
     (hne : (CBLevel f α).Nonempty) :
     ∃ x : A, x ∈ isolatedLocus f (CBLevel f α) := by
-  have := hscat ( CBLevel f α ) hne
-  obtain ⟨U, hU₁, hU₂, hU₃⟩ := this; obtain ⟨x, hx₁, hx₂⟩ := hU₂; use x; simp_all +decide [ isolatedLocus ] 
+  have := hscat (CBLevel f α) hne
+  obtain ⟨U, hU₁, hU₂, hU₃⟩ := this; obtain ⟨x, hx₁, hx₂⟩ := hU₂; use x; simp_all +decide [isolatedLocus]
   exact ⟨U, hU₁, hx₁, fun a ha ha' ha'' => hU₃ _ _ ha' ha'' _ _ hx₁ hx₂ ▸ rfl⟩
 
 theorem minFun_is_minimum

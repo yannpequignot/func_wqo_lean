@@ -4,9 +4,7 @@ import RequestProject.PrelimMemo.Basic
 import RequestProject.Bqo.Ramsey
 open Set
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 noncomputable section
 
@@ -94,11 +92,9 @@ theorem perfect_or_bad {α : Type*} (r : α → α → Prop)
 **Proof:** Given a sequence `g : ℕ → α`, apply 2-BQO to the pair-sequence
 `(m, n, _) ↦ g m`. A good triple `m < n < l` yields `r (g m) (g n)`. -/
 theorem TwoBQO.wellQuasiOrdered {α : Type*} {r : α → α → Prop}
-    (h : TwoBQO r) : WellQuasiOrdered r := by
-  rw [WellQuasiOrdered]
-  intro g
-  obtain ⟨m, n, _l, hmn, _hnl, hrel⟩ := h (fun m _n _hmn => g m)
-  exact ⟨m, n, hmn, hrel⟩
+    (h : TwoBQO r) : WellQuasiOrdered r := fun g =>
+  let ⟨m, n, _, hmn, _, hrel⟩ := h (fun m _ _ => g m)
+  ⟨m, n, hmn, hrel⟩
 
 /-!
 ## §4  Well-orders are 2-BQO

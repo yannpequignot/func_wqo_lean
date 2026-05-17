@@ -3,9 +3,7 @@ import RequestProject.BaireSpace.GenRedProp
 open scoped Topology
 open Set Function TopologicalSpace
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # CB Analysis — Scattered Functions and Cantor–Bendixson Theory
@@ -110,7 +108,7 @@ theorem CBLevel_zero {X Y : Type*} [TopologicalSpace X]
     (f : X → Y) : CBLevel f 0 = univ := by
   simp [CBLevel, Ordinal.limitRecOn]
 
-/-
+/--
 The CB levels are decreasing: if `α ≤ β` then `CB_β(f) ⊆ CB_α(f)`.
 -/
 theorem CBLevel_antitone {X Y : Type*} [TopologicalSpace X]
@@ -118,8 +116,8 @@ theorem CBLevel_antitone {X Y : Type*} [TopologicalSpace X]
   intro α β hαβ x hx
   induction' β using Ordinal.limitRecOn with β ih generalizing α x
   · aesop
-  · cases hαβ.eq_or_lt <;> simp_all +decide [ CBLevel ]
-  · cases hαβ.eq_or_lt <;> simp_all +decide [ CBLevel ]
+  · cases hαβ.eq_or_lt <;> simp_all +decide [CBLevel]
+  · cases hαβ.eq_or_lt <;> simp_all +decide [CBLevel]
 
 /-!
 ## CB-Rank
@@ -178,7 +176,7 @@ theorem scattered_of_empty_perfectKernel {X Y : Type*}
     rw [Ordinal.limitRecOn_limit _ _ _ _ hβ]
     exact mem_iInter₂.mpr (fun γ hγ => by exact ih γ (mem_Iio.mp hγ) hxA)
 
-/-
+/--
 If `f` is scattered and `S` is nonempty, then the isolated locus of `f` on `S`
 is nonempty.
 -/
@@ -189,7 +187,7 @@ lemma scattered_isolatedLocus_nonempty {X Y : Type*}
   rcases hf S hS with ⟨U, hU, hU'⟩
   exact ⟨hU'.1.choose, hU'.1.choose_spec.2, U, hU, hU'.1.choose_spec.1, fun x hx => hU'.2 _ ⟨hx.1, hx.2⟩ _ hU'.1.choose_spec⟩
 
-/-
+/--
 The CB levels never stabilize implies there's an injection from `Ordinal.{0}` into `X`.
 Used to derive a contradiction when `X` is small enough.
 -/
@@ -203,22 +201,22 @@ lemma CBLevel_strictAnti_of_ne {X Y : Type*}
     by_contra h_contra
     push_neg at h_contra
     have h_eq : CBLevel f α = CBLevel f (Order.succ α) := by
-      exact Set.Subset.antisymm h_contra ( CBLevel_antitone f ( Order.le_succ α ) )
+      exact Set.Subset.antisymm h_contra (CBLevel_antitone f (Order.le_succ α))
     exact h α h_eq
   choose g hg using h_inj
-  refine' ⟨g, fun α β hαβ => le_antisymm _ _⟩ <;> contrapose! hαβ
+  refine ⟨g, fun α β hαβ => le_antisymm ?_ ?_⟩ <;> contrapose! hαβ
   · have h_g_alpha_in_CBLevel_beta : g α ∈ CBLevel f (Order.succ β) := by
-      exact CBLevel_antitone f ( Order.succ_le_of_lt hαβ ) ( hg α |>.1 )
-    exact fun h => hg β |>.2 ( h ▸ h_g_alpha_in_CBLevel_beta )
+      exact CBLevel_antitone f (Order.succ_le_of_lt hαβ) (hg α |>.1)
+    exact fun h => hg β |>.2 (h ▸ h_g_alpha_in_CBLevel_beta)
   · intro h_eq
     have h_subset : CBLevel f β ⊆ CBLevel f (Order.succ α) := by
       apply CBLevel_antitone
       exact Order.succ_le_iff.mpr hαβ
-    exact hg α |>.2 ( h_eq ▸ h_subset ( hg β |>.1 ) )
+    exact hg α |>.2 (h_eq ▸ h_subset (hg β |>.1))
 
 
 
-/-
+/--
 If `f` is scattered and `CBLevel f α` is nonempty, then `CBLevel f (succ α)` is
 strictly smaller.
 -/
@@ -228,12 +226,12 @@ lemma CBLevel_succ_ssubset_of_scattered {X Y : Type*}
     (hne : (CBLevel f α).Nonempty) :
     CBLevel f (Order.succ α) ⊂ CBLevel f α := by
   have h_eq : isolatedLocus f (CBLevel f α) ≠ ∅ := by
-    exact Set.Nonempty.ne_empty ( scattered_isolatedLocus_nonempty f hf _ hne )
-  simp_all +decide [ Set.ssubset_def, Set.subset_def ]
-  simp_all +decide [ CBLevel_succ', Set.ext_iff ]
+    exact Set.Nonempty.ne_empty (scattered_isolatedLocus_nonempty f hf _ hne)
+  simp_all +decide [Set.ssubset_def, Set.subset_def]
+  simp_all +decide [CBLevel_succ', Set.ext_iff]
   exact ⟨h_eq.choose, h_eq.choose_spec.1, fun _ => h_eq.choose_spec⟩
 
-/-
+/--
 Forward direction of Proposition 2.7 when `X` is `Small.{0}` (in particular, `Type 0`).
 The CB levels are indexed by `Ordinal.{0}`, so the stabilization argument uses
 `not_injective_of_ordinal` which requires `Small.{0} X`.
@@ -247,8 +245,8 @@ private lemma scattered_implies_empty_perfectKernel_small {X Y : Type*}
     apply CBLevel_strictAnti_of_ne
     intro α h_eq
     apply CBLevel_succ_ssubset_of_scattered f h_scattered α (by
-    exact h.mono ( Set.iInter_subset _ α )) |>.ne h_eq.symm
-  exact not_injective_of_ordinal ( h_contradiction.choose ) h_contradiction.choose_spec
+    exact h.mono (Set.iInter_subset _ α)) |>.ne h_eq.symm
+  exact not_injective_of_ordinal (h_contradiction.choose) h_contradiction.choose_spec
 
 /-- **Proposition 2.7.** A function is scattered iff its perfect kernel is empty.
 
@@ -298,29 +296,29 @@ lemma local_cb_derivative {X Y : Type*}
     (α : Ordinal.{0}):
     CBLevel (f ∘ (Subtype.val: U -> X)) α= (CBLevel f α) ∩ U := by
   induction' α using Ordinal.limitRecOn with α ih
-  · simp +decide [ CBLevel ]
-  · rw [ CBLevel_succ', CBLevel_succ' ]
-    simp +decide [ Set.ext_iff, isolatedLocus ] at ih ⊢
+  · simp +decide [CBLevel]
+  · rw [CBLevel_succ', CBLevel_succ']
+    simp +decide [Set.ext_iff, isolatedLocus] at ih ⊢
     intro x
     constructor
     · rintro ⟨hx, hx', hx''⟩
-      refine' ⟨⟨ih x |>.1 ⟨hx, hx'⟩ |>.1, _⟩, hx⟩
+      refine ⟨⟨ih x |>.1 ⟨hx, hx'⟩ |>.1, ?_⟩, hx⟩
       intro V hV hxV
-      specialize hx'' ( Subtype.val ⁻¹' V ) ( hV.preimage continuous_subtype_val ) ( by simpa )
+      specialize hx'' (Subtype.val ⁻¹' V) (hV.preimage continuous_subtype_val) (by simpa)
       grind
     · intro hx
-      refine' ⟨hx.2, ih x |>.2 ⟨hx.1.1, hx.2⟩ |>.2, _⟩
+      refine ⟨hx.2, ih x |>.2 ⟨hx.1.1, hx.2⟩ |>.2, ?_⟩
       intro V hV hxV
       rcases hV with ⟨W, hW, rfl⟩
-      rcases hx.1.2 ( W ∩ U ) ( hW.inter hU ) ⟨hxV, hx.2⟩ with ⟨y, hyW, hyU, hy⟩
+      rcases hx.1.2 (W ∩ U) (hW.inter hU) ⟨hxV, hx.2⟩ with ⟨y, hyW, hyU, hy⟩
       exact ⟨y, hyW.2, hyW.1, ih y |>.2 ⟨hyU, hyW.2⟩ |>.2, hy⟩
   · rename_i o ho ih
-    refine' Set.Subset.antisymm _ _
+    refine Set.Subset.antisymm ?_ ?_
     · intro x hx
-      simp_all +decide [ CBLevel, Set.ext_iff ]
-      exact ⟨fun i hi => ( ih i hi x |> Iff.mp ) ( hx i |> fun ⟨hx₁, hx₂⟩ => ⟨hx₁, hx₂ hi⟩ ) |>.1, hx o |> fun ⟨hx₁, hx₂⟩ => hx₁⟩
+      simp_all +decide [CBLevel, Set.ext_iff]
+      exact ⟨fun i hi => (ih i hi x |> Iff.mp) (hx i |> fun ⟨hx₁, hx₂⟩ => ⟨hx₁, hx₂ hi⟩) |>.1, hx o |> fun ⟨hx₁, hx₂⟩ => hx₁⟩
     · intro x hx
-      simp_all +decide [ CBLevel, Set.ext_iff ]
+      simp_all +decide [CBLevel, Set.ext_iff]
       exact fun i hi => ih i hi x |>.2 ⟨hx.1 i hi, hx.2⟩ |>.2
 
 /-- The exit ordinal of x (min α s.t. x ∉ CBLevel f α) cannot be a limit ordinal. -/
@@ -338,7 +336,7 @@ lemma exit_ordinal_not_limit {X Y : Type*}
   intro δ hδ
   exact h δ hδ
 
-/-
+/--
 The minimal exit ordinal of any point from the CB hierarchy is a successor.
 -/
 lemma exit_ordinal_is_successor {X Y : Type*}
@@ -350,11 +348,11 @@ lemma exit_ordinal_is_successor {X Y : Type*}
   contrapose! hx_out
   induction' γ using Ordinal.limitRecOn with γ ih
   · exact CBLevel_zero f ▸ Set.mem_univ x
-  · exact hx_out γ ( Order.lt_succ γ ) ( ih fun β hβ => hx_out β ( lt_trans hβ ( Order.lt_succ γ ) ) )
-  · simp_all +decide [ CBLevel ]
+  · exact hx_out γ (Order.lt_succ γ) (ih fun β hβ => hx_out β (lt_trans hβ (Order.lt_succ γ)))
+  · simp_all +decide [CBLevel]
     grind
 
-/-
+/--
 If x ∈ isolatedLocus f (CBLevel f β), then there exists open U with x ∈ U
     such that CBLevel f (succ β) ∩ U = ∅.
 -/
@@ -366,11 +364,11 @@ lemma isolatedLocus_clears_succ_level {X Y : Type*}
     (hx : x ∈ isolatedLocus f (CBLevel f β)) :
     ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ CBLevel f (Order.succ β) ∩ U = ∅ := by
   rcases hx with ⟨hx₁, ⟨U, hU₁, hx₂, hx₃⟩⟩
-  refine' ⟨U, hU₁, hx₂, Set.eq_empty_iff_forall_notMem.2 fun y hy => _⟩
-  simp_all +decide [ CBLevel_succ' ]
+  refine ⟨U, hU₁, hx₂, Set.eq_empty_iff_forall_notMem.2 fun y hy => ?_⟩
+  simp_all +decide [CBLevel_succ']
   exact hy.1.2 ⟨hy.1.1, U, hU₁, hy.2, fun z hz => by aesop⟩
 
-/-
+/--
 If CBLevel f (succ β) ∩ U = ∅ for open U, then CBRank(f|_U) ≤ succ β,
     provided succ β < omega1.
 -/
@@ -384,8 +382,8 @@ lemma cbrank_restriction_le_of_empty_level {X Y : Type*}
   apply csInf_le'
   ext x
   constructor <;> intro hx <;> contrapose! hempty
-  · exact ⟨x, by simpa using local_cb_derivative U hU ( Order.succ β ) |>.subset ⟨x, hx, rfl⟩⟩
-  · contrapose! hempty; simp_all +decide [ CBLevel_succ' ]
+  · exact ⟨x, by simpa using local_cb_derivative U hU (Order.succ β) |>.subset ⟨x, hx, rfl⟩⟩
+  · contrapose! hempty; simp_all +decide [CBLevel_succ']
 
 lemma limit_locally_lower {X Y : Type*}
     [TopologicalSpace X]
@@ -403,16 +401,16 @@ lemma limit_locally_lower {X Y : Type*}
       by_contra h_nonempty
       have h_contradiction : CBLevel f (Order.succ α) ⊂ CBLevel f α := by
         apply CBLevel_succ_ssubset_of_scattered f hf α (Set.nonempty_iff_ne_empty.mpr h_nonempty)
-      simp_all +decide [ Set.ssubset_def ]
+      simp_all +decide [Set.ssubset_def]
     contrapose! h_contradiction
-    exact ⟨lam, hlam ▸ csInf_mem ( show { α : Ordinal.{0} | CBLevel f α = CBLevel f ( Order.succ α ) }.Nonempty from by exact Set.nonempty_iff_ne_empty.2 fun h => by simp_all +decide [ CBRank ] ), h_empty_level⟩
-  · simp_all +decide [ Set.not_nonempty_iff_eq_empty ]
+    exact ⟨lam, hlam ▸ csInf_mem (show { α : Ordinal.{0} | CBLevel f α = CBLevel f (Order.succ α) }.Nonempty from by exact Set.nonempty_iff_ne_empty.2 fun h => by simp_all +decide [CBRank]), h_empty_level⟩
+  · simp_all +decide [Set.not_nonempty_iff_eq_empty]
     have h_contradiction : ∃ β, β < CBRank f ∧ x ∈ CBLevel f β ∧ x ∉ CBLevel f (Order.succ β) := by
       apply exit_ordinal_is_successor
       aesop
     obtain ⟨β, hβ_lt, hβ_mem, hβ_not_mem⟩ := h_contradiction
     have h_iso_loc : x ∈ isolatedLocus f (CBLevel f β) := by
-      simp_all +decide [ CBLevel_succ' ]
+      simp_all +decide [CBLevel_succ']
     have h_neighborhood : ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ CBLevel f (Order.succ β) ∩ U = ∅ := by
       obtain ⟨U, hU_open, hxU, hU_const⟩ := h_iso_loc.2
       refine ⟨U, hU_open, hxU, ?_⟩
@@ -444,7 +442,7 @@ lemma ContinuouslyReduces.scattered_local {X X' Y Y' : Type*}
     (heq : ∀ x, f x = τ (g (σ x)))
     (A : Set X)
     (x : X) (hx :  x ∈ A)
-    (hsx : (σ x) ∈ (isolatedLocus g (σ '' A)) )
+    (hsx : (σ x) ∈ (isolatedLocus g (σ '' A)))
     : (x ∈ isolatedLocus f A) := by
   -- 1. Unpack the hypothesis hsx.
   -- hsx is of the form `(σ x ∈ σ '' A) ∧ (∃ U, ...)`
@@ -523,7 +521,7 @@ theorem ContinuouslyReduces.scattered {X X' Y Y' : Type*}
       rw [h_const_VS z hz, h_const_VS z' hz']
     exact ⟨V, hVopen, h_VS_nonempty, hf_const_adapted⟩
 
-/-
+/--
 If `(σ,τ)` reduces `f` to `g`, then for all `α`, `σ(CB_α(f)) ⊆ CB_α(g)`.
 -/
 theorem ContinuouslyReduces.cb_monotone {X X' Y Y' : Type*}
@@ -537,14 +535,14 @@ theorem ContinuouslyReduces.cb_monotone {X X' Y Y' : Type*}
     σ '' (CBLevel f α) ⊆ CBLevel g α := by
   intro x hx
   obtain ⟨y, hy, rfl⟩ := hx
-  induction' α using Ordinal.limitRecOn with α ih generalizing y <;> simp_all +decide [ CBLevel ]
+  induction' α using Ordinal.limitRecOn with α ih generalizing y <;> simp_all +decide [CBLevel]
   contrapose! hy
   obtain ⟨U, hUo, hyU, hU⟩ := hy.2
-  refine' fun hy' => ⟨_, _⟩
+  refine fun hy' => ⟨?_, ?_⟩
   · exact hy'
-  · refine' ⟨σ ⁻¹' U, hUo.preimage hσ, hyU, fun z hz => _⟩ ; aesop
+  · refine ⟨σ ⁻¹' U, hUo.preimage hσ, hyU, fun z hz => ?_⟩ ; aesop
 
-/-
+/--
 For a scattered function, if CBRank f = r, then CBLevel f r = ∅.
 -/
 lemma CBLevel_eq_empty_at_rank {X Y : Type*}
@@ -563,7 +561,7 @@ lemma CBLevel_eq_empty_at_rank {X Y : Type*}
   · have h_inj : ∃ g : Ordinal.{0} → X, Function.Injective g := by
       apply CBLevel_strictAnti_of_ne
       exact fun α => fun h => hS ⟨α, h⟩
-    exact False.elim ( not_injective_of_ordinal h_inj.choose h_inj.choose_spec )
+    exact False.elim (not_injective_of_ordinal h_inj.choose h_inj.choose_spec)
 
 theorem ContinuouslyReduces.rank_monotone {X X' Y Y' : Type*}
     [TopologicalSpace X] [TopologicalSpace X']

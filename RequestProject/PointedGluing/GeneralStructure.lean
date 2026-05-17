@@ -4,9 +4,7 @@ import RequestProject.PointedGluing.MaxFunLimitRank
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 8000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 noncomputable section
 
@@ -17,9 +15,7 @@ This file proves the General Structure Theorem for continuous reducibility
 between scattered functions on the Baire space.
 -/
 
--- ============================================================
--- Helper definitions and lemmas for MaxFun_le_limit_rank
--- ============================================================
+/-! ## Helper definitions and lemmas for MaxFun_le_limit_rank -/
 
 /-- Restricted domain: {x ∈ B | (g x) 0 = k} as a Set (ℕ → ℕ). -/
 def gRestrDom (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (k : ℕ) : Set (ℕ → ℕ) :=
@@ -52,29 +48,29 @@ private lemma gRestrFun_first_coord (B : Set (ℕ → ℕ)) (g : B → ℕ → �
     (x : gRestrDom B g k) : (gRestrFun B g k x) 0 = k := by
   simp [gRestrFun]; exact x.prop.choose_spec
 
-/-
+/--
 If CBLevel of each restriction is empty, then CBLevel of g is empty.
 -/
 private lemma gRestrFun_CBLevel_union_empty (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ)
     (hgc : Continuous g) (β : Ordinal.{0})
     (h : ∀ k : ℕ, CBLevel (gRestrFun B g k) β = ∅) :
     CBLevel g β = ∅ := by
-  convert CBLevel_open_union_empty g ( fun k => { b : B | ( g b ) 0 = k } ) ( fun k => ?_ ) ( fun x => ?_ ) β ?_
-  · exact hgc.comp continuous_id' |> Continuous.comp ( continuous_apply 0 ) |> Continuous.isOpen_preimage |> fun h => h { k } <| by simp +decide 
+  convert CBLevel_open_union_empty g (fun k => { b : B | (g b) 0 = k }) (fun k => ?_) (fun x => ?_) β ?_
+  · exact hgc.comp continuous_id' |> Continuous.comp (continuous_apply 0) |> Continuous.isOpen_preimage |> fun h => h { k } <| by simp +decide
   · exact ⟨_, rfl⟩
   · intro k
     have h_homeo : ∃ (e : {b : B | (g b) 0 = k} ≃ₜ gRestrDom B g k), (gRestrFun B g k) ∘ e = (g ∘ Subtype.val : {b : B | (g b) 0 = k} → ℕ → ℕ) := by
-      refine' ⟨_, _⟩
-      refine' ⟨_, _, _⟩
-      refine' ⟨fun x => ⟨x.val, ⟨x.1.2, x.2⟩⟩, fun x => ⟨⟨x.val, x.2.choose⟩, x.2.choose_spec⟩, _, _⟩ <;> simp +decide
-      all_goals norm_num [ funext_iff, LeftInverse, RightInverse ]
+      refine ⟨?_, ?_⟩
+      refine ⟨?_, ?_, ?_⟩
+      refine ⟨fun x => ⟨x.val, ⟨x.1.2, x.2⟩⟩, fun x => ⟨⟨x.val, x.2.choose⟩, x.2.choose_spec⟩, ?_, ?_⟩ <;> simp +decide
+      all_goals norm_num [funext_iff, LeftInverse, RightInverse]
       · fun_prop (disch := solve_by_elim)
       · fun_prop (disch := solve_by_elim)
       · intro; simp [gRestrFun]
     obtain ⟨e, he⟩ := h_homeo
-    have := CBLevel_homeomorph e ( gRestrFun B g k ) β; aesop
+    have := CBLevel_homeomorph e (gRestrFun B g k) β; aesop
 
-/-
+/--
 For each γ < η = CBRank g, some k has CBRank(gRestrFun k) > γ.
 -/
 private lemma gRestrFun_CBRank_cofinal (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ)
@@ -88,9 +84,9 @@ private lemma gRestrFun_CBRank_cofinal (B : Set (ℕ → ℕ)) (g : B → ℕ �
     intro k
     apply Set.eq_empty_of_forall_notMem
     intro x hx
-    have := CBLevel_eq_empty_at_rank ( gRestrFun B g k ) ( gRestrFun_scattered B g hg k )
-    exact this.subset ( CBLevel_antitone _ ( hγ k ) hx )
-  exact hrank ▸ CBRank_le_of_CBLevel_empty g γ ( gRestrFun_CBLevel_union_empty B g hgc γ h_empty )
+    have := CBLevel_eq_empty_at_rank (gRestrFun B g k) (gRestrFun_scattered B g hg k)
+    exact this.subset (CBLevel_antitone _ (hγ k) hx)
+  exact hrank ▸ CBRank_le_of_CBLevel_empty g γ (gRestrFun_CBLevel_union_empty B g hgc γ h_empty)
 
 
 private lemma omega1_add_nat (η : Ordinal.{0}) (hη : η < omega1) (n : ℕ) :
@@ -125,27 +121,28 @@ private lemma exists_injection_above_targets (η : Ordinal.{0}) (hη : η < omeg
   have := @enumBelow_surj η hη (by
   rintro rfl; specialize hβ 0; simp_all +decide ;)
   generalize_proofs at *
-  rw [ show cofinalSeq η = fun n => enumBelow η n from ?_ ]
+  rw [show cofinalSeq η = fun n => enumBelow η n from ?_]
   · have h_infinite : ∀ n, Set.Infinite {m : ℕ | β n ≤ enumBelow η m} := by
       intro n
       have h_infinite : Set.Infinite {m | β n ≤ m ∧ m < η} := by
         have h_infinite : ∀ m : Ordinal.{0}, β n ≤ m ∧ m < η → ∃ m' : Ordinal.{0}, β n ≤ m' ∧ m' < η ∧ m < m' := by
-          exact fun m hm => ⟨Order.succ m, hm.1.trans ( Order.le_succ _ ), hlim.succ_lt hm.2, Order.lt_succ m⟩
+          exact fun m hm => ⟨Order.succ m, hm.1.trans (Order.le_succ _), hlim.succ_lt hm.2, Order.lt_succ m⟩
         contrapose! h_infinite
-        exact ⟨Finset.max' ( h_infinite.toFinset ) ⟨β n, h_infinite.mem_toFinset.mpr ⟨le_rfl, hβ n⟩⟩, h_infinite.mem_toFinset.mp ( Finset.max'_mem _ _ ), fun m' hm₁ hm₂ => Finset.le_max' _ _ ( h_infinite.mem_toFinset.mpr ⟨hm₁, hm₂⟩ )⟩
+        exact ⟨Finset.max' (h_infinite.toFinset) ⟨β n, h_infinite.mem_toFinset.mpr ⟨le_rfl, hβ n⟩⟩, h_infinite.mem_toFinset.mp (Finset.max'_mem _ _), fun m' hm₁ hm₂ => Finset.le_max' _ _ (h_infinite.mem_toFinset.mpr ⟨hm₁, hm₂⟩)⟩
       intro h_finite
-      exact h_infinite <| Set.Finite.subset ( h_finite.image fun m => enumBelow η m ) fun x hx => by cases' this ⟨x, hx.2⟩ with m hm; aesop
-    use fun n => Nat.recOn n ( Nat.find <| Set.Infinite.nonempty <| h_infinite 0 ) fun n ih => Nat.find <| Set.Infinite.exists_gt ( h_infinite ( n + 1 ) ) ih
-    refine' ⟨_, _⟩
-    · refine' strictMono_nat_of_lt_succ _ |> StrictMono.injective
-      exact fun n => Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.2
+      exact h_infinite <| Set.Finite.subset (h_finite.image fun m => enumBelow η m) fun x hx => by cases' this ⟨x, hx.2⟩ with m hm; aesop
+    use fun n => Nat.recOn n (Nat.find <| Set.Infinite.nonempty <| h_infinite 0) fun n ih => Nat.find <| Set.Infinite.exists_gt (h_infinite (n + 1)) ih
+    refine ⟨?_, ?_⟩
+    · refine strictMono_nat_of_lt_succ ?_ |> StrictMono.injective
+      exact fun n => Nat.find_spec (h_infinite _ |> Set.Infinite.exists_gt <| _) |>.2
     · intro n; induction n <;> simp_all +decide
-      · exact Nat.find_spec ( h_infinite 0 |> Set.Infinite.nonempty )
-      · exact Nat.find_spec ( h_infinite _ |> Set.Infinite.exists_gt <| _ ) |>.1
+      · exact Nat.find_spec (h_infinite 0 |> Set.Infinite.nonempty)
+      · exact Nat.find_spec (h_infinite _ |> Set.Infinite.exists_gt <| _) |>.1
   · unfold cofinalSeq; aesop
 
-/-- Core inequality: MaxFun(η + n) ≤ MinFun(η + 2n), by well-founded induction on η
-    and regular induction on n. -/
+set_option maxHeartbeats 8000000 in
+/-- Core inequality: `MaxFun(η + n) ≤ MinFun(η + 2n)`, by well-founded induction on `η`
+    and regular induction on `n`. -/
 private lemma MaxFun_le_MinFun : ∀ (η : Ordinal.{0}), η < omega1 →
     (Order.IsSuccLimit η ∨ η = 0) → ∀ (n : ℕ),
     ContinuouslyReduces (MaxFun (η + ↑n)) (MinFun (η + 2 * ↑n)) := by
@@ -175,7 +172,7 @@ private lemma MaxFun_le_MinFun : ∀ (η : Ordinal.{0}), η < omega1 →
             calc α' ≤ α' + ↑m := le_self_add
               _ = enumBelow η k := hm.symm
               _ < η := h_enum_lt
-          have : α' + 2 * ↑m = α' + ↑(2 * m) := by push_cast; ring
+          have : α' + 2 * ↑m = α' + ↑(2 * m) := by push_cast; ring_nf
           rw [this]
           exact limit_add_nat_lt η hlim hne α' hα'_lt (2 * m)
         choose α' m hα' hm hα'm using h_decomp
@@ -222,7 +219,8 @@ private lemma MaxFun_le_MinFun : ∀ (η : Ordinal.{0}), η < omega1 →
       rw [h1, h2]
       exact MaxFun_le_MinFun_succ (η + ↑n) (η + 2 * ↑n) ih
 
-/-- Tree argument: MaxFun(η) ≤ g for limit η with CBRank g = η.
+set_option maxHeartbeats 8000000 in
+/- Tree argument: MaxFun(η) ≤ g for limit η with CBRank g = η.
 PROVIDED SOLUTION
 We are going to find a sequence '(s_n)_{n\in\N}' in $\N^{<\N}$ of finite sequences
 pairwise incomparable for the prefix relation such that the sequence $(\CB(g\corestr{N_{s_n}}))_n$
@@ -248,6 +246,7 @@ Then, by \cref{CBbasics0}~\cref{CBbasicsfromJSL2},  $\CB_{\beta}(g)\cap g^{-1}(N
 and so $\CB_{\beta}(g)\subseteq g^{-1}([T])$.
 But as $[T]$ is finite, we have $\CB_{\beta+1}(g)=\empty$ and so $\CB(g)\leq \beta+1$, a contradiction.
  -/
+set_option maxHeartbeats 8000000 in
 private lemma MaxFun_le_limit_rank (η : Ordinal.{0}) (hη : η < omega1)
     (hlam : Order.IsSuccLimit η)
     (B : Set (ℕ → ℕ)) (g : B → ℕ → ℕ) (hgc : Continuous g) (hg : ScatteredFun g)
@@ -265,7 +264,7 @@ private lemma MaxFun_le_limit_rank (η : Ordinal.{0}) (hη : η < omega1)
       calc α' ≤ α' + ↑m := le_self_add
         _ = enumBelow η n := hm.symm
         _ < η := enumBelow_lt η hne n
-    have h_cast : (2 : Ordinal.{0}) * ↑m = ↑(2 * m) := by push_cast; ring
+    have h_cast : (2 : Ordinal.{0}) * ↑m = ↑(2 * m) := by push_cast; ring_nf
     rw [h_cast]
     exact limit_add_nat_lt η hlam hne α' hα'_lt (2 * m)
   choose α' m hα' hm hδ using h_decomp
@@ -285,7 +284,7 @@ private lemma MaxFun_le_limit_rank (η : Ordinal.{0}) (hη : η < omega1)
     rw [hm n]
     have h_scat := gClopenFun_scattered B g hg (C (p n))
     have h_cont := gClopenFun_continuous B g hgc (C (p n))
-    have h_cast : (2 : Ordinal.{0}) * ↑(m n) = ↑(2 * m n) := by push_cast; ring
+    have h_cast : (2 : Ordinal.{0}) * ↑(m n) = ↑(2 * m n) := by push_cast; ring_nf
     have hmin_g : ContinuouslyReduces (MinFun (α' n + 2 * ↑(m n)))
         (gClopenFun B g (C (p n))) :=
       minFun_is_minimum (α' n + 2 * ↑(m n))
@@ -297,6 +296,7 @@ private lemma MaxFun_le_limit_rank (η : Ordinal.{0}) (hη : η < omega1)
     exact hmax_min.trans hmin_g
   exact gluing_via_codomain_partition η hη hlam B g hgc C hC_clopen hC_disj p hp_inj hred
 
+set_option maxHeartbeats 8000000 in
 /-- **Theorem (JSLgeneralstructure). General Structure Theorem.** -/
 theorem general_structure_theorem
     (A B : Set Baire)
@@ -334,7 +334,7 @@ theorem general_structure_theorem
       (maxFun_is_maximum' (η + ↑n) hηn_lt).1 f hfc hf
         (fun β hβ => cblevel_empty_of_le f hf β (hf_rank ▸ hβ))
     have hmax_min := MaxFun_le_MinFun η hη hlam n
-    have h_cast : (↑(2 * n) : Ordinal.{0}) = 2 * ↑n := by push_cast; ring
+    have h_cast : (↑(2 * n) : Ordinal.{0}) = 2 * ↑n := by push_cast; ring_nf
     have h2n_lt : η + ↑(2 * n) < omega1 := omega1_add_nat η hη (2 * n)
     have h2n_lt_rank : η + ↑(2 * n) < CBRank g := by
       rw [h_cast]; exact lt_of_lt_of_le (Order.lt_succ _) hg_ge

@@ -3,9 +3,7 @@ import RequestProject.PrelimMemo.Gluing
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Formalization of `3_general_struct_memo.tex` — Definitions

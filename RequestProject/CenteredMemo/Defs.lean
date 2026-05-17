@@ -3,9 +3,7 @@ import RequestProject.PointedGluing.Defs
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Formalization of `4_centered_memo.tex` — Definitions
@@ -62,9 +60,8 @@ def IsMonotoneSeq {X Y : ℕ → Type*}
 /-- A monotone sequence is regular. -/
 theorem IsMonotoneSeq.isRegularSeq {X Y : ℕ → Type*}
     [∀ n, TopologicalSpace (X n)] [∀ n, TopologicalSpace (Y n)]
-    {f : ∀ n, X n → Y n} (hf : IsMonotoneSeq f) : IsRegularSeq f := by
-  intro i
-  apply Set.infinite_of_injective_forall_mem (f := fun n => n + i + 1)
+    {f : ∀ n, X n → Y n} (hf : IsMonotoneSeq f) : IsRegularSeq f := fun i =>
+  Set.infinite_of_injective_forall_mem (f := fun n => n + i + 1)
     (fun m n (h : m + i + 1 = n + i + 1) => by omega)
     (fun n => hf i (n + i + 1) (by omega))
 

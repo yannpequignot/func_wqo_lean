@@ -4,9 +4,7 @@ import RequestProject.BaireSpace.Basics
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 8000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 noncomputable section
 
@@ -42,7 +40,7 @@ lemma branching_level_antichain (f : ℕ → (ℕ → ℕ)) (k : ℕ)
     ∃ (seq : ℕ → Σ n : ℕ, Fin n → ℕ),
       (∀ i j, i ≠ j → ¬IsPrefix (seq i).2 (seq j).2 ∧ ¬IsPrefix (seq j).2 (seq i).2) ∧
       ∀ i, ∀ j : Fin (seq i).1, (seq i).2 j = f i j := by
-  refine' ⟨fun i ↦ ⟨k + 1, fun j ↦ f i j⟩, _, _⟩ <;> simp +decide [IsPrefix]
+  refine ⟨fun i ↦ ⟨k + 1, fun j ↦ f i j⟩, ?_, ?_⟩ <;> simp +decide [IsPrefix]
   exact fun i j hij => ⟨⟨⟨k, Nat.lt_succ_self _⟩, fun h => hij <| hinj <| by simpa using h⟩,
     ⟨⟨k, Nat.lt_succ_self _⟩, fun h => hij <| hinj <| by simpa using h.symm⟩⟩
 
@@ -55,7 +53,7 @@ lemma orphan_antichain
     ∃ (seq : ℕ → Σ n : ℕ, Fin n → ℕ),
       (∀ i j, i ≠ j → ¬IsPrefix (seq i).2 (seq j).2 ∧ ¬IsPrefix (seq j).2 (seq i).2) ∧
       ∀ i, ∀ j : Fin (seq i).1, (seq i).2 j = f i j := by
-  refine' ⟨fun i => ⟨levels i + 1, fun j => f i j⟩, _, _⟩ <;> simp +decide [IsPrefix]
+  refine ⟨fun i => ⟨levels i + 1, fun j => f i j⟩, ?_, ?_⟩ <;> simp +decide [IsPrefix]
   intro i j hij; cases lt_or_gt_of_ne hij <;> simp_all +decide [hlev_strict.lt_iff_lt]
   · exact fun _ => ⟨⟨levels i, by linarith [hlev_strict ‹_›]⟩,
       by specialize hdiffer i; specialize hagree j (levels i) (by linarith [hlev_strict ‹_›]); aesop⟩
@@ -114,15 +112,15 @@ lemma infinite_baire_antichain_prefixes
   · rintro ⟨_, hagree⟩
     exact hij (hk j i (fun l => (hagree l).symm))
 
-/-
+/--
 Discrete topology transfers through `Subtype.val`: if `S` is a discrete subset
 of `↥A` (a subtype of `X`), then `Subtype.val '' S` is a discrete subset of `X`.
 -/
 lemma discreteTopology_image_val {X : Type*} [TopologicalSpace X]
     {A : Set X} (S : Set A) [DiscreteTopology S] :
     DiscreteTopology (Subtype.val '' S : Set X) := by
-  rw [ discreteTopology_subtype_iff ] at *;
-  simp_all +decide [ Filter.inf_principal_eq_bot, nhdsWithin ];
-  intro x hx hxS; specialize ‹∀ a : X, ∀ b : a ∈ A, ⟨ a, b ⟩ ∈ S → Sᶜ ∈ 𝓝 ⟨ a, b ⟩ ⊓ Filter.principal { ⟨ a, b ⟩ } ᶜ› x hx hxS; simp_all +decide [ Filter.mem_inf_principal ] ;
-  rw [ mem_nhds_subtype ] at *;
-  rcases ‹_› with ⟨ u, hu, hu' ⟩ ; filter_upwards [ hu ] with y hy ; specialize hu' ; aesop;
+  rw [discreteTopology_subtype_iff] at *
+  simp_all +decide [Filter.inf_principal_eq_bot, nhdsWithin]
+  intro x hx hxS; specialize ‹∀ a : X, ∀ b : a ∈ A, ⟨a, b⟩ ∈ S → Sᶜ ∈ 𝓝 ⟨a, b⟩ ⊓ Filter.principal { ⟨a, b⟩ } ᶜ› x hx hxS; simp_all +decide [Filter.mem_inf_principal]
+  rw [mem_nhds_subtype] at *
+  rcases ‹_› with ⟨u, hu, hu'⟩ ; filter_upwards [hu] with y hy ; specialize hu' ; aesop

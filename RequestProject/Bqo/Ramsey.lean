@@ -3,9 +3,7 @@ import Mathlib
 
 open Set
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 noncomputable section
 

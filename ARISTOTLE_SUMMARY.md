@@ -1,3 +1,143 @@
+# Summary of changes for run 5f779c31-44ed-4393-b695-a5cecfdf9a2e
+## Mathlib Style Improvements
+
+Successfully applied comprehensive Mathlib-standard code quality improvements across all 44+ Lean files in the project. The full build passes with no new warnings.
+
+### Key Changes
+
+1. **Localized `set_option maxHeartbeats`** (highest-impact change):
+   - Removed global `set_option maxHeartbeats` from all 44 files.
+   - Only 11 specific declarations across 5 files actually needed elevated heartbeats — the rest compile fine with defaults.
+   - Each necessary `set_option maxHeartbeats N in` is now placed directly before the declaration that requires it, following Mathlib convention.
+
+2. **Spacing normalization** (730 lines across 33 files):
+   - Removed spaces inside parentheses: `( fun x => ...)` → `(fun x => ...)`
+   - Removed spaces inside brackets: `[ arg1, arg2 ]` → `[arg1, arg2]`
+
+3. **Documentation improvements** (153 comments converted):
+   - Added `/-! ... -/` module docstrings to all files that were missing them (`Main.lean`, `SelfSimilarity.lean`, `Blackboard.lean`)
+   - Converted 153 block comments (`/- ... -/`) preceding declarations to proper doc comments (`/-- ... -/`)
+
+4. **Whitespace cleanup**:
+   - Removed trailing whitespace from 65 lines
+   - Normalized trailing newlines (all files end with exactly one newline)
+
+### What Was Already Done (by previous work)
+- CamelCase file naming, deprecated tactic migration (`refine'` → `refine`), `exact?` removal, unused variable fixes, `set_option relaxedAutoImplicit false` removal, and other cleanup as documented in `STYLE_GUIDE.md`.
+
+### Remaining Lower-Priority Items
+- ~540 lines exceed the 100-character line length limit, mostly in complex tactic proofs where breaking up would require careful proof restructuring.
+
+The updated `STYLE_GUIDE.md` documents all changes comprehensively.
+
+# Summary of changes for run eb71193f-1480-44fe-a5b8-9f72825cd383
+## Modular Refactoring Summary
+
+Successfully refactored the 3 largest files in the project into a modular structure, splitting them into 8 focused sub-files. All changes compile successfully with no new `sorry` statements introduced.
+
+### Files Split
+
+#### 1. `PrelimMemo/Gluing.lean` (845 lines → 3 sub-files + re-export)
+- **`PrelimMemo/Gluing/Defs.lean`** (279 lines) — Core definitions: `IsDisjointUnion`, `IsRelativeClopenPartition`, `prepend`/`unprepend`, `GluingSet`, `GluingFunVal`, plus the continuity-of-union theorems and the gluing identity lemma.
+- **`PrelimMemo/Gluing/UpperBound.lean`** (339 lines) — Gluing as upper/lower bound (Proposition 2.17): `gluingFun_upper_bound_forward/backward`, `continuous_prepend/unprepend`, `continuous_pasting_on_clopen`, `disjoint_union_reduces_gluing`, and piecewise continuity helpers.
+- **`PrelimMemo/Gluing/LocallyConstant.lean`** (276 lines) — Locally constant functions (Proposition 2.24): `constant_equiv_id_singleton`, `locally_constant_infinite_image`, plus the finite generation section (commented-out BQO theorem) and `exists_infinite_discrete_subspace`.
+- **`PrelimMemo/Gluing.lean`** (13 lines) — Re-export file that imports all three sub-modules, preserving backward compatibility for all downstream imports.
+
+#### 2. `PointedGluing/GeneralStructureHelpers.lean` (400 lines → 3 sub-files + re-export)
+- **`GeneralStructureHelpers/Functoriality.lean`** (196 lines) — Pointed gluing functoriality: `pgs_reconstruct`, `pgl_fun_mem`, `pgl_tau_continuousOn`, `pgl_functorial_val`, `omega_pgl_le_pgl_pgl`.
+- **`GeneralStructureHelpers/OrdinalArithmetic.lean`** (60 lines) — Ordinal decomposition helpers: `limit_add_nat_lt`, `ordinal_limit_nat_decomposition`, `cofinalSeq_eventually_ge`.
+- **`GeneralStructureHelpers/GluingInjection.lean`** (202 lines) — Successor step and gluing injection: `MaxFun_le_MinFun_succ`, `gluing_reduces_to_pgluing_via_injection` with all its sigma/tau continuity helpers.
+- **`GeneralStructureHelpers.lean`** (13 lines) — Re-export file.
+
+#### 3. `PointedGluing/MaxFunLimitRank.lean` (700 lines → 2 sub-files + re-export)
+- **`MaxFunLimitRank/ClopenRestriction.lean`** (211 lines) — `gClopenDom`/`gClopenFun` definitions and their properties, plus `gluing_via_codomain_partition` (the blockwise reduction lemma).
+- **`MaxFunLimitRank/TreeArgument.lean`** (524 lines) — The full tree argument: `TreeT`, `cbRankRestr`, prefix-closure, `gClopenFun_CBRank_eq`, and `exists_disjoint_clopen_with_cofinal_ranks`.
+- **`MaxFunLimitRank.lean`** (11 lines) — Re-export file.
+
+### Import Minimization
+- The original `PrelimMemo/Gluing.lean` imported `Bqo.TwoBQO` which was only needed for a commented-out BQO theorem. The split files no longer carry this import, reducing unnecessary transitive dependencies.
+- Added the necessary `import RequestProject.Bqo.TwoBQO` directly to `PointedGluing/Theorems.lean` where `PairSeq`/`BadPairSeq` are actually used, rather than carrying it through the entire gluing import chain.
+- Removed `import Mathlib` from `PrelimMemo/Gluing/UpperBound.lean` (was added temporarily during debugging, confirmed unnecessary).
+
+### Proof Fixes
+- Replaced fragile `grind +locals` / `grind` calls in `gluingFun_upper_bound_forward` with explicit `subst`-based proofs that handle dependent-type rewrites correctly and are stable across both LSP and `lake build` environments.
+
+# Summary of changes for run 82a395ff-a017-455b-befe-bc9a69937cd4
+## Proof Golfing Summary
+
+The project has been golfed across all Lean files, reducing the total line count from **14,538 to 14,322 lines** (216 lines removed, ~1.5% reduction). All changes compile successfully and no proofs were broken.
+
+### Key changes made:
+
+**1. Removed all unused `simp` arguments (~35 instances across 12 files)**
+- Fixed every `linter.unusedSimpArgs` warning in the project
+- Files affected: `Gluing.lean`, `CBRankHelpers.lean`, `ContinuousOnTau.lean`, `BasicProperties.lean`, `MaxMinHelpers.lean`, `GeneralStructureHelpers.lean`, `MinFunHelpers.lean`, `MinFunLocalHelpers.lean`, `MaxFunMaximum.lean`, `NonScattered.lean`, `Decomposition.lean`, `CBRankSimpleHelpers.lean`
+
+**2. Replaced `ring` with `ring_nf` (4 instances in `GeneralStructure.lean`)**
+- Fixed the `ring` suggestions where `ring_nf` was needed for non-commutative contexts
+
+**3. Golfed `BaireSpace/GenRedProp.lean`** (83 → 49 lines, 41% reduction)
+- Collapsed verbose proof of `baire_open_reduction_rel` into a more compact structure
+- Removed redundant comments and intermediate steps
+
+**4. Golfed `PrelimMemo/Basic.lean`** (226 → 176 lines, 22% reduction)
+- Converted `restriction_reduces` and `reduces_to_id_of_retract` to term-mode proofs
+- Collapsed `sigma_injective` to a term-mode proof
+- Simplified `HomeomorphicFun.continuouslyEquiv` proof structure
+- Removed verbose docstring comments while preserving key documentation
+
+**5. Golfed `PointedGluing/CBRankSimpleHelpers.lean`** (246 → 152 lines, 38% reduction)
+- Eliminated redundant `have` chains and verbose intermediate steps
+- Collapsed multi-line proof patterns into more compact forms
+- Simplified `regularity_contradiction`, `sup_ray_cb_eq_alpha`, and `CBLevel_all_rays_le_implies_const`
+
+**6. Golfed `IntroMemo.lean`** (474 → 467 lines)
+- Made `ContinuouslyReduces.refl` a term-mode proof
+- Compacted `ContinuouslyReduces.trans` by collapsing the two goals into one `refine`
+
+**7. Golfed `CenteredMemo/Defs.lean`**
+- Made `IsMonotoneSeq.isRegularSeq` a term-mode proof
+
+**8. Golfed `Bqo/TwoBQO.lean`** (368 → 366 lines)
+- Made `TwoBQO.wellQuasiOrdered` a term-mode proof
+
+**9. Golfed `PointedGluing/CBRankHelpers.lean`** (339 → 335 lines)
+- Simplified `blockSet_isOpen` and `ne_zeroStream_of_blockSet` proofs
+
+All remaining `sorry` statements are unchanged from the original project (pre-existing unfinished proofs). The build produces no linter warnings for unused simp arguments.
+
+# Summary of changes for run fd825f22-4980-4615-b8cf-7b448a2df3b4
+## Mathlib Style Compliance — Changes Made
+
+The project has been updated to more closely follow Mathlib coding standards. All changes compile successfully.
+
+### Key changes:
+
+1. **File naming (CamelCase)**:
+   - Renamed `MaxMinhelpers.lean` → `MaxMinHelpers.lean`
+   - Renamed `blackboard.lean` → `Blackboard.lean`
+
+2. **Migrated all `refine'` to `refine`** (228 instances across 25 files):
+   - Replaced `_` goal placeholders with `?_` as required by `refine`
+   - Restructured several non-trivial proof patterns that relied on `refine'` semantics:
+     - `Continuous.congr`/`ContinuousOn.congr` + `use` patterns → explicit `(f := ...)` or `apply` + `pick_goal`
+     - Made existential witnesses explicit where inference failed
+     - Provided explicit arguments in recursive calls where metavariable unification didn't work
+
+3. **Removed `set_option relaxedAutoImplicit false`** from all 38 files (redundant — it's the default in Lean 4.28.0)
+
+4. **Removed all trailing semicolons** (44 remaining instances)
+
+5. **Fixed angle bracket spacing** (`⟨ x, y ⟩` → `⟨x, y⟩`)
+
+6. **Cleaned up banner-style comments** (`-- ════════════`, `-- ── Title ──────`) replaced with simpler section markers
+
+### Remaining items (documented in `STYLE_GUIDE.md`):
+- ~45 unused simp argument warnings (require manual investigation per-instance)
+- ~600 lines exceeding 100-character limit
+- Extra whitespace in tactic expressions (`( fun ...`, `[ arg ]`)
+- Global `set_option maxHeartbeats` (should be localized per-declaration)
+
 # Summary of changes for run fc71fc8c-af78-408f-ac2e-4202c7fccf12
 ## Fixed all sorries in Case B of `exists_disjoint_clopen_with_cofinal_ranks`
 

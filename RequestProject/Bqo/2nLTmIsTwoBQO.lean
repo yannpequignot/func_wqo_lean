@@ -5,9 +5,7 @@ import RequestProject.Bqo.TwoBQO
 
 open Set
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # 2n < m implies Two-BQO

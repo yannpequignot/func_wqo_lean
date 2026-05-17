@@ -4,9 +4,7 @@ import RequestProject.CenteredMemo.Defs
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Formalization of `4_centered_memo.tex` — Main Theorems
@@ -90,12 +88,12 @@ theorem centerInvariance_reduce
     {U : Set A'} (hU : IsOpen U) (hσx : σ x ∈ U) :
     ContinuouslyReduces f (g ∘ (Subtype.val : U → A')) := by
   have h_f_le_f_restrict : f ≤ f ∘ (Subtype.val : σ ⁻¹' U → A) := by
-    exact hcenter _ ( hU.preimage hσ ) hσx
+    exact hcenter _ (hU.preimage hσ) hσx
   have h_f_restrict_le_g_restrict : f ∘ (Subtype.val : σ ⁻¹' U → A) ≤ g ∘ (Subtype.val : U → A') := by
-    refine' ⟨fun a => ⟨σ a, a.2⟩, _, _⟩
+    refine ⟨fun a => ⟨σ a, a.2⟩, ?_, ?_⟩
     · fun_prop
-    · refine' ⟨τ, _, _⟩
-      · refine' hτ_cont.mono _
+    · refine ⟨τ, ?_, ?_⟩
+      · refine hτ_cont.mono ?_
         rintro _ ⟨a, rfl⟩ ; exact ⟨a, rfl⟩
       · aesop
   exact ContinuouslyReduces.trans h_f_le_f_restrict h_f_restrict_le_g_restrict
@@ -119,7 +117,7 @@ theorem centerInvariance_equiv
     (hτ_eq : ∀ a, f a = τ (g (σ a))) :
     IsCenterFor g (σ x) := by
   intro U hU hσU
-  convert hequiv.2.trans ( centerInvariance_reduce hcenter hσ hτ_cont hτ_eq hU hσU ) using 1
+  convert hequiv.2.trans (centerInvariance_reduce hcenter hσ hτ_cont hτ_eq hU hσU) using 1
 
 /-
 **Fact 4.2 (Centerinvariance) — Item 3.**
@@ -138,9 +136,9 @@ theorem centerInvariance_cover
     {I : Type*} {C : I → Set A'} (hcover : ⋃ i, C i = univ)
     (hopen : ∀ i, IsOpen (C i)) :
     ∃ i, ContinuouslyReduces f (g ∘ (Subtype.val : C i → A')) := by
-  have := hcover.symm.subset ( Set.mem_univ ( hred.choose x ) )
+  have := hcover.symm.subset (Set.mem_univ (hred.choose x))
   obtain ⟨i, hi⟩ := Set.mem_iUnion.mp this
-  exact ⟨i, centerInvariance_reduce hcenter ( hred.choose_spec.1 ) ( hred.choose_spec.2.choose_spec.1 ) ( hred.choose_spec.2.choose_spec.2 ) ( hopen i ) hi⟩
+  exact ⟨i, centerInvariance_reduce hcenter (hred.choose_spec.1) (hred.choose_spec.2.choose_spec.1) (hred.choose_spec.2.choose_spec.2) (hopen i) hi⟩
 
 /-- **Proposition 4.3 (scatteredhavecocenter).**
 Suppose that `f : A → B` is centered with `A` metrizable and `B` Hausdorff.
@@ -165,7 +163,7 @@ theorem scatteredHaveCocenter
     ScatteredFun f ↔ (∀ x y : A, IsCenterFor f x → IsCenterFor f y → f x = f y) := by
   sorry
 
-/-
+/--
 **Proposition 4.3 — Second part.**
 When `f` is scattered and centered, it is simple and any center maps to the
 distinguished point.
@@ -207,7 +205,7 @@ theorem rigidityOfCocenter_tau
     (y_g : B') (hy_g : ∀ x, IsCenterFor g x → g x = y_g) :
     τ y_g = y_f := by
   obtain ⟨x, hx⟩ := hf_cent
-  rw [ ← hy_g _ ( centerInvariance_equiv hx hequiv hσ hτ_cont hτ_eq ), ← hy_f _ hx, hτ_eq ]
+  rw [← hy_g _ (centerInvariance_equiv hx hequiv hσ hτ_cont hτ_eq), ← hy_f _ hx, hτ_eq]
 
 /-
 **Proposition 4.4 (Rigidityofthecocenter) — Item 2.**
@@ -235,12 +233,12 @@ theorem rigidityOfCocenter_separation
         g (σ x.val))) := by
   intro n hn
   obtain ⟨x_i, hx_i⟩ : ∃ (x_i : ℕ → {a : A | (∀ k < n, f a k = y_f k) ∧ f a n ≠ y_f n}), Filter.Tendsto (fun i => g (σ (x_i i))) Filter.atTop (nhds y_g) := by
-    rw [ mem_closure_iff_seq_limit ] at hn
-    exact ⟨fun i => Classical.choose ( hn.choose_spec.1 i ), by simpa only [ Classical.choose_spec ( hn.choose_spec.1 _ ) ] using hn.choose_spec.2⟩
+    rw [mem_closure_iff_seq_limit] at hn
+    exact ⟨fun i => Classical.choose (hn.choose_spec.1 i), by simpa only [Classical.choose_spec (hn.choose_spec.1 _)] using hn.choose_spec.2⟩
   have h_contra : ∀ᶠ i in Filter.atTop, f (x_i i) n = y_f n := by
     have h_contra : Filter.Tendsto (fun i => f (x_i i)) Filter.atTop (nhds y_f) := by
-      simpa only [ hred, hτ_yg ] using hτ.continuousAt.tendsto.comp hx_i
-    rw [ tendsto_pi_nhds ] at h_contra
+      simpa only [hred, hτ_yg] using hτ.continuousAt.tendsto.comp hx_i
+    rw [tendsto_pi_nhds] at h_contra
     simpa using h_contra n
   exact h_contra.exists.elim fun i hi => x_i i |>.2.2 hi
 
@@ -270,7 +268,7 @@ theorem rigidityOfCocenter_finiteGluing
           g x.val) := by
   sorry
 
-/-
+/--
 **Proposition 4.4 (Rigidityofthecocenter) — Item 4.**
 `(Ray(f, y_f, n))_{n ∈ ℕ}` is reducible by finite pieces to `(Ray(g, y_g, n))_{n ∈ ℕ}`.
 This follows from a recursive application of Item 3.
@@ -295,19 +293,19 @@ theorem rigidityOfCocenter_reducibleByPieces
   by_contra h_contra
   have :=rigidityOfCocenter_finiteGluing hf_scat hg_scat hf_cent hg_cent hequiv y_f y_g hy_f hy_g
   choose M hM₁ hM₂ using this
-  refine' h_contra ⟨fun n => Finset.Icc ( Nat.recOn n 0 fun n IH => M IH n + 1 ) ( M ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n ), _, _⟩
+  refine h_contra ⟨fun n => Finset.Icc (Nat.recOn n 0 fun n IH => M IH n + 1) (M (Nat.recOn n 0 fun n IH => M IH n + 1) n), ?_, ?_⟩
   · intro m n hmn
-    cases lt_or_gt_of_ne hmn <;> simp +decide [ *, Finset.disjoint_left ]
+    cases lt_or_gt_of_ne hmn <;> simp +decide [*, Finset.disjoint_left]
     · intro a ha₁ ha₂ ha₃
-      refine' absurd ha₃ ( not_le_of_gt _ )
-      refine' Nat.le_induction _ _ n ‹_› <;> intros <;> simp +decide [ * ]
-      exact le_trans ( by linarith ) ( hM₁ _ _ )
-    · refine' fun a ha₁ ha₂ ha₃ => lt_of_lt_of_le _ ha₁
-      refine' Nat.le_induction _ _ m ‹_› <;> intros <;> simp +decide [ * ]
-      exact le_trans ( by linarith ) ( hM₁ _ _ )
+      refine absurd ha₃ (not_le_of_gt ?_)
+      refine Nat.le_induction ?_ ?_ n ‹_› <;> intros <;> simp +decide [*]
+      exact le_trans (by linarith) (hM₁ _ _)
+    · refine fun a ha₁ ha₂ ha₃ => lt_of_lt_of_le ?_ ha₁
+      refine Nat.le_induction ?_ ?_ m ‹_› <;> intros <;> simp +decide [*]
+      exact le_trans (by linarith) (hM₁ _ _)
   · intro n
-    obtain ⟨σ, hσ, τ, hτ, h⟩ := hM₂ ( Nat.recOn n 0 fun n IH => M IH n + 1 ) n
-    refine' ⟨_, _, _⟩
+    obtain ⟨σ, hσ, τ, hτ, h⟩ := hM₂ (Nat.recOn n 0 fun n IH => M IH n + 1) n
+    refine ⟨?_, ?_, ?_⟩
     use fun x => ⟨σ x |>.1, by
       exact ⟨_, Finset.mem_Icc.mpr ⟨σ x |>.2.choose_spec.1, σ x |>.2.choose_spec.2.1⟩, σ x |>.2.choose_spec.2.2.1, σ x |>.2.choose_spec.2.2.2⟩⟩
     all_goals generalize_proofs at *
@@ -339,7 +337,7 @@ theorem isCentered_of_equiv
   obtain ⟨σ', hσ'_cont, τ', hτ'_cont, hτ'_eq⟩ := hequiv.2
   obtain ⟨x₀, hx₀⟩ := hg_cent
   use σ' x₀
-  have := centerInvariance_equiv hx₀ hequiv.symm hσ'_cont hτ'_cont ( fun x => hτ'_eq x ▸ rfl ) ; aesop
+  have := centerInvariance_equiv hx₀ hequiv.symm hσ'_cont hτ'_cont (fun x => hτ'_eq x ▸ rfl) ; aesop
 
 theorem residualCorestrictionOfCentered
     {A B : Set (ℕ → ℕ)}
@@ -356,7 +354,7 @@ theorem residualCorestrictionOfCentered
   convert isCentered_of_equiv _ hequiv using 1
   exact ⟨⟨_, zeroStream_mem_pointedGluingSet C⟩, pgluingOfRegularIsCentered C D g hg_reg⟩
 
-/-
+/--
 **Theorem 4.6 (CenteredasPgluing) — Item 1 (forward direction).**
 If `f ∈ 𝒞` is centered with cocenter `y`, then `f ≤ pgl_n Ray(f, y, n)`.
 

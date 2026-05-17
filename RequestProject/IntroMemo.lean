@@ -3,9 +3,7 @@ import Mathlib
 open scoped Topology
 open Set Function TopologicalSpace
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Formalization of `1_intro_memo.tex`
@@ -97,10 +95,10 @@ def ContinuouslyReduces {X Y X' Y' : Type*}
 infix:50 " ≤ " => ContinuouslyReduces
 
 /-- Continuous reducibility is reflexive: any function reduces to itself via `(id, id)`. -/
-theorem ContinuouslyReduces.refl (f : X → Y) : f ≤ f := by
-  exact ⟨id, continuous_id, id, continuousOn_id, fun x => rfl⟩
+theorem ContinuouslyReduces.refl (f : X → Y) : f ≤ f :=
+  ⟨id, continuous_id, id, continuousOn_id, fun _ => rfl⟩
 
-/-
+/--
 Continuous reducibility is transitive. If `f ≤ g` via `(σ₁, τ₁)` and `g ≤ h`
 via `(σ₂, τ₂)`, then `f ≤ h` via `(σ₂ ∘ σ₁, τ₁ ∘ τ₂)`.
 -/
@@ -112,16 +110,9 @@ theorem ContinuouslyReduces.trans {X X' X'' Y Y' Y'' : Type*}
   f ≤ h := by
     obtain ⟨σ₁, hσ₁, τ₁, hτ₁cont, hτ₁eq⟩ := hfg
     obtain ⟨σ₂, hσ₂, τ₂, hτ₂cont, hτ₂eq⟩ := hgh
-    refine ⟨σ₂ ∘ σ₁, hσ₂.comp hσ₁, τ₁ ∘ τ₂, ?_, ?_⟩
-    · apply ContinuousOn.comp hτ₁cont (hτ₂cont.mono (Set.range_comp_subset_range _ _))
-      intro y hy
-      obtain ⟨x, rfl⟩ := hy
-      simp [Function.comp] at *
-      rw [← hτ₂eq]
-      exact Set.mem_range_self x
-    · intro x
-      simp [Function.comp]
-      rw [hτ₁eq, ← hτ₂eq]
+    refine ⟨σ₂ ∘ σ₁, hσ₂.comp hσ₁, τ₁ ∘ τ₂, ?_, fun x => by simp [Function.comp]; rw [hτ₁eq, ← hτ₂eq]⟩
+    apply ContinuousOn.comp hτ₁cont (hτ₂cont.mono (Set.range_comp_subset_range _ _))
+    rintro y ⟨x, rfl⟩; simp [Function.comp] at *; rw [← hτ₂eq]; exact Set.mem_range_self x
 
 end ContinuousReduction
 
@@ -244,7 +235,7 @@ def locallyConstantLocus {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
     (f : X → Y) : Set X :=
   {x | ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ ∀ y ∈ U, f y = f x}
 
-/-
+/--
 The locally constant locus is open.
 -/
 theorem isOpen_locallyConstantLocus {X Y : Type*}
@@ -252,7 +243,7 @@ theorem isOpen_locallyConstantLocus {X Y : Type*}
     IsOpen (locallyConstantLocus f) := by
   refine isOpen_iff_forall_mem_open.mpr ?_
   rintro x ⟨U, hUo, hxU, hU⟩
-  exact ⟨U, fun y hy => ⟨U, hUo, hy, fun z hz => by rw [ hU z hz, hU y hy ]⟩, hUo, hxU⟩
+  exact ⟨U, fun y hy => ⟨U, hUo, hy, fun z hz => by rw [hU z hz, hU y hy]⟩, hUo, hxU⟩
 
 /-- The *Cantor–Bendixson derivative* of `f` is the restriction of `f` to the complement
 of the locally constant locus — the set of points where `f` is not locally constant. -/

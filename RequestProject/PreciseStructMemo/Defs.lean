@@ -3,9 +3,7 @@ import RequestProject.CenteredMemo.Theorems
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Formalization of `5_precise_struct_memo.tex` — Definitions

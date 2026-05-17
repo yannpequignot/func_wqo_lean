@@ -1,13 +1,12 @@
 import RequestProject.PointedGluing.MaxFunMaximum
+import RequestProject.Bqo.TwoBQO
 
 
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
 
-set_option maxHeartbeats 4000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 # Remaining Theorems from Chapter 3
@@ -38,19 +37,19 @@ theorem pointedGluing_rays_upper_bound
     grind⟩, by
     aesop⟩
   generalize_proofs at *
-  refine' ⟨_, _, _⟩
+  refine ⟨?_, ?_, ?_⟩
   use fun a => ⟨prependZerosOne 0 a.val, Or.inr <| Set.mem_iUnion.mpr ⟨0, a.val, a.property, rfl⟩⟩
-  · refine' Continuous.subtype_mk _ _
+  · refine Continuous.subtype_mk ?_ ?_
     exact continuous_prependZerosOne 0 |> Continuous.comp <| continuous_subtype_val
-  · refine' ⟨_, _, _⟩
+  · refine ⟨?_, ?_, ?_⟩
     use fun x => x ∘ fun n => n + 1
     · fun_prop
-    · intro x; ext n; simp +decide [ PointedGluingFun ]
-      split_ifs <;> simp_all +decide [ prependZerosOne ]
-      · rename_i h; have := congr_fun h 0; simp_all +decide [ prependZerosOne ]
+    · intro x; ext n; simp +decide [PointedGluingFun]
+      split_ifs <;> simp_all +decide [prependZerosOne]
+      · rename_i h; have := congr_fun h 0; simp_all +decide [prependZerosOne]
       · congr
-      · simp_all +decide [ firstNonzero, prependZerosOne ]
-        unfold stripZerosOne at *; simp_all +decide [ prependZerosOne ]
+      · simp_all +decide [firstNonzero, prependZerosOne]
+        unfold stripZerosOne at *; simp_all +decide [prependZerosOne]
 
 
 /-- **Corollary (SplittingaPgluingonatail).**

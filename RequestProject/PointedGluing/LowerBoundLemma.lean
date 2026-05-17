@@ -8,9 +8,7 @@ import RequestProject.BaireSpace.GenRedProp
 open scoped Topology
 open Set Function TopologicalSpace Classical
 
-set_option maxHeartbeats 8000000
 set_option autoImplicit false
-set_option relaxedAutoImplicit false
 
 /-!
 ## Pointed Gluing as a Lower Bound (Lemma 3.13 Pgluingaslowerbound)
@@ -20,7 +18,6 @@ set_option relaxedAutoImplicit false
 
 /-
   CHANGES FROM THE ORIGINAL
-  ──────────────────────────
   1. A private helper `firstNonzero_val_ne` is lifted out of the proof body
      (it was duplicated twice inline).
 
@@ -42,7 +39,6 @@ set_option relaxedAutoImplicit false
      extracted into named `have`s with clear filter-statement types.
 
   LEAN IDIOM GLOSSARY  (for learners)
-  ─────────────────────────────────────
   • `dif_pos h` / `dif_neg h`
       Rewrites `if h : P then a else b` using a proof `h : P` (or `h : ¬P`).
       Used whenever σ or τ_global are unfolded.
@@ -73,9 +69,7 @@ set_option relaxedAutoImplicit false
       of a relative clopen partition (another local lemma).
 -/
 
--- ============================================================
---  PRIVATE HELPERS  (lifted out of the proof body)
--- ============================================================
+/-! ##  PRIVATE HELPERS  (lifted out of the proof body) -/
 
 /-- At the first nonzero position of `z`, the value is indeed nonzero.
     This tiny fact was proved twice inline in the original; we lift it here. -/
@@ -132,20 +126,21 @@ lemma sigma_cont_on_pieces
          strip_mem_of_pointedGluingSet C z h⟩).val
     let piece := Subtype.val ⁻¹' RaySet (PointedGluingSet C) zeroStream i
     Continuous (fun z : ↑piece => σ z.val) := by
-  refine' Continuous.congr _ _
-  refine' fun z => ( σ_n i ⟨stripZerosOne i z.val.val, strip_mem_of_block C z.val i z.2.2⟩ ).val
-  · refine' Continuous.comp _ _
+  refine Continuous.congr
+    (f := fun z => (σ_n i ⟨stripZerosOne i z.val.val, strip_mem_of_block C z.val i z.2.2⟩).val)
+    ?_ ?_
+  · refine Continuous.comp ?_ ?_
     · exact continuous_subtype_val
-    · exact hσ_n i |> Continuous.comp <| Continuous.subtype_mk ( continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val.comp <| continuous_subtype_val ) _
+    · exact hσ_n i |> Continuous.comp <| Continuous.subtype_mk (continuous_stripZerosOne i |> Continuous.comp <| continuous_subtype_val.comp <| continuous_subtype_val) _
   · intro z
     simp [RaySet] at z
     rename_i h
     have := h.2.2
     have h_firstNonzero : firstNonzero h.val.val = i := by
       unfold firstNonzero
-      split_ifs <;> simp_all +decide [ Nat.find_eq_iff ]
+      split_ifs <;> simp_all +decide [Nat.find_eq_iff]
       · exact ⟨this.2, fun n hn => rfl⟩
-      · exact False.elim ( this.2 ( by rfl ) )
+      · exact False.elim (this.2 (by rfl))
     cases h ; aesop
 
 /-- ContinuousOn τ_global on range(f ∘ σ): for any y in the range, ContinuousWithinAt holds.
@@ -244,9 +239,7 @@ lemma tau_global_continuousOn
       · exact absurd h hy_UI
     rw [this]; exact hcwat_fx
 
--- ============================================================
---  MAIN THEOREM
--- ============================================================
+/-! ##  MAIN THEOREM -/
 
 theorem pointedGluing_lower_bound_lemma
     {A : Type*} [TopologicalSpace A] [MetrizableSpace A]
@@ -265,9 +258,7 @@ theorem pointedGluing_lower_bound_lemma
     ContinuouslyReduces
       (fun (z : PointedGluingSet C) => PointedGluingFun C D g z)
       f := by
-  -- ══════════════════════════════════════════════════════════
   --  PHASE 0 — Extract witnesses from hypotheses
-  -- ══════════════════════════════════════════════════════════
   --
   -- `hrelclop` bundles two pieces: pairwise disjointness of the
   -- images f(Aₙ), and the fact that each piece is relatively open
@@ -300,10 +291,7 @@ theorem pointedGluing_lower_bound_lemma
     exact ⟨sn, tn, hsn, htn, heqn⟩
 
   choose σ_n τ_n hσ_n hτ_n hτ_n_eq using hred'
-
-  -- ══════════════════════════════════════════════════════════
   --  PHASE 1 — Define σ and prove it is continuous
-  -- ══════════════════════════════════════════════════════════
   --
   -- σ : PointedGluingSet C → A is defined piecewise:
   --   • If z = zeroStream  →  x   (the base point)
@@ -319,7 +307,7 @@ theorem pointedGluing_lower_bound_lemma
        strip_mem_of_pointedGluingSet C z h⟩).val
 
 
-  -- ── 1a. Continuity of σ on U = {z | z.val ≠ zeroStream} ─────────────
+  -- 1a. Continuity of σ on U = {z | z.val ≠ zeroStream}
   --
   -- We work with pieces in PointedGluingSet C directly (not the double-
   -- subtype), so that `continuous_of_relativeClopenPartition_seq` can
@@ -448,7 +436,7 @@ theorem pointedGluing_lower_bound_lemma
       ext z; simp [Set.restrict]
     rw [heq]
     exact hσ_pieces i
-  -- ── 1b. Sequential condition: zₖ → zeroStream ⟹ σ(zₖ) → x ─────────
+  -- 1b. Sequential condition: zₖ → zeroStream ⟹ σ(zₖ) → x
   --
   -- If zₖ.val ≠ zeroStream for all k and zₖ → z₀ = zeroStream, then
   -- σ(zₖ) ∈ Aₙ for n = firstNonzero(zₖ.val), and n → ∞, so
@@ -490,7 +478,7 @@ theorem pointedGluing_lower_bound_lemma
       exact absurd heq (firstNonzero_val_ne (hzk_ne k))
     exact hN (firstNonzero (zk k).val) hfnz_ge hσ_mem
 
-  -- ── 1c. Assemble: σ is continuous ───────────────────────────────────
+  -- 1c. Assemble: σ is continuous
   --
   -- `sufficient_cond_continuity` says: a function on a metrizable space
   -- is continuous if it is continuous on an open U and satisfies a
@@ -508,10 +496,7 @@ theorem pointedGluing_lower_bound_lemma
           simp only [Set.mem_compl_iff, Set.mem_setOf_eq, not_not] at hz₀
           simp only [σ, dif_pos hz₀]
           exact σ_seq zk z₀ hzk_ne hz₀ htendsto)
-
-  -- ══════════════════════════════════════════════════════════
   --  PHASE 2 — Define In, τi and prove their properties
-  -- ══════════════════════════════════════════════════════════
   --
   -- In n  =  range (f ∘ val ∘ σₙ n)   ⊆  f(Aₙ)
   --
@@ -561,9 +546,7 @@ theorem pointedGluing_lower_bound_lemma
     intro ⟨y, hy⟩
     show n = (τi ∘ Set.inclusion (Set.subset_iUnion In n)) ⟨y, hy⟩
     exact (hτi_n ⟨y, Set.mem_iUnion.mpr ⟨n, hy⟩⟩ n hy).symm
-  -- ══════════════════════════════════════════════════════════
   --  PHASE 3 — Define τ, τ_global and prove continuity
-  -- ══════════════════════════════════════════════════════════
   --
   -- τ : (⋃ n, In n) → ℕ → ℕ
   --   y  ↦  prependZerosOne (τi y) (τₙ (τi y) y)
@@ -608,10 +591,7 @@ theorem pointedGluing_lower_bound_lemma
   have hfx_notUI : f x ∉ UI := fun hmem => by
     obtain ⟨n, zn, hzn⟩ := Set.mem_iUnion.mp hmem
     exact hsep n (subset_closure ⟨(σ_n n zn).val, (σ_n n zn).prop, hzn⟩)
-
-  -- ══════════════════════════════════════════════════════════
   --  PHASE 4 — Auxiliary: f(σ z) ∈ UI when z ≠ zeroStream
-  -- ══════════════════════════════════════════════════════════
   --
   -- For z ≠ zeroStream, σ z = (σₙ n z').val where n = firstNonzero z.val,
   -- so f(σ z) ∈ In n ⊆ UI.
@@ -623,14 +603,11 @@ theorem pointedGluing_lower_bound_lemma
     exact ⟨firstNonzero z.val,
       ⟨⟨stripZerosOne _ z.val, strip_mem_of_pointedGluingSet C z hz⟩,
         by simp [σ, dif_neg hz]⟩⟩
-
-  -- ══════════════════════════════════════════════════════════
   --  PHASE 5 — Produce the reduction witness and verify goals
-  -- ══════════════════════════════════════════════════════════
 
   refine ⟨σ, σ_cont, τ_global, ?_, ?_⟩
 
-  -- ── Goal 1: ContinuousOn τ_global on range(f ∘ σ) ──────────────────
+  -- Goal 1: ContinuousOn τ_global on range(f ∘ σ)
   --
   -- Strategy: show that the composition z ↦ τ_global(f(σ z)) is continuous
   -- (using `sufficient_cond_continuity` again), then derive ContinuousOn on
@@ -649,14 +626,14 @@ theorem pointedGluing_lower_bound_lemma
   --   and firstNonzero (zₖ k).val → ∞ as zₖ k → zeroStream,
   --   so prependZerosOne n _ → zeroStream.
 
-  · -- ── 5.1  firstNonzero tends to ∞ as zₖ → zeroStream ───────────────
+  · -- 5.1  firstNonzero tends to ∞ as zₖ → zeroStream
     -- Used both in Goal 1 and (implicitly) in σ_seq above.
     -- Stated here so it can be referred to in the `hcomp` proof below.
     --
     -- LEAN: `Filter.tendsto_atTop` says Tendsto g atTop atTop ↔
     --   ∀ N, ∀ᶠ k in atTop, N ≤ g k.
 
-    -- ── 5.2  The composition z ↦ τ_global(f(σ z)) is continuous ────────
+    -- 5.2  The composition z ↦ τ_global(f(σ z)) is continuous
     --
     -- ★ SORRY 2 ★
     -- What is needed for the sub-goal `hlift`:
@@ -747,7 +724,7 @@ theorem pointedGluing_lower_bound_lemma
       σ σ_cont rfl In rfl h_refine hrelclop'
       τi hτi_n hτi_cont τ rfl hτ_cont τ_global rfl hfx_notUI h_incl hcomp
 
-  -- ── Goal 2: functional equation ────────────────────────────────────
+  -- Goal 2: functional equation
   --
   -- PointedGluingFun C D g z = τ_global (f (σ z))
   --
